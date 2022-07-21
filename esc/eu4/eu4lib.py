@@ -389,7 +389,7 @@ class Eu4Color(sRGBColor):
 
     @classmethod
     def new_from_parser_obj(cls, color_obj):
-        """create an Eu4Color object from an ck2parser Obj.
+        """create an Eu4Color object from a ck2parser Obj.
 
         The Obj must contain a list/tuple of rgb values.
         For example if the following pdx script is parsed into the variable data:
@@ -398,3 +398,22 @@ class Eu4Color(sRGBColor):
             Eu4Color.new_from_parser_obj(data['color'])
         """
         return cls(color_obj.contents[0].val, color_obj.contents[1].val, color_obj.contents[2].val, is_upscaled=True)
+
+    @classmethod
+    def new_from_rgb_hex(cls, hex_str):
+        """
+        Converts an RGB hex string like #RRGGBB and assigns the values to
+        this sRGBColor object.
+
+        this overrides the parent method, to handle the different is_upscaled correctly
+
+        :rtype: sRGBColor
+        """
+        colorstring = hex_str.strip()
+        if colorstring[0] == '#':
+            colorstring = colorstring[1:]
+        if len(colorstring) != 6:
+            raise ValueError("input #%s is not in #RRGGBB format" % colorstring)
+        r, g, b = colorstring[:2], colorstring[2:4], colorstring[4:]
+        r, g, b = [int(n, 16) for n in (r, g, b)]
+        return cls(r, g, b)

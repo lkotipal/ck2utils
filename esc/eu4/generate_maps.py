@@ -253,6 +253,16 @@ class MapGenerator:
         color_to_provinces[Eu4Color(150, 150, 150)] = empty_provinces
         self.color_map_generator.generate_mapimage_with_several_colors(color_to_provinces, 'Countries')
 
+    def continent_map(self):
+        self.color_map_generator.generate_mapimage_with_several_colors({
+            Eu4Color.new_from_rgb_hex('#7fffff'): 'europe',
+            Eu4Color.new_from_rgb_hex('#ffff7f'): 'asia',
+            Eu4Color.new_from_rgb_hex('#7f7fff'): 'africa',
+            Eu4Color.new_from_rgb_hex('#ff7f7f'): 'north_america',
+            Eu4Color.new_from_rgb_hex('#7fff7f'): 'south_america',
+            Eu4Color.new_from_rgb_hex('#ff7fff'): 'oceania'
+        }, 'Continent map')
+
     # TODO: this is unfinished and waiting for the outcome of the discussion on the talk page
     def mission_map(self):
         tags_with_tag_specific_missions = set()
@@ -473,6 +483,7 @@ every_province = {
         self.terrain_map()
         self.colonial_region_map()
         self.country_map()
+        self.continent_map()
         self.mission_map()
 
 
