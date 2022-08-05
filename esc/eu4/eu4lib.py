@@ -234,8 +234,6 @@ class Country(NameableEntity):
         super().__init__(tag, display_name)
         self.tag = tag
         self.color = color
-        if color:
-            print(tag)
         self.parser = parser
         self.country_file = country_file
 
