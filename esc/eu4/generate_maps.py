@@ -12,6 +12,7 @@ from eu4.eu4lib import Eu4Color
 from eu4.paths import eu4outpath, verified_for_version
 from eu4.colormap import ColorMapGenerator
 from eu4.provincelists import is_island, province_is_on_an_island, island, terrain_to_provinces, coastal_provinces
+from ck2parser import Date
 
 
 class MapGenerator:
@@ -262,6 +263,34 @@ class MapGenerator:
             Eu4Color.new_from_rgb_hex('#7fff7f'): 'south_america',
             Eu4Color.new_from_rgb_hex('#ff7fff'): 'oceania'
         }, 'Continent map')
+
+    def techgroup_map(self):
+        tech_group_color = {
+            'western': '#ccc000', 'eastern': '#b38000',
+            'ottoman': '#7ecb78', 'muslim': '#00cc00',
+            'indian': '#0099cc', 'east_african': '#f98c0f',
+            'central_african': '#633c27', 'chinese': '#cc4c00',
+            'nomad_group': '#662600', 'sub_saharan': '#804c4c',
+            'north_american': '#d98c8c', 'mesoamerican': '#800000',
+            'south_american': '#006600', 'andean': '#8c4c8c',
+            'aboriginal_tech': '#FFFFFF', 'polynesian_tech': '#1a35b1'
+        }
+        tag_to_tech_group = {}
+        for path, tree in self.mapparser.parser.parse_files('history/countries/*'):
+            tag = path.stem[:3]
+            tree_1444 = tree.at_time(Date(1444,11,11))
+            if 'technology_group' in tree_1444:
+                tag_to_tech_group[tag] = tree_1444['technology_group']
+            else:
+                print('Warning: {} has no technology_group'.format(tag))
+
+        color_to_provinces = {}
+        for tech_group, color_hex in tech_group_color.items():
+            color = Eu4Color.new_from_rgb_hex(color_hex)
+            color_to_provinces[color] = [prov.id for prov in self.mapparser.all_land_provinces.values()
+                                         if 'Owner' in prov and tag_to_tech_group[prov.get('Owner')] == tech_group]
+
+        self.color_map_generator.generate_mapimage_with_several_colors(color_to_provinces, 'Tech groups')
 
     # TODO: this is unfinished and waiting for the outcome of the discussion on the talk page
     def mission_map(self):
