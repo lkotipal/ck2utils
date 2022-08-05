@@ -185,7 +185,51 @@ class Stringifiable:
     pass
 
 
-class TopLevel(Stringifiable):
+class ContainerMixin:
+    """Common code for TopLevel and Obj"""
+
+    contents = None
+    _dictionary = None
+
+    def __len__(self):
+        return len(self.contents)
+
+    def __contains__(self, item):
+        return item in self.contents or item in self.dictionary
+
+    def __iter__(self):
+        return iter(self.contents)
+
+    def __getitem__(self, key):
+        return self.dictionary[key]
+
+    def __reversed__(self):
+        return reversed(self.contents)
+
+    def get(self, *args, **kwargs):
+        return self.dictionary.get(*args, **kwargs)
+
+    # assumes keys occur at most once
+    def has_pair(self, key_val, val_val):
+        return key_val in self.dictionary and self[key_val].val == val_val
+
+    @property
+    def has_pairs(self):
+        return not self.contents or isinstance(self.contents[0], Pair)
+
+    @property
+    def dictionary(self):
+        if self._dictionary is None:
+            self._dictionary = {k.val: v for k, v in reversed(self.contents)}
+        return self._dictionary
+
+    def find_all(self, key):
+        """get a list of values which have the given key"""
+        return [v.val for k, v in self.contents if k.val == key]
+    pass
+
+
+class TopLevel(ContainerMixin, Stringifiable):
 
     def __init__(self, contents=None, post_comments=None):
         super().__init__()
@@ -198,21 +242,6 @@ class TopLevel(Stringifiable):
         else:
             self.post_comments = [Comment(s) for s in post_comments]
         self._dictionary = None
-
-    def __len__(self):
-        return len(self.contents)
-
-    def __contains__(self, item):
-        return item in self.contents
-
-    def __iter__(self):
-        return iter(self.contents)
-
-    def __getitem__(self, key):
-        return self.dictionary[key]
-
-    def __reversed__(self):
-        return reversed(self.contents)
 
     @property
     def pre_comments(self):
@@ -248,23 +277,6 @@ class TopLevel(Stringifiable):
             c_list = self.post_comments
         if (c_list and c_list[0].val.startswith('-*-')):
             del c_list[0]
-
-    def get(self, *args, **kwargs):
-        return self.dictionary.get(*args, **kwargs)
-
-    # assumes keys occur at most once
-    def has_pair(self, key_val, val_val):
-        return key_val in self.dictionary and self[key_val].val == val_val
-
-    @property
-    def has_pairs(self):
-        return not self.contents or isinstance(self.contents[0], Pair)
-
-    @property
-    def dictionary(self):
-        if self._dictionary is None:
-            self._dictionary = {k.val: v for k, v in reversed(self.contents)}
-        return self._dictionary
 
     def str(self, parser, indent=0):
         s = ''
@@ -603,7 +615,7 @@ class Pair(Stringifiable):
         return s, (nl, col)
 
 
-class Obj(Stringifiable):
+class Obj(ContainerMixin, Stringifiable):
 
     def __init__(self, kel, contents=None, ker=None):
         super().__init__()
@@ -616,21 +628,6 @@ class Obj(Stringifiable):
             self.contents = contents
             self.ker = ker if ker is not None else Op('}')
         self._dictionary = None
-
-    def __len__(self):
-        return len(self.contents)
-
-    def __contains__(self, item):
-        return item in self.contents or item in self.dictionary
-
-    def __iter__(self):
-        return iter(self.contents)
-
-    def __getitem__(self, key):
-        return self.dictionary[key]
-
-    def __reversed__(self):
-        return reversed(self.contents)
 
     @property
     def pre_comments(self):
@@ -652,23 +649,6 @@ class Obj(Stringifiable):
     def has_comments(self):
         return (self.kel.has_comments or self.ker.has_comments or
                 any(x.has_comments for x in self))
-
-    def get(self, *args, **kwargs):
-        return self.dictionary.get(*args, **kwargs)
-
-    # assumes keys occur at most once
-    def has_pair(self, key_val, val_val):
-        return key_val in self.dictionary and self[key_val].val == val_val
-
-    @property
-    def has_pairs(self):
-        return not self.contents or isinstance(self.contents[0], Pair)
-
-    @property
-    def dictionary(self):
-        if self._dictionary is None:
-            self._dictionary = {k.val: v for k, v in reversed(self.contents)}
-        return self._dictionary
 
     def str(self, parser, indent=0):
         indent_str = '\t' if parser.tab_indents else ' ' * parser.indent_width
