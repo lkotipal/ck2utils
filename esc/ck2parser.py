@@ -12,6 +12,8 @@ import re
 import sys
 import time
 import traceback
+from operator import attrgetter
+
 from funcparserlib.lexer import make_tokenizer, Token
 from funcparserlib.parser import (some, a, maybe, many, finished, skip,
                                   oneplus, forward_decl, NoParseError)
@@ -276,6 +278,46 @@ class TopLevel(Stringifiable):
             s += comments_to_str(parser, self.post_comments, indent)
         return s
 
+    def _add_pair_to_result_dict(self, pair, result, keys_which_can_appear_more_than_once):
+        if pair.key.val in keys_which_can_appear_more_than_once:
+            if pair.key.val not in result:
+                result[pair.key.val] = []
+            result[pair.key.val].append(pair)
+        else:  # overwrite keys if they already exist
+            result[pair.key.val] = pair
+
+    def at_time(self, date, keys_which_can_appear_more_than_once=[]):
+        """
+        return a new TopLevel who's dated entries are merged with the top level if they are not later than the date argument
+
+        if multiple entries have the same key, all but the latest entry is removed
+        unless the key is in keys_which_can_appear_more_than_once
+        @param date: a Date object
+        @param keys_which_can_appear_more_than_once: a list of strings
+        @return: TopLevel
+        """
+        result_dict = {}
+        dated_items = []
+        for pair in self.contents:
+            if isinstance(pair.key, Date):
+                if pair.key <= date:
+                    dated_items.append(pair)
+                else:  # ignore dated entries past the date we are looking for
+                    pass
+            else:
+                self._add_pair_to_result_dict(pair, result_dict, keys_which_can_appear_more_than_once)
+
+        for date, date_pairs in sorted(dated_items, key=attrgetter('key')):
+            for pair in date_pairs:
+                self._add_pair_to_result_dict(pair, result_dict, keys_which_can_appear_more_than_once)
+        result_list = []
+        for pair in result_dict.values():
+            if isinstance(pair, list):
+                result_list.extend(pair)
+            else:
+                result_list.append(pair)
+        return TopLevel(result_list, self.post_comments)
+
 
 class Commented(Stringifiable):
 
@@ -413,13 +455,41 @@ class Number(Commented):
         else:
             return self.val < other
 
+
+@total_ordering
 class Date(Commented):
+
+    def __init__(self, *args):
+        if len(args) == 3 and isinstance(args[0], int) and isinstance(args[1], int) and isinstance(args[2], int):
+            self.pre_comments = []
+            self.val = tuple(args)
+            self.post_comment = None
+        else:
+            super().__init__(*args)
 
     def str_to_val(self, string):
         return tuple((int(x) if x else 0) for x in string.split('.'))
 
     def val_str(self):
         return '{}.{}.{}'.format(*self.val)
+
+    def __str__(self):
+        return self.val_str()
+
+    def __hash__(self):
+        return hash(self.val)
+
+    def __eq__(self, other):
+        if isinstance(other, Date):
+            return self.val == other.val
+        else:
+            return self.val == other
+
+    def __lt__(self, other):
+        if isinstance(other, Date):
+            return self.val < other.val
+        else:
+            return self.val < other
 
 
 class Op(Commented):
