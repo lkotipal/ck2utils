@@ -156,8 +156,8 @@ all_modifiers = [
         AdditiveModifier('monthly_fervor_increase', ['monthly fervor', 'monthly fervor increase']),
         MultiplicativeModifier('naval_attrition', ['naval attrition']),
         MultiplicativeModifier('naval_forcelimit_modifier', ['naval force limit modifier', 'naval forcelimit modifier']),
-        MultiplicativeModifier('naval_maintenance_modifier', ['naval maintenance modifier']),
         MultiplicativeModifier('monthly_gold_inflation_modifier', ['monthly gold inflation modifier']),
+        MultiplicativeModifier('naval_maintenance_modifier', ['naval maintenance modifier']),
         MultiplicativeModifier('naval_morale', ['morale of navies', 'naval morale']),
         AdditiveModifier('navy_tradition', ['navy tradition', 'yearly navy tradition']),
         MultiplicativeModifier('navy_tradition_decay', ['navy tradition decay']),
@@ -380,7 +380,9 @@ class BonusTableGenerator():
         for modifier in all_modifiers:
             lines.append('| {} ='.format("\n| ".join(modifier.icons)))
             if modifier.name not in self.eu4parser.ideas_and_policies_by_modifier:
-                lines.append('{{!}}-{{!}}colspan="5"{{!}} <span style="color: red;">no ideas and policies have the modifier \'\'“' + modifier.icons[0] + '”\'\'</span>[[Category:Bonus table outdated]]')
+                lines.append('{{!}}-{{!}}colspan="5"{{!}} <span style="color: red;">In patch ' + eu4_major_version() +
+                             ' no ideas and policies have the modifier \'\'“' + modifier.icons[0] +
+                             '”\'\'</span>[[Category:Bonus table outdated]]')
                 continue
             all_values_for_modifier = self.eu4parser.ideas_and_policies_by_modifier[modifier.name].keys()
             for value in sorted(self.eu4parser.ideas_and_policies_by_modifier[modifier.name].keys(), key=lambda x: x if isinstance(x, str) else abs(x)*(-1) ):
@@ -399,11 +401,11 @@ class BonusTableGenerator():
                                 if not idea.formatted_name().startswith('Full'):
                                     print('"{}"({})  is the bonus of an idea group with an unclear name'.format(idea.formatted_name(), idea.name))
                             else:
-                                if not formatted_name.endswith('ambition') and not formatted_name.endswith('ambitions'):
+                                if 'ambition' not in formatted_name.lower():
                                     print('"{}"({})  is an ambition with an unclear name'.format(formatted_name, idea.name))
                             template_params['b'].append(formatted_name)
                         elif idea.is_tradition():
-                            if not formatted_name.endswith('traditions') and not formatted_name.endswith('tradition'):
+                            if 'tradition' not in formatted_name.lower():
                                 print('"{}"({}) is a tradition with an unclear name'.format(formatted_name, idea.name))
                             template_params['t'].append(formatted_name)
                         else:

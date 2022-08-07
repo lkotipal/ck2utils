@@ -298,7 +298,10 @@ class TradeNode(NameableEntityWithProvincesAndColor):
 
 class IdeaGroup(NameableEntity):
     overridden_display_names = {
+        'horde_gov_ideas': 'Horde government Ideas',
         'latin_ideas': 'Italian (minor) ideas',
+        'nubian_ideas': 'Nubian (minor) ideas',
+        'ATJ_ideas':  'Acehnese/Pasai ideas',  # because they are also for Pasai which is not obvious
     }
 
     def __init__(self, name, display_name, ideas, bonus, traditions=None, category=None):
@@ -332,10 +335,26 @@ class IdeaGroup(NameableEntity):
 
 class Idea(NameableEntity):
     overridden_display_names = {
-        'daimyo_ideas_start': 'Daimyo traditions',  # the game calls them "Sengoku Jidai"
+        'horde_gov_ideas_bonus': 'Full Horde ideas',
+        'theocracy_gov_ideas_bonus': 'Full Divine ideas',
+        'ATJ_ideas_bonus': 'Acehnese/Pasai ambition',  # because they are also for Pasai which is not obvious
+        'ATJ_ideas_start': 'Acehnese/Pasai traditions',
+        'BLI_ideas_bonus': 'Balinese ambition',
+        'SUN_ideas_bonus': 'Sundanese ambition',
         'TTL_ideas_start': 'Three Leagues traditions',  # the game calls them "League Traditions"
+        'california_native_ideas_start': 'California Native traditions',
+        'daimyo_ideas_start': 'Daimyo traditions',  # the game calls them "Sengoku Jidai"
+        'fijian_ideas_start': 'Fijian traditions',
+        'hawaiian_ideas_start': 'Hawaiian traditions',
         'latin_ideas_start': 'Italian (minor) traditions',
         'latin_ideas_bonus': 'Italian (minor) ambition',
+        'maori_ideas_start': 'Iwi traditions',
+        'nubian_ideas_start': 'Nubian (minor) traditions',
+        'nubian_ideas_bonus': 'Nubian (minor) ambition',
+        'nw_native_ideas_start': 'North Western Native traditions',
+        'plains_native_ideas_start': 'Plains Native traditions',
+        'samoan_ideas_start': 'Samoan traditions',
+        'tongan_ideas_start': 'Tongan traditions',
     }
 
     def __init__(self, name, display_name, modifiers):
@@ -363,16 +382,26 @@ class Idea(NameableEntity):
 
 
 class Policy(NameableEntity):
+    overridden_idea_group_names = {
+        'horde_gov_ideas': 'Horde',  # override the overide from the IdeaGroup class
+    }
+
     def __init__(self, name, display_name, category, modifiers, idea_groups):
         super().__init__(name, display_name)
         self.category = category
         self.modifiers = modifiers
         self.idea_groups = idea_groups
 
+    def get_idea_group_short_name(self, idea_group):
+        if idea_group.name in self.overridden_idea_group_names:
+            return self.overridden_idea_group_names[idea_group.name]
+        else:
+            return idea_group.short_name()
+
     def formatted_name(self):
         return '{}-{}: {}'.format(
-            self.idea_groups[0].short_name(),
-            self.idea_groups[1].short_name(),
+            self.get_idea_group_short_name(self.idea_groups[0]),
+            self.get_idea_group_short_name(self.idea_groups[1]),
             self.display_name)
 
 
