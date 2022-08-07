@@ -6,7 +6,7 @@ from collections import OrderedDict
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 from ck2parser import SimpleParser, Obj
 from localpaths import eu4dir
-from eu4.paths import eu4_version
+from eu4.paths import eu4_version, eu4_major_version
 from eu4.eu4lib import Religion, Idea, IdeaGroup, Policy, Eu4Color, Country
 from eu4.cache import disk_cache, cached_property
 
@@ -55,7 +55,7 @@ class Eu4Parser:
 
     @cached_property
     def eu4_major_version(self):
-        return '.'.join(self.eu4_version.split('.')[0:2])
+        return eu4_major_version()
 
     @cached_property
     def all_religions(self):

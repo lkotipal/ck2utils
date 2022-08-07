@@ -15,6 +15,10 @@ def eu4_version():
     return _eu4_version
 
 
+def eu4_major_version():
+    return '.'.join(eu4_version().split('.')[0:2])
+
+
 def verified_for_version(version, extra_message=''):
     """issue a warning if the eu4 version is newer than the version parameter"""
     if version < eu4_version():
