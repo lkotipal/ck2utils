@@ -1,5 +1,9 @@
-import os, sys
+#!/usr/bin/env python3
+import csv
+import os
 import re
+import sys
+# add the parent folder to the path so that imports work even if the working directory is the eu4 folder
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 from eu4.paths import eu4_major_version, eu4outpath
 from eu4.mapparser import Eu4Parser
@@ -55,6 +59,10 @@ class LibertyDesireModifier(MultiplicativeModifier):
     def modify_value(self, value):
         return value * (-1)
 
+class AdditiveModifierWithPercentageSign(AdditiveModifier):
+    def format_value(self, value, other_values):
+        return super().format_value(value, other_values) + '%'
+
 all_modifiers = [
         AdditiveModifier('num_accepted_cultures', ['max promoted cultures']),
         MultiplicativeModifier('adm_tech_cost_modifier', ['adm tech cost']),
@@ -107,6 +115,7 @@ all_modifiers = [
         MultiplicativeModifier('global_tax_modifier', ['national tax modifier', 'global tax modifier']),
         MultiplicativeModifier('global_trade_goods_size_modifier', ['goods produced modifier']),
         MultiplicativeModifier('global_trade_power', ['global trade power']),
+        MultiplicativeModifier('great_project_upgrade_cost', ['great project upgrade cost']),
         MultiplicativeModifier('heavy_ship_cost', ['heavy ship cost']),
         MultiplicativeModifier('heavy_ship_power', ['heavy ship combat ability', 'heavy ship power']),
         MultiplicativeModifier('heir_chance', ['chance of new heir', 'heir chance']),
@@ -148,6 +157,7 @@ all_modifiers = [
         MultiplicativeModifier('naval_attrition', ['naval attrition']),
         MultiplicativeModifier('naval_forcelimit_modifier', ['naval force limit modifier', 'naval forcelimit modifier']),
         MultiplicativeModifier('naval_maintenance_modifier', ['naval maintenance modifier']),
+        MultiplicativeModifier('monthly_gold_inflation_modifier', ['monthly gold inflation modifier']),
         MultiplicativeModifier('naval_morale', ['morale of navies', 'naval morale']),
         AdditiveModifier('navy_tradition', ['navy tradition', 'yearly navy tradition']),
         MultiplicativeModifier('navy_tradition_decay', ['navy tradition decay']),
@@ -204,6 +214,7 @@ all_modifiers = [
         MultiplicativeModifier('shock_damage_received', ['shock damage received']),
         MultiplicativeModifier('army_tradition_from_battle', ['army tradition from battles']),
         MultiplicativeModifier('naval_tradition_from_battle', ['naval tradition from battles']),
+        AdditiveModifier('cavalry_fire', ['cavalry fire']),
         MultiplicativeModifier('cavalry_flanking', ['cavalry flanking ability']),
         MultiplicativeModifier('fire_damage', ['land fire damage']),
         MultiplicativeModifier('capture_ship_chance', ['capture ship chance', 'chance to capture enemy ships']),
@@ -226,6 +237,7 @@ all_modifiers = [
         AdditiveModifier('meritocracy', ['meritocracy']),
         MultiplicativeModifier('harsh_treatment_cost', ['harsh treatment cost']),
         MultiplicativeModifier('global_ship_trade_power', ['ship trade power']),
+        MultiplicativeModifier('ship_power_propagation', ['ship trade power propagation']),
         MultiplicativeModifier('build_time', ['construction time']),
         AdditiveModifier('possible_policy', ['possible policies']),
         MultiplicativeModifier('reform_progress_growth', ['reform progress growth']),
@@ -247,6 +259,7 @@ all_modifiers = [
         MultiplicativeModifier('autonomy_change_time', ['autonomy change cooldown']),
         MultiplicativeModifier('backrow_artillery_damage', ['artillery damage from back row']),
         AdditiveModifier('placed_merchant_power', ['merchant trade power']),
+        AdditiveModifierWithPercentageSign('liberty_desire', ['liberty desire']),
         MultiplicativeModifier('liberty_desire_from_subject_development', ['liberty desire from subjects development']),
         MultiplicativeModifier('reelection_cost', ['reelection cost']),
         MultiplicativeModifier('female_advisor_chance', ['female advisor chance']),
@@ -275,6 +288,8 @@ all_modifiers = [
         MultiplicativeModifier('drill_gain_modifier', ['army drill gain modifier']),
         MultiplicativeModifier('enforce_religion_cost', ['cost of enforcing religion through war']),
         MultiplicativeModifier('leader_cost', ['leader cost']),
+        AdditiveModifier('tribal_development_growth', ['tribal development growth']),
+        AdditiveModifier('accept_vassalization_reasons', ['vassalizatation acceptance']),
         ConstantModifier('auto_explore_adjacent_to_colony', ['auto explore adjacent to colony']),
         ConstantModifier('cb_on_primitives', ['cb on primitives']),
         ConstantModifier('cb_on_religious_enemies', ['cb on religious enemies']),
@@ -283,9 +298,9 @@ all_modifiers = [
         ConstantModifier('sea_repair', ['sea repair']),
         MultiplicativeModifier('global_supply_limit_modifier', ['national supply limit modifier']),
         ConstantModifier('may_perform_slave_raid_on_same_religion', ['May raid coasts including coasts of countries with same religion']),
-        AdditiveModifier('tribal_development_growth', ['tribal development growth']),
         MultiplicativeModifier('monthly_reform_progress_modifier', ['monthly reform progress modifier']),
     ]
+
 
 class BonusTableGenerator():
 
