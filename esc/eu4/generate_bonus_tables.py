@@ -395,8 +395,16 @@ class BonusTableGenerator():
                         else:
                             formatted_name = idea.formatted_name()
                         if idea.is_bonus():
+                            if idea.idea_group.is_basic_idea():
+                                if not idea.formatted_name().startswith('Full'):
+                                    print('"{}"({})  is the bonus of an idea group with an unclear name'.format(idea.formatted_name(), idea.name))
+                            else:
+                                if not formatted_name.endswith('ambition') and not formatted_name.endswith('ambitions'):
+                                    print('"{}"({})  is an ambition with an unclear name'.format(formatted_name, idea.name))
                             template_params['b'].append(formatted_name)
                         elif idea.is_tradition():
+                            if not formatted_name.endswith('traditions') and not formatted_name.endswith('tradition'):
+                                print('"{}"({}) is a tradition with an unclear name'.format(formatted_name, idea.name))
                             template_params['t'].append(formatted_name)
                         else:
                             template_params['i'].append(formatted_name)
