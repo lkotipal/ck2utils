@@ -9,7 +9,7 @@ from eu4.paths import eu4_major_version, eu4outpath
 from eu4.mapparser import Eu4Parser
 from eu4.eu4lib import Idea, Policy
 
-class ModifierType():
+class ModifierType:
     def __init__(self, name, icons):
         self.name = name
         self.icons = icons
@@ -151,7 +151,6 @@ all_modifiers = [
         MultiplicativeModifier('caravan_power', ['caravan power']),
         AdditiveModifier('merchants', ['merchants']),
         MultiplicativeModifier('mil_tech_cost_modifier', ['mil tech cost']),
-        MultiplicativeModifier('migration_cooldown', ['migration cooldown']),
         AdditiveModifier('missionaries', ['missionaries']),
         AdditiveModifier('monthly_fervor_increase', ['monthly fervor', 'monthly fervor increase']),
         MultiplicativeModifier('naval_attrition', ['naval attrition']),
@@ -237,7 +236,7 @@ all_modifiers = [
         AdditiveModifier('meritocracy', ['meritocracy']),
         MultiplicativeModifier('harsh_treatment_cost', ['harsh treatment cost']),
         MultiplicativeModifier('global_ship_trade_power', ['ship trade power']),
-        MultiplicativeModifier('ship_power_propagation', ['ship trade power propagation']),
+        MultiplicativeModifier('ship_power_propagation', ['ship tradepower propagation']),
         MultiplicativeModifier('build_time', ['construction time']),
         AdditiveModifier('possible_policy', ['possible policies']),
         MultiplicativeModifier('reform_progress_growth', ['reform progress growth']),
@@ -290,6 +289,21 @@ all_modifiers = [
         MultiplicativeModifier('leader_cost', ['leader cost']),
         AdditiveModifier('tribal_development_growth', ['tribal development growth']),
         AdditiveModifier('accept_vassalization_reasons', ['vassalizatation acceptance']),
+
+        AdditiveModifier('pr_captains_influence', ['captains influence']),
+        MultiplicativeModifier('rival_change_cost', ['change rival cost']),
+        AdditiveModifier('infantry_shock', ['infantry shock']),
+        MultiplicativeModifier('manpower_in_true_faith_provinces', ['manpower in true faith provinces']),
+        MultiplicativeModifier('migration_cost', ['migration cost']),
+        MultiplicativeModifier('prestige_from_naval', ['prestige from naval battles, prestige from naval']),
+        MultiplicativeModifier('promote_culture_cost', ['promote culture cost']),
+        MultiplicativeModifier('raze_power_gain', ['razing power gain']),
+        AdditiveModifier('movement_speed_in_fleet_modifier', ['ship speed']),
+        MultiplicativeModifier('warscore_cost_vs_other_religion', ['war score cost vs other religions']),
+        MultiplicativeModifier('yearly_karma_decay', ['yearly karma decay']),
+        MultiplicativeModifier('yearly_patriarch_authority', ['yearly patriarch authority']),
+
+        # the following have no icon
         ConstantModifier('auto_explore_adjacent_to_colony', ['auto explore adjacent to colony']),
         ConstantModifier('cb_on_primitives', ['cb on primitives']),
         ConstantModifier('cb_on_religious_enemies', ['cb on religious enemies']),
@@ -297,8 +311,16 @@ all_modifiers = [
         ConstantModifier('reduced_stab_impacts', ['reduced stab impacts']),
         ConstantModifier('sea_repair', ['sea repair']),
         MultiplicativeModifier('global_supply_limit_modifier', ['national supply limit modifier']),
-        ConstantModifier('may_perform_slave_raid_on_same_religion', ['May raid coasts including coasts of countries with same religion']),
+        ConstantModifier('may_perform_slave_raid_on_same_religion', ['may raid coasts including coasts of countries with same religion']),
         MultiplicativeModifier('monthly_reform_progress_modifier', ['monthly reform progress modifier']),
+        MultiplicativeModifier('mercantilism_cost', ['cost to promote mercantilism']),
+        MultiplicativeModifier('expand_administration_cost', ['expand administration cost']),
+        ConstantModifier('may_establish_frontier', ['may establish siberian frontiers']),
+        ConstantModifier('can_fabricate_for_vassals', ['may fabricate claims for subjects']),
+        AdditiveModifier('monthly_piety_accelerator', ['monthly piety accelerator']),
+        MultiplicativeModifier('harmonization_speed', ['religious harmonization speed']),
+        AdditiveModifier('yearly_authority', ['yearly authority']),
+        AdditiveModifier('yearly_doom_reduction', ['yearly doom reduction']),
     ]
 
 
@@ -351,9 +373,6 @@ class BonusTableGenerator():
 | reduce inflation cost
 | inflation reduction cost ={{!}}-
 {{!}}colspan="5"{{!}} <span style="color: red;">Since patch 1.28 no ideas and policies have the modifier ''“reduce inflation cost”''.</span>[[Category:Bonus table outdated]]
-| prestige from naval =
-{{!}}-
-{{!}}colspan="5"{{!}} <span style="color: red;">Since patch 1.28 no ideas and policies have the modifier ''“prestige from naval”''.</span>[[Category:Bonus table outdated]]
 | transport power
 | transport combat ability =
 {{!}}-
@@ -364,6 +383,9 @@ class BonusTableGenerator():
 | available mercenaries =
 {{!}}-
 {{!}}colspan="5"{{!}} <span style="color: red;">The modifier ''“available mercenaries”'' was replaced by ''“mercenary manpower”'' with patch 1.30.</span>[[Category:Bonus table outdated]]
+| migration cooldown =
+{{!}}-
+{{!}}colspan="5"{{!}} <span style="color: red;">The modifier ''“migration cooldown”'' was replaced by ''“migration cost”'' with patch 1.31.</span>[[Category:Bonus table outdated]]
 
 | #default = {{!}}-
 {{!}}colspan="5"{{!}}<span style="color: red;">(invalid bonus type “{{lc:{{{1}}}}}” for [[Template:Bonus table]])</span>
@@ -380,7 +402,8 @@ class BonusTableGenerator():
         for modifier in all_modifiers:
             lines.append('| {} ='.format("\n| ".join(modifier.icons)))
             if modifier.name not in self.eu4parser.ideas_and_policies_by_modifier:
-                lines.append('{{!}}-{{!}}colspan="5"{{!}} <span style="color: red;">In patch ' + eu4_major_version() +
+                lines.append('{{!}}-')
+                lines.append('{{!}}colspan="5"{{!}} <span style="color: red;">In patch ' + eu4_major_version() +
                              ' no ideas and policies have the modifier \'\'“' + modifier.icons[0] +
                              '”\'\'</span>[[Category:Bonus table outdated]]')
                 continue
