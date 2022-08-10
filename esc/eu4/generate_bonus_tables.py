@@ -295,7 +295,7 @@ all_modifiers = [
         AdditiveModifier('infantry_shock', ['infantry shock']),
         MultiplicativeModifier('manpower_in_true_faith_provinces', ['manpower in true faith provinces']),
         MultiplicativeModifier('migration_cost', ['migration cost']),
-        MultiplicativeModifier('prestige_from_naval', ['prestige from naval battles, prestige from naval']),
+        MultiplicativeModifier('prestige_from_naval', ['prestige from naval battles', 'prestige from naval']),
         MultiplicativeModifier('promote_culture_cost', ['promote culture cost']),
         MultiplicativeModifier('raze_power_gain', ['razing power gain']),
         AdditiveModifier('movement_speed_in_fleet_modifier', ['ship speed']),
