@@ -11,6 +11,7 @@ from PIL import Image
 import spectra
 from ck2parser import rootpath, csv_rows, SimpleParser, Obj
 from localpaths import eu4dir
+from eu4.paths import eu4outpath
 from print_time import print_time
 
 @print_time
@@ -120,7 +121,7 @@ def main():
 
     out = Image.fromarray(prov_color_lut[b])
     out.paste(borders, mask=borders)
-    out_path = rootpath / (mod + 'eu4culture_map.png')
+    out_path = eu4outpath / (mod + 'Cultures.png')
     out.save(str(out_path))
 
 if __name__ == '__main__':

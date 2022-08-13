@@ -10,6 +10,7 @@ import numpy as np
 from PIL import Image, ImageFont, ImageDraw
 from ck2parser import rootpath, csv_rows, SimpleParser
 from localpaths import eu4dir
+from eu4.paths import eu4outpath
 from print_time import print_time
 
 @print_time
@@ -85,10 +86,10 @@ def main():
     borders_path = rootpath / (mod + 'eu4borderlayer.png')
     borders = Image.open(str(borders_path))
 
-    for value_func, name in [(lambda x: sum(x.values()), ''),
+    for value_func, name in [(lambda x: sum(x.values()), 'development'),
                              (lambda x: x['base_tax'], 'tax'),
-                             (lambda x: x['base_production'], 'prod'),
-                             (lambda x: x['base_manpower'], 'man')]:
+                             (lambda x: x['base_production'], 'production'),
+                             (lambda x: x['base_manpower'], 'manpower')]:
         province_value = {n: value_func(province_values[n])
                           for n in provs_to_label}
         vmin, vmax = 0, max(province_value.values())
@@ -149,7 +150,7 @@ def main():
         out.paste(borders, mask=borders)
         out.paste(lines, mask=lines)
         out.paste(txt, mask=txt)
-        out_path = rootpath / (mod + 'eu4dev{}_map.png'.format(name))
+        out_path = eu4outpath / (mod + 'Base_{}_map.png'.format(name))
         out.save(str(out_path))
 
 if __name__ == '__main__':

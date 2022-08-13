@@ -6,6 +6,7 @@ import numpy as np
 from PIL import Image, ImageFont, ImageDraw
 from ck2parser import rootpath, csv_rows, SimpleParser
 from localpaths import eu4dir
+from eu4.paths import eu4outpath
 from print_time import print_time
 
 @print_time
@@ -107,7 +108,7 @@ def main():
         out.paste(borders, mask=borders)
         out.paste(lines, mask=lines)
         out.paste(txt, mask=txt)
-        out_path = rootpath / (mod + 'eu4province_id_map' + mode + '.png')
+        out_path = eu4outpath / (mod + 'Province ID map' + mode + '.png')
         out.save(str(out_path))
 
 if __name__ == '__main__':

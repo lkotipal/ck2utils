@@ -10,6 +10,7 @@ import numpy as np
 from PIL import Image, ImageFont, ImageDraw
 from ck2parser import rootpath, csv_rows, SimpleParser
 from localpaths import eu4dir
+from eu4.paths import eu4outpath
 from print_time import print_time
 
 @print_time
@@ -40,27 +41,38 @@ def main():
             rgb_number_map[rgb] = np.uint16(number)
             provs_to_label.add(number)
 
+    migratory_reforms = set()
+    for _, tree in parser.parse_files('common/government_reforms/*'):
+        for n, v in tree:
+            if v.has_pair('allow_migration', 'yes'):
+                migratory_reforms.add(n.val)
+
     migratory_govs = set()
     for _, tree in parser.parse_files('common/governments/*'):
         for n, v in tree:
-            if v.has_pair('allow_migration', 'yes'):
-                migratory_govs.add(n.val)
-
+            if 'basic_reform' in v.dictionary:
+                if v['basic_reform'].val_str() in migratory_reforms:
+                    migratory_govs.add(n.val)
     migratory_provs = {}
     for path, tree in parser.parse_files('history/countries/*'):
         tag = path.stem[:3]
         gov = None
+        reform = None
         history = defaultdict(list)
         for n, v in tree:
             if n.val == 'government':
                 gov = v.val
+            elif n.val == 'add_government_reform':
+                reform = v.val
             elif isinstance(n.val, tuple) and n.val <= (1444, 11, 11):
                 history[n.val].extend(v)
         for _, v in sorted(history.items()):
             for n2, v2 in v:
                 if n2.val == 'government':
                     gov = v2.val
-        if gov in migratory_govs:
+                elif n2.val == 'add_government_reform':
+                    reform = v2.val
+        if gov in migratory_govs or reform in migratory_reforms:
             migratory_provs[tag] = []
 
     province_values = {}
@@ -118,8 +130,8 @@ def main():
     borders_path = rootpath / (mod + 'eu4borderlayer.png')
     borders = Image.open(str(borders_path))
 
-    for value_func, name in [(lambda x: x['native_size'] * 100, 'pop'),
-                             (lambda x: x['native_hostileness'], 'agg')]:
+    for value_func, name in [(lambda x: x['native_size'] * 100, 'population'),
+                             (lambda x: x['native_hostileness'], 'aggressiveness')]:
         province_value = {n: value_func(province_values[n])
                           for n in provs_to_label}
         vmin, vmax = 0, max(province_value.values())
@@ -180,7 +192,7 @@ def main():
         out.paste(borders, mask=borders)
         out.paste(lines, mask=lines)
         out.paste(txt, mask=txt)
-        out_path = rootpath / (mod + 'eu4native{}_map.png'.format(name))
+        out_path = eu4outpath / (mod + 'Native {} map.png'.format(name))
         out.save(str(out_path))
 
 if __name__ == '__main__':
