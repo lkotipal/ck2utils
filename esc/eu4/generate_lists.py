@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 import os
+import re
+
 import sys
 import math
 from locale import strxfrm, setlocale, LC_COLLATE
+
 # add the parent folder to the path so that imports work even if the working directory is the eu4 folder
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 from eu4.wiki import WikiTextConverter
@@ -10,12 +13,12 @@ from eu4.paths import eu4outpath
 from eu4.mapparser import Eu4MapParser
 
 # the MonumentList needs pyradox which needs to be imported in some way
-# sys.path.append(os.path.dirname(os.path.realpath(__file__)) + '/../../../../pyradox')
-# from pyradox.filetype.table import make_table, WikiDialect
+sys.path.append(os.path.dirname(os.path.realpath(__file__)) + '/../../../../pyradox')
+from pyradox.filetype.table import make_table, WikiDialect
 
 
 class MonumentList:
-    """unfinished; needs pyradox and pdxparse"""
+    """needs the pyradox import and pdxparse must be in the path"""
 
     def __init__(self):
         self.parser = Eu4MapParser()
@@ -59,7 +62,8 @@ class MonumentList:
             else:
                 build_trigger = None
             if trigger != can_upgrade_trigger:
-                print('Warning: can_use_modifiers_trigger is {} but can_upgrade_trigger is {}'.format(trigger, can_upgrade_trigger))
+                print('Warning: can_use_modifiers_trigger is {} but can_upgrade_trigger is {}'.format(trigger,
+                                                                                                      can_upgrade_trigger))
             if trigger != build_trigger:
                 print('Warning: can_use_modifiers_trigger is {} but build_trigger is {}'.format(trigger, build_trigger))
             if len(v['keep_trigger']) > 0:
@@ -102,15 +106,82 @@ class MonumentList:
                     on_upgraded = values['on_upgraded'].inline_str(self.parser.parser)[0]
                 else:
                     on_upgraded = None
-                tier_data.append({'province_modifiers': province_modifiers, 'area_modifier': area_modifier, 'country_modifiers': country_modifiers, 'on_upgraded': on_upgraded})
-            monuments[monumentid] = {'name': name, 'provinceID': provinceID, 'province': prov, 'can_be_moved': can_be_moved, 'level': level, 'trigger': trigger, 'tiers': tier_data, 'build_cost': build_cost, 'type': monument_type, 'build_trigger': build_trigger, 'prestige_gain': prestige_gain, 'icon': self.get_monument_icon(monumentid)}
+                tier_data.append({'province_modifiers': province_modifiers, 'area_modifier': area_modifier,
+                                  'country_modifiers': country_modifiers, 'on_upgraded': on_upgraded})
+            monuments[monumentid] = {'name': name, 'provinceID': provinceID, 'province': prov,
+                                     'can_be_moved': can_be_moved, 'level': level, 'trigger': trigger,
+                                     'tiers': tier_data, 'build_cost': build_cost, 'type': monument_type,
+                                     'build_trigger': build_trigger, 'prestige_gain': prestige_gain,
+                                     'icon': self.get_monument_icon(monumentid)}
         return monuments
 
-    def _get_unique_key(self, monument, what, tier=None):
+    @staticmethod
+    def _get_unique_key(monument, what, tier=None):
         if tier:
             return '{}_{}_{}'.format(monument, tier, what)
         else:
             return '{}_{}'.format(monument, what)
+
+    @staticmethod
+    def simplify_multiple_OR(conditions):
+        modified_conditions = []
+        or_regex = re.compile(r'^[* ]*(At least one of|Either):$')
+
+        in_or = False
+        in_or2 = False
+        or_indent = 0
+        for line in conditions.splitlines():
+            if WikiTextConverter.calculate_indentation(line) <= or_indent:
+                in_or = False
+                in_or2 = False
+            elif in_or2:
+                if WikiTextConverter.calculate_indentation(line) <= (or_indent + 1):
+                    in_or2 = False
+                else:
+                    # everything within the second OR can be moved up
+                    line = WikiTextConverter.remove_indent(line)
+            elif in_or:
+                if or_regex.match(line) and WikiTextConverter.calculate_indentation(line) == (or_indent + 1):  # don't match ORs within other conditions
+                    in_or2 = True
+                    continue  # skip adding this line
+            else:
+                if or_regex.match(line):
+                    in_or = True
+                    or_indent = WikiTextConverter.calculate_indentation(line)
+            modified_conditions.append(line)
+        return_value = '\n'.join(modified_conditions)
+        if return_value != conditions:
+            # try to simplify some more
+            return MonumentList.simplify_multiple_OR(return_value)
+        else:
+            # nothing was changed, so we stop the recursion
+            return return_value
+
+    @staticmethod
+    def improve_requirements(requirements):
+        culture = r'Culture is ([-a-zA-Z ]*)'
+        accept = r'Culture is accepted by its owner'
+        replacements = [
+            (r'^([*]*)( ?)All of:\n\1\* '+culture+r'\n\1\* '+accept,
+             r'\1\2{{icon|culture|24px}} Culture is \3 and is accepted by its owner'),
+            (r'^([* ]*)'+culture+r'\n\1'+accept,
+             r'\1{{icon|culture|24px}} Culture is \2 and is accepted by its owner'),
+            (r'^([*]*)( ?)At least one of:\n\1\* ' +culture+r'\n\1\* '+culture+r'\n\1\2'+accept,
+             r"\1\2{{icon|culture|24px}} Culture is \3 ''or'' \4 and is accepted by its owner"),
+            (r'^([*]*)( ?)At least one of:\n\1\* '+culture+r'\n\1\* '+culture+r'\n\1\* '+culture+r'\n\1\2'+accept,
+             r"\1\2{{icon|culture|24px}} Culture is \3, \4 ''or'' \5 and is accepted by its owner"),
+        ]
+
+        for pattern, replacement in replacements:
+            requirements = re.sub(pattern, replacement, requirements, flags=re.MULTILINE)
+
+        # without multiline so that it matches all requirements to make sure that there are no other conditions
+        requirements = re.sub(r'^([*]*)( ?)At least one of:\n\1\* [^ ]* '+culture+r' and is accepted by its owner\n\1\* [^ ]* '+culture+r' and is accepted by its owner$',
+                              r"{{icon|culture|24px}} Culture is \3 ''or'' \4 and is accepted by its owner", requirements)
+
+        requirements = MonumentList.simplify_multiple_OR(requirements)
+
+        return requirements
 
     def generate(self):
 
@@ -127,64 +198,76 @@ class MonumentList:
                 tier_data = data['tiers'][tier]
                 for mod_type in ['province_modifiers', 'area_modifier', 'country_modifiers']:
                     if tier_data[mod_type]:
-                        modifiers[self._get_unique_key(monument, mod_type, tier)] = wiki_converter.remove_surrounding_brackets(tier_data[mod_type])
+                        modifiers[self._get_unique_key(monument, mod_type,
+                                                       tier)] = wiki_converter.remove_surrounding_brackets(
+                            tier_data[mod_type])
                 if tier_data['on_upgraded']:
                     trigger_and_effects[self._get_unique_key(monument, 'on_upgraded', tier)] = tier_data['on_upgraded']
 
-
-        wiki_converter.to_wikitext(province_scope=trigger_and_effects, modifiers=modifiers)
+        wiki_converter.to_wikitext(province_scope=trigger_and_effects, modifiers=modifiers, strip_icon_sizes=True)
 
         trigger_effects_modifiers = {**trigger_and_effects, **modifiers}
 
         for monument, data in monuments.items():
             if data['trigger']:
                 # add linebreak because the conditions are lists
-                data['Requirements'] = '\n' + wiki_converter.remove_indent(trigger_and_effects[self._get_unique_key(monument, 'trigger')])
+                data['Requirements'] = '\n' + wiki_converter.remove_superfluous_indents(
+                    self.improve_requirements(trigger_and_effects[self._get_unique_key(monument, 'trigger')]))
             else:
                 data['Requirements'] = ''
-            for tier in range(1,4):
+            for tier in range(1, 4):
                 effects = ''
                 tier_data = data['tiers'][tier]
-                for effect_type, description in {'province_modifiers': 'Province modifiers', 'area_modifier': 'Area modifiers', 'country_modifiers': 'Global modifiers', 'on_upgraded': 'When upgraded'}.items():
+                for effect_type, description in {'province_modifiers': 'Province modifiers',
+                                                 'area_modifier': 'Area modifiers',
+                                                 'country_modifiers': 'Global modifiers',
+                                                 'on_upgraded': 'When upgraded'}.items():
                     if self._get_unique_key(monument, effect_type, tier) in trigger_effects_modifiers:
-                        effects += description + ':\n{{plainlist|\n' + wiki_converter.add_indent(trigger_effects_modifiers[self._get_unique_key(monument, effect_type, tier)]) + '\n}}\n'
+                        effects_list = trigger_effects_modifiers[self._get_unique_key(monument, effect_type, tier)]
+                        # indenting the effects compared to the description looks better, but there is not enough space
+                        # in the table in the current layout
+                        # effects_list = wiki_converter.add_indent(effects_list)
+                        effects += '\n' + description + ':\n{{plainlist|\n' + effects_list + '\n}}'
                 data['tier_' + str(tier)] = effects
 
-        monuments = {k: v for (k,v) in monuments.items() if v['type'] == 'monument'}
+        monuments = {k: v for (k, v) in monuments.items() if v['type'] == 'monument'}
 
         monuments = dict(sorted(monuments.items(), key=lambda x: x[1]['name']))
-        for i, monument in enumerate(monuments.items(), start =1 ):
+        for i, monument in enumerate(monuments.items(), start=1):
             monument[1]['number'] = i
 
         column_specs = [
             ('', 'id="%(name)s" | %(number)d'),
-            ('Name', 'style="text-align:center; font-weight: bold; font-size:larger" | %(name)s \n\n[[File:%(icon)s.png|%(name)s]]'),
-            ('Location', lambda k, v: '<small>{{plainlist|\n*%s\n*%s}}</small>\n%s' % (
+            ('Name',
+             'style="text-align:center; font-weight: bold; font-size:larger" | %(name)s\n\n[[File:%(icon)s.png|%(name)s]]'),
+            ('Location', lambda k, v: '{{plainlist|\n*%s\n*%s\n}}\n%s' % (
                 v['province'].superregion,
                 v['province'].region,
                 v['province'])),
             ('Level', '%(level)d'),
-#            ('[[File:Great project level icon move.png|24px|Can be relocated]]', lambda k,v: 'yes' if v['can_be_moved'] else 'no')
-            ('[[File:Great project level icon move.png|24px|Can be relocated]]', lambda k,v: '{{icon|%s}}' % ('yes' if v['can_be_moved'] else 'no')),
+            # yes/no style might work better for mobile devices for which the column seems to be broken
+            # ('[[File:Great project level icon move.png|24px|Can be relocated]]', lambda k,v: 'yes' if v['can_be_moved'] else 'no')
+            ('[[File:Great project level icon move.png|24px|Can be relocated]]',
+             lambda k, v: '{{icon|%s}}' % ('yes' if v['can_be_moved'] else 'no')),
             ('Requirements', '%(Requirements)s'),
             ('[[File:Great project level icon tier 1.png|24px]] Noteworthy level', '%(tier_1)s'),
             ('[[File:Great project level icon tier 2.png|24px]] Significant level', '%(tier_2)s'),
             ('[[File:Great project level icon tier 3.png|24px]] Magnificent level', '%(tier_3)s'),
-            ]
+        ]
 
         dialect = WikiDialect
         dialect.row_cell_begin = lambda s: ''
         dialect.row_cell_delimiter = '\n| '
 
-        table = make_table(monuments, 'wiki', column_specs,
-                           table_style = '')
-        #print(table)
+        table = make_table(monuments, 'wiki', column_specs, table_style='', table_classes=['mildtable'], sortable=True)
         self._writeFile('monuments', table)
 
-    def _writeFile(self, name, content):
+    @staticmethod
+    def _writeFile(name, content):
         output_file = eu4outpath / 'eu4{}.txt'.format(name)
         with output_file.open('w') as f:
             f.write(content)
+
 
 class AreaAndRegionsList:
 
@@ -199,20 +282,21 @@ class AreaAndRegionsList:
             lines.append('; {} subcontinent'.format(superregion.display_name))
             for region in superregion.regions:
                 lines.append('* {}'.format(region.display_name))
-            lines.append('') # blank lines to separate the superregions
-        lines.pop() # remove last blank line
+            lines.append('')  # blank lines to separate the superregions
+        lines.pop()  # remove last blank line
         lines.append('|4}}')
         return '\n'.join(lines)
 
     def formatSeaRegions(self):
         regionsWithInlandSeas = [region for region in self.parser.all_regions.values() if region.contains_inland_seas]
-        regionsWithOnlyHighSeas = [region for region in self.parser.all_regions.values() if not region.contains_inland_seas and not region.contains_land_provinces]
+        regionsWithOnlyHighSeas = [region for region in self.parser.all_regions.values() if
+                                   not region.contains_inland_seas and not region.contains_land_provinces]
 
         lines = ['{{MultiColumn|']
         lines.append('; With some inland sea zones {{icon|galley}}')
         for region in regionsWithInlandSeas:
             lines.append('* {}'.format(region.display_name))
-        lines.append('') # blank lines to separate the superregions
+        lines.append('')  # blank lines to separate the superregions
 
         lines.append('; Without any inland sea zones')
         for region in regionsWithOnlyHighSeas:
@@ -235,8 +319,8 @@ class AreaAndRegionsList:
             lines.append('; [[{}]]'.format(link))
             for area in region.areas:
                 lines.append('* {}'.format(area.display_name))
-            lines.append('') # blank lines to separate the regions
-        lines.pop() # remove last blank line
+            lines.append('')  # blank lines to separate the regions
+        lines.pop()  # remove last blank line
         lines.append('|5}}')
         return '\n'.join(lines)
 
@@ -249,8 +333,8 @@ class AreaAndRegionsList:
             lines.append('; {}'.format(region.display_name))
             for area in region.areas:
                 lines.append('* {}'.format(area.display_name))
-            lines.append('') # blank lines to separate the regions
-        lines.pop() # remove last blank line
+            lines.append('')  # blank lines to separate the regions
+        lines.pop()  # remove last blank line
         lines.append('|5}}')
         return '\n'.join(lines)
 
@@ -258,22 +342,23 @@ class AreaAndRegionsList:
         lines = ['{| class="wikitable" style="float:right; clear:right; width:300px; text-align:center; "',
                  '|+ Subcontinents',
                  '|']
-        sregions_per_column = math.ceil(len([s for s in self.parser.all_superregions.values() if s.contains_land_provinces]) / 3)
+        sregions_per_column = math.ceil(
+            len([s for s in self.parser.all_superregions.values() if s.contains_land_provinces]) / 3)
         columns = []
         currentColumn = []
         for i, sregion in enumerate(self.parser.all_superregions.values()):
             if not sregion.contains_land_provinces:
                 continue
             color = self.parser.color_list[i]
-            currentColumn.append('| style="background-color:{}"|{}'.format(color.get_css_color_string(), sregion.display_name))
+            currentColumn.append(
+                '| style="background-color:{}"|{}'.format(color.get_css_color_string(), sregion.display_name))
             if len(currentColumn) == sregions_per_column:
                 columns.append('{| style="width:100px;"\n' + '\n|-\n'.join(currentColumn) + '\n|}')
                 currentColumn = []
         columns.append('{| style="width:100px;"\n' + '\n|-\n'.join(currentColumn) + '\n|}')
-        lines.append('\n|\n'.join(  columns  ) )
+        lines.append('\n|\n'.join(columns))
         lines.append('|}')
         return '\n'.join(lines)
-
 
     def formatEstuaryList(self):
         lines = ['{{SVersion|' + self.parser.eu4_major_version + '}}',
@@ -288,18 +373,19 @@ class AreaAndRegionsList:
             else:
                 ref = ''
             estuary_lines.append('* {} ({}){}'.format(
-                    ' and '.join([p.name for p in provinces]),
-                    self.parser.localize(estuary)
-                    ,ref
+                ' and '.join([p.name for p in provinces]),
+                self.parser.localize(estuary)
+                , ref
 
-                ))
+            ))
         lines.extend(sorted(estuary_lines))
         lines.append('|4}}')
 
         return '\n'.join(lines)
 
     def writeSuperRegionsList(self):
-        self.writeFile('superregions', self.formatSuperregionsColorTable() + '\n\nAll of the land regions are grouped together to form the following in-game subcontinents:\n' + self.formatSuperRegions())
+        self.writeFile('superregions',
+                       self.formatSuperregionsColorTable() + '\n\nAll of the land regions are grouped together to form the following in-game subcontinents:\n' + self.formatSuperRegions())
 
     def writeSeaRegionsList(self):
         self.writeFile('searegions', self.formatSeaRegions())
@@ -318,12 +404,12 @@ class AreaAndRegionsList:
         with output_file.open('w') as f:
             f.write(content)
 
+
 if __name__ == '__main__':
     # for correct sorting. en_US seems to work even for non english characters, but the default None sorts all non-ascii characters to the end
     setlocale(LC_COLLATE, 'en_US.utf8')
 
-    # MonumentList().generate()
-    # exit()
+    MonumentList().generate()
 
     list_generator = AreaAndRegionsList()
     list_generator.writeSuperRegionsList()
@@ -331,4 +417,3 @@ if __name__ == '__main__':
     list_generator.writeLandAreaList()
     list_generator.writeSeaAreaList()
     list_generator.writeEstuaryList()
-
