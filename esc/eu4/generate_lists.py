@@ -8,7 +8,7 @@ from locale import strxfrm, setlocale, LC_COLLATE
 
 # add the parent folder to the path so that imports work even if the working directory is the eu4 folder
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
-from eu4.wiki import WikiTextConverter
+from eu4.wiki import WikiTextConverter, get_SVersion_header
 from eu4.paths import eu4outpath
 from eu4.mapparser import Eu4MapParser
 
@@ -361,7 +361,7 @@ class AreaAndRegionsList:
         return '\n'.join(lines)
 
     def formatEstuaryList(self):
-        lines = ['{{SVersion|' + self.parser.eu4_major_version + '}}',
+        lines = [get_SVersion_header(),
                  '{{desc|Estuary|' + self.parser.localize('desc_river_estuary_modifier') + '}}',
                  'River estuaries give {{icon|local trade power}} {{green|+10}} local trade power.<ref name="emod">See in {{path|common/event_modifiers/00_event_modifiers.txt}}</ref> ',
                  '{{MultiColumn|'

@@ -5,6 +5,8 @@ import re
 import sys
 # add the parent folder to the path so that imports work even if the working directory is the eu4 folder
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
+
+from eu4.wiki import get_SVersion_header, WikiTextConverter
 from eu4.paths import eu4_major_version, eu4outpath
 from eu4.mapparser import Eu4Parser
 from eu4.eu4lib import Idea, Policy
@@ -13,7 +15,7 @@ from eu4.modifier_list import all_modifiers
 
 class BonusTableGenerator:
 
-    header = '''<includeonly>{{SVersion|''' + eu4_major_version() + '''|table}}
+    header = '<includeonly>' + get_SVersion_header('table') + '''
 {{{!}} class="mildtable plainlist mw-collapsible {{#ifeq: {{lc:{{{collapse|}}}}}|yes|mw-collapsed|}}"
 ! style="width:30px" {{!}} {{icon|{{{1}}}|24px}}
 ! style="min-width:120px" {{!}} Traditions

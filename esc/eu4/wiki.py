@@ -2,6 +2,22 @@ from tempfile import TemporaryDirectory, mkstemp
 import os
 import subprocess
 import re
+from eu4.paths import eu4_major_version
+
+
+def get_SVersion_header(scope=None):
+    """generate a SVersion wiki template for the current version
+
+    for example {{SVersion|1.33}}
+
+    @param scope a string which is used as the second parameter to the template
+    @see https://eu4.paradoxwikis.com/Template:SVersion
+    """
+    version_header = '{{SVersion|' + eu4_major_version()
+    if scope:
+        version_header += '|' + scope
+    version_header += '}}'
+    return version_header
 
 
 class WikiTextConverter:
