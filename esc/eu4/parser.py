@@ -173,6 +173,7 @@ class Eu4Parser:
                         modifiers[n2.val] = v2.val
                 all_policies[policy_name] = Policy(policy_name,
                                                    self.localize(policy_name),
+                                                   self.localize('desc_' + policy_name),
                                                    category,
                                                    modifiers,
                                                    idea_groups)

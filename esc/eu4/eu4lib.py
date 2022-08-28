@@ -386,13 +386,15 @@ class Policy(NameableEntity):
         'horde_gov_ideas': 'Horde',  # override the overide from the IdeaGroup class
     }
 
-    def __init__(self, name, display_name, category, modifiers, idea_groups):
+    def __init__(self, name, display_name, description, category, modifiers, idea_groups):
         super().__init__(name, display_name)
+        self.description = description
         self.category = category
         self.modifiers = modifiers
         self.idea_groups = idea_groups
 
-    def get_idea_group_short_name(self, idea_group):
+    def get_idea_group_short_name(self, idea_group_number):
+        idea_group = self.idea_groups[idea_group_number]
         if idea_group.name in self.overridden_idea_group_names:
             return self.overridden_idea_group_names[idea_group.name]
         else:
@@ -400,8 +402,8 @@ class Policy(NameableEntity):
 
     def formatted_name(self):
         return '{}-{}: {}'.format(
-            self.get_idea_group_short_name(self.idea_groups[0]),
-            self.get_idea_group_short_name(self.idea_groups[1]),
+            self.get_idea_group_short_name(0),
+            self.get_idea_group_short_name(1),
             self.display_name)
 
 
@@ -444,3 +446,62 @@ class Eu4Color(sRGBColor):
         r, g, b = colorstring[:2], colorstring[2:4], colorstring[4:]
         r, g, b = [int(n, 16) for n in (r, g, b)]
         return cls(r, g, b)
+
+
+class ModifierType:
+    def __init__(self, name, icons):
+        self.name = name
+        self.icons = icons
+
+    def format_value(self, value, other_values):
+        if isinstance(value, str):
+            return value
+        else:
+            if self.max_decimal_places(other_values) > 0:
+                formatstring = ':.{}f'.format(self.max_decimal_places(other_values))
+            else:
+                formatstring = ''
+            if value > 0:
+                return ('+{'+formatstring + '}').format(value)
+            else:
+                return ('−{'+formatstring + '}').format(value * -1)
+
+    def max_decimal_places(self, value_list):
+        return max([self.count_decimal_places(value) for value in value_list])
+
+    def count_decimal_places(self, value):
+        str_value = str(value)
+        if '.' in str_value:
+            str_value = re.sub('0+$', '', str_value)
+            return len(str_value.split('.')[1])
+        else:
+            return 0
+
+
+class MultiplicativeModifier(ModifierType):
+    def modify_value(self, value):
+        value = value*100
+        if value == round(value): # no decimal places
+            value = int(value)
+        return value
+
+    def format_value(self, value, other_values):
+        return super().format_value(self.modify_value(value), [self.modify_value(v) for v in other_values]) + '%'
+
+
+class AdditiveModifier(ModifierType):
+    pass
+
+
+class ConstantModifier(ModifierType):
+    pass
+
+
+class LibertyDesireModifier(MultiplicativeModifier):
+    def modify_value(self, value):
+        return value * (-1)
+
+
+class AdditiveModifierWithPercentageSign(AdditiveModifier):
+    def format_value(self, value, other_values):
+        return super().format_value(value, other_values) + '%'
