@@ -2,6 +2,9 @@
 import csv
 import os
 import re
+import string
+from operator import attrgetter
+
 import sys
 # add the parent folder to the path so that imports work even if the working directory is the eu4 folder
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
@@ -154,7 +157,144 @@ class BonusTableGenerator:
         with output_file.open('w') as f:
             f.write(content)
 
+
+class PolicyListGenerator:
+    colors = {'ADM': '#7de77d', 'DIP': '#7dc3e7', 'MIL': '#e6e77d'}
+
+    def __init__(self):
+        self.eu4parser = Eu4Parser()
+        self.parser = self.eu4parser.parser
+        self.formatted_modifiers = None
+
+    def get_policy_list(self, category):
+        """all policies of a category (e.g. ADM) as a list"""
+        return [policy for policy in self.eu4parser.all_policies.values() if policy.category == category]
+
+    def get_policy(self, idea_group1, idea_group2):
+        for policy in self.eu4parser.all_policies.values():
+            if idea_group1 in policy.idea_groups and idea_group2 in policy.idea_groups:
+                return policy
+        return None
+
+    def get_overview_header(self, idea_group):
+        if idea_group.name == 'horde_gov_ideas':
+            return '| style="background-color:{color}" | [[File:Horde Government idea group.png|link=horde government|46px]]<div style="font-size: x-small">Horde</div>'.format(
+                color=self.colors[idea_group.category])
+        return '| style="background-color:{color}" | [[File:{name} idea group.png|link={name} ideas|46px]]<div style="font-size: x-small">{name}</div>'.format(
+            color=self.colors[idea_group.category],
+            name=idea_group.short_name()
+        )
+
+    def get_overview_line(self, idea_group, other_groups):
+        lines = ['|-', self.get_overview_header(idea_group)]  # one line in the table, but multiple lines in the code
+        regex = re.compile(r'({{icon\|[^}]*}}) {{green\|([^}]*)}}')
+        for other_group in other_groups:
+            policy = self.get_policy(idea_group, other_group)
+            if policy:
+                lines.append('| style="background-color:{}" | '.format(self.colors[policy.category])
+                             + '<br>'.join(['{1} {0}'.format(*match)
+                                            for match in regex.findall(self.format_modifiers(policy))]))
+            else:
+                lines.append('| &nbsp;')
+        return lines
+
+    def build_overview(self):
+        idea_groups = {category: sorted([group for group in self.eu4parser.all_idea_groups.values()
+                                         if group.category == category], key=attrgetter('display_name'))
+                       for category in ['ADM', 'DIP', 'MIL']}
+
+        lines = ['== Overview ==', get_SVersion_header(),
+                 '<span style="display:inline-block; width:2.2em; height:2.2em;background-color:#7de77d; border:1px solid black">{{icon|adm}}</span> Administrative points',
+                 '<span style="display:inline-block; width:2.2em; height:2.2em;background-color:#7dc3e7; border:1px solid black">{{icon|dip}}</span> Diplomatic points',
+                 '<span style="display:inline-block; width:2.2em; height:2.2em;background-color:#e6e77d; border:1px solid black">{{icon|mil}}</span> Military points',
+                 '{| class="wikitable" style="text-align:center"',
+                 '|-',
+                 '!']
+        for group in idea_groups['DIP'] + idea_groups['MIL']:
+            lines.append(self.get_overview_header(group))
+        for group in idea_groups['ADM']:
+            lines.extend(self.get_overview_line(group, idea_groups['DIP'] + idea_groups['MIL']))
+        for group in idea_groups['MIL']:
+            lines.extend(self.get_overview_line(group, idea_groups['DIP']))
+        lines.append('|}')
+        self.writeFile('eu4policies_overview', lines)
+
+    def build_toc(self, category):
+        header = '''{| class="toccolours"
+! colspan="4" | Contents
+|-valign=top
+| style="width:280px" |'''
+        lines = [header]
+        names = {}
+        for policy in self.get_policy_list(category):
+            if policy.display_name.startswith('The '):
+                names[policy.display_name.removeprefix('The ') + ', The'] = policy.display_name
+            else:
+                names[policy.display_name] = policy.display_name
+        max_lines_in_column = round((len(names) + 26) / 4)
+        lines_in_column = []
+        columns = 1
+        for letter in string.ascii_uppercase:
+            lines_in_column.append(';' + letter)
+            for name_without_the in sorted(names.keys()):
+                if name_without_the[:1].upper() == letter:
+                    lines_in_column.append(':[[#{}|{}]]'.format(names[name_without_the], name_without_the))
+            if len(lines_in_column) >= max_lines_in_column and columns < 4:
+                columns += 1
+                lines.extend(lines_in_column)
+                lines_in_column = ['| style="width:280px" |']
+        lines.extend(lines_in_column)
+        lines.append('|}')
+        return lines
+
+    def format_modifiers(self, policy):
+        if not self.formatted_modifiers:
+            modifiers = {policy.name: '\n'.join(['{} = {}'.format(key, value) for key, value in policy.modifiers.items()]) for policy in self.eu4parser.all_policies.values()}
+            WikiTextConverter().to_wikitext(modifiers=modifiers, strip_icon_sizes=True)
+            self.formatted_modifiers = modifiers
+        return self.formatted_modifiers[policy.name]
+
+    def format_policy(self, policy):
+        return [
+            '{{policy',
+            '|name = ' + policy.display_name,
+            '|desc = ' + policy.description,
+            '|ig1 = ' + policy.get_idea_group_short_name(0),
+            '|ig2 = ' + policy.get_idea_group_short_name(1),
+            '|effect = ' + self.format_modifiers(policy),
+            '}}'
+        ]
+
+    def handle_category(self, category, category_display_name):
+        lines = ['==[[File:{} power.png|link={} power]]{} policies=='.format(
+            category_display_name, category_display_name, category_display_name),
+            get_SVersion_header()]
+        lines.extend(self.build_toc(category))
+        lines.append('')
+        lines.append('{{box wrapper|')
+        for policy in self.get_policy_list(category):
+            lines.extend(self.format_policy(policy))
+
+        lines.append('}}')
+        self.writeFile('eu4policies_' + category, lines)
+
+    def run(self):
+        self.build_overview()
+        for category, category_display_name in {'ADM': 'Administrative', 'DIP': 'Diplomatic', 'MIL': 'Military'}.items():
+            self.handle_category(category, category_display_name)
+
+    def writeFile(self, name, lines):
+        output_file = eu4outpath / '{}.txt'.format(name)
+        with output_file.open('w') as f:
+            f.write("\n".join(lines))
+            # make sure that the file has a newline at the end.
+            # This is helpful so that concatenating multiple files doesn't lead joined lines
+            if lines[-1] != '':
+                f.write("\n")
+
+
 if __name__ == '__main__':
+    PolicyListGenerator().run()
     generator = BonusTableGenerator()
     generator.run()
 
