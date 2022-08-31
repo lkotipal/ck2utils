@@ -7,6 +7,7 @@ from operator import attrgetter
 
 import sys
 # add the parent folder to the path so that imports work even if the working directory is the eu4 folder
+from pathlib import Path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 
 from eu4.wiki import get_SVersion_header, WikiTextConverter
@@ -187,13 +188,38 @@ class PolicyListGenerator:
 
     def get_overview_line(self, idea_group, other_groups):
         lines = ['|-', self.get_overview_header(idea_group)]  # one line in the table, but multiple lines in the code
-        regex = re.compile(r'({{icon\|[^}]*}}) {{green\|([^}]*)}}')
+        icon_regex = r'({{icon\|[^}]*}}|\[\[File:[^]]*\]\])'
+        regexs = [re.compile(icon_regex + r' {{green\|([^}]*)}}'),
+                  re.compile(icon_regex + r' ({{DLC-only\|([^|}]*)\|([^|}]*)}})'),
+                  re.compile(icon_regex + r" '''([-+0-9.%]*)'''"),
+                  re.compile(icon_regex + r'() .*'),
+                  ]
+
         for other_group in other_groups:
             policy = self.get_policy(idea_group, other_group)
             if policy:
-                lines.append('| style="background-color:{}" | '.format(self.colors[policy.category])
-                             + '<br>'.join(['{1} {0}'.format(*match)
-                                            for match in regex.findall(self.format_modifiers(policy))]))
+                rearranged_modifier_lines = []
+                for modifierline in self.format_modifiers(policy).splitlines():
+                    rearranged_modifier_line = None
+                    for regex in regexs:
+                        if rearranged_modifier_line:
+                            continue  # skip after first match
+                        match = regex.search(modifierline)
+                        if match:
+                            icon = match.group(1)
+                            value = match.group(2)
+                            if 'DLC-only' in value:
+                                if match.group(3) == 'Marines force limit':
+                                    value = match.group(4) + '%'
+                                else:
+                                    raise Exception('unhandled DLC-only ' + value)
+                            rearranged_modifier_line = '{value} {icon}'.format(value=value, icon=icon)
+                    if rearranged_modifier_line:
+                        rearranged_modifier_lines.append(rearranged_modifier_line)
+                    else:
+                        raise Exception('Cant handle line ' + modifierline)
+
+                lines.append('| style="background-color:{}" | {}'.format(self.colors[policy.category], "<br>".join(rearranged_modifier_lines)))
             else:
                 lines.append('| &nbsp;')
         return lines
@@ -278,6 +304,19 @@ class PolicyListGenerator:
         lines.append('}}')
         self.writeFile('eu4policies_' + category, lines)
 
+    # experiment to use File:, but it has no links
+    # @staticmethod
+    # def _replace_icon(match):
+    #     icon = match.group(1)
+    #     if icon in icon_to_filename:
+    #         filename = icon_to_filename[icon]
+    #     else:
+    #         filename = icon
+    #     return '[[File:{}.png|28px]]'.format(filename)
+    #
+    # def replace_icons_with_file_images(self, wikitext):
+    #     return re.sub(r'{{icon\|([^}]*)}}', self._replace_icon, wikitext)
+
     def run(self):
         self.build_overview()
         for category, category_display_name in {'ADM': 'Administrative', 'DIP': 'Diplomatic', 'MIL': 'Military'}.items():
@@ -285,8 +324,9 @@ class PolicyListGenerator:
 
     def writeFile(self, name, lines):
         output_file = eu4outpath / '{}.txt'.format(name)
+        text = "\n".join(lines)
         with output_file.open('w') as f:
-            f.write("\n".join(lines))
+            f.write(text)
             # make sure that the file has a newline at the end.
             # This is helpful so that concatenating multiple files doesn't lead joined lines
             if lines[-1] != '':
