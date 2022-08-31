@@ -449,11 +449,14 @@ class Eu4Color(sRGBColor):
 
 
 class ModifierType:
-    def __init__(self, name, icons):
+    def __init__(self, name, icons, multiply_value_with=None):
         self.name = name
         self.icons = icons
+        self.multiply_value_with = multiply_value_with
 
     def format_value(self, value, other_values):
+        value = self.modify_value(value)
+        other_values = [self.modify_value(v) for v in other_values]
         if isinstance(value, str):
             return value
         else:
@@ -477,16 +480,21 @@ class ModifierType:
         else:
             return 0
 
-
-class MultiplicativeModifier(ModifierType):
     def modify_value(self, value):
-        value = value*100
-        if value == round(value): # no decimal places
-            value = int(value)
+        if self.multiply_value_with is not None:
+            value *= self.multiply_value_with
+            if value == round(value):  # no decimal places
+                value = int(value)
         return value
 
+
+class MultiplicativeModifier(ModifierType):
+
+    def __init__(self, name, icons, multiply_value_with=100):
+        super().__init__(name, icons, multiply_value_with)
+
     def format_value(self, value, other_values):
-        return super().format_value(self.modify_value(value), [self.modify_value(v) for v in other_values]) + '%'
+        return super().format_value(value, other_values) + '%'
 
 
 class AdditiveModifier(ModifierType):
@@ -495,11 +503,6 @@ class AdditiveModifier(ModifierType):
 
 class ConstantModifier(ModifierType):
     pass
-
-
-class LibertyDesireModifier(MultiplicativeModifier):
-    def modify_value(self, value):
-        return value * (-1)
 
 
 class AdditiveModifierWithPercentageSign(AdditiveModifier):

@@ -1,4 +1,4 @@
-from eu4.eu4lib import AdditiveModifier, ConstantModifier, MultiplicativeModifier, LibertyDesireModifier, \
+from eu4.eu4lib import AdditiveModifier, ConstantModifier, MultiplicativeModifier, \
     AdditiveModifierWithPercentageSign
 
 all_modifiers = [
@@ -143,7 +143,7 @@ all_modifiers = [
     MultiplicativeModifier('global_sailors_modifier', ['national sailors modifier']),
     MultiplicativeModifier('sailors_recovery_speed', ['sailor recovery speed']),
     MultiplicativeModifier('state_maintenance_modifier', ['state maintenance']),
-    LibertyDesireModifier('reduced_liberty_desire', ['liberty desire in subjects']),
+    MultiplicativeModifier('reduced_liberty_desire', ['liberty desire in subjects'], multiply_value_with=-1),
     AdditiveModifier('yearly_corruption', ['corruption']),
     MultiplicativeModifier('global_institution_spread', ['institution spread']),
     MultiplicativeModifier('embracement_cost', ['institution embracement cost']),
@@ -168,7 +168,7 @@ all_modifiers = [
     MultiplicativeModifier('global_naval_engagement_modifier', ['global naval engagement']),
     MultiplicativeModifier('mercenary_discipline', ['mercenary discipline']),
     MultiplicativeModifier('fire_damage_received', ['fire damage received']),
-    MultiplicativeModifier('monthly_piety', ['monthly piety']),
+    AdditiveModifier('monthly_piety', ['monthly piety'], multiply_value_with=100),
     AdditiveModifier('yearly_tribal_allegiance', ['yearly tribal allegiance']),
     MultiplicativeModifier('same_culture_advisor_cost', ['cost of adv wrc']),
     AdditiveModifier('meritocracy', ['meritocracy']),
@@ -255,7 +255,7 @@ all_modifiers = [
     MultiplicativeModifier('expand_administration_cost', ['expand administration cost']),
     ConstantModifier('may_establish_frontier', ['may establish siberian frontiers']),
     ConstantModifier('can_fabricate_for_vassals', ['may fabricate claims for subjects']),
-    AdditiveModifier('monthly_piety_accelerator', ['monthly piety accelerator']),
+    AdditiveModifier('monthly_piety_accelerator', ['monthly piety accelerator'], multiply_value_with=100),
     MultiplicativeModifier('harmonization_speed', ['religious harmonization speed']),
     AdditiveModifier('yearly_authority', ['yearly authority']),
     AdditiveModifier('yearly_doom_reduction', ['yearly doom reduction']),
