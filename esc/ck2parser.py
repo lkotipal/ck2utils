@@ -955,7 +955,7 @@ class SimpleParser:
         """parse files, merge all top level items into one dictionary and return the items of that dictionary"""
         dictionary = {}
         for filename, tree in self.parse_files(glob, basedir, moddirs, **kwargs):
-            dictionary.update(tree.dictionary)
+            dictionary.update(reversed(tree.dictionary.items()))
 
         return dictionary.items()
 
