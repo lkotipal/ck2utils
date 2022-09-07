@@ -225,7 +225,7 @@ class ContainerMixin:
 
     def find_all(self, key):
         """get a list of values which have the given key"""
-        return [v.val for k, v in self.contents if k.val == key]
+        return [(v.val if hasattr(v, 'val') else v) for k, v in self.contents if k.val == key]
     pass
 
 
@@ -439,6 +439,11 @@ class String(Commented):
         else:
             return self.val < other
 
+    def __add__(self, other):
+        if isinstance(other, String):
+            return self.val + other.val
+        else:
+            return self.val + other
 
 @total_ordering
 class Number(Commented):
@@ -467,6 +472,17 @@ class Number(Commented):
         else:
             return self.val < other
 
+    def __add__(self, other):
+        if isinstance(other, Number):
+            return self.val + other.val
+        else:
+            return self.val + other
+
+    def __sub__(self, other):
+        if isinstance(other, Number):
+            return self.val - other.val
+        else:
+            return self.val - other
 
 @total_ordering
 class Date(Commented):
