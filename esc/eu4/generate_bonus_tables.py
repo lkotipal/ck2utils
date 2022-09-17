@@ -90,6 +90,9 @@ class BonusTableGenerator:
         self.parser = self.eu4parser.parser
 
     def run(self):
+        self.writeFile('bonus_tables', self.generate())
+
+    def generate(self):
         lines = [self.header]
         processed_modifier_names = set()
         for modifier in sorted(all_modifiers, key=lambda m: m.icons[0]):
@@ -142,7 +145,7 @@ class BonusTableGenerator:
                     for idea in idea_list
                     ]), file=sys.stderr)
         lines.append(self.footer)
-        self.writeFile('bonus_tables', "\n".join(lines))
+        return "\n".join(lines)
 
     def sort_ideas_key_function(self, idea):
         key = idea.formatted_name()
@@ -322,7 +325,8 @@ class PolicyListGenerator:
         for category, category_display_name in {'ADM': 'Administrative', 'DIP': 'Diplomatic', 'MIL': 'Military'}.items():
             self.handle_category(category, category_display_name)
 
-    def writeFile(self, name, lines):
+    @staticmethod
+    def writeFile(name, lines):
         output_file = eu4outpath / '{}.txt'.format(name)
         text = "\n".join(lines)
         with output_file.open('w') as f:

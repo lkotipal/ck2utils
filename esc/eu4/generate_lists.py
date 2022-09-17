@@ -1,16 +1,22 @@
 #!/usr/bin/env python3
 import os
 import re
+from pathlib import Path
 
 import sys
 import math
 from locale import strxfrm, setlocale, LC_COLLATE
+from typing import List, Dict
+
 
 # add the parent folder to the path so that imports work even if the working directory is the eu4 folder
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 from eu4.wiki import WikiTextConverter, get_SVersion_header
 from eu4.paths import eu4outpath
+from eu4.parser import Eu4Parser
 from eu4.mapparser import Eu4MapParser
+from eu4.eu4lib import GovernmentReform
+from ck2parser import Obj, Pair
 
 # the MonumentList needs pyradox which needs to be imported in some way
 sys.path.append(os.path.dirname(os.path.realpath(__file__)) + '/../../../../pyradox')
@@ -41,7 +47,10 @@ class MonumentList:
             monument_type = v['type']
             if monument_type == 'canal':
                 build_cost = v['build_cost']
-                prestige_gain = v['on_built']['owner']['add_prestige']
+                if 'owner' in v['on_built'] and 'add_prestige' in v['on_built']['owner']:
+                    prestige_gain = v['on_built']['owner']['add_prestige']
+                else:
+                    prestige_gain = None
             else:
                 build_cost = None
                 prestige_gain = None
@@ -90,19 +99,19 @@ class MonumentList:
                 if cost_to_upgrade != '{{ factor = {} }}'.format(expected_upgrade_cost):
                     print('Warning: unexpected cost_to_upgrade "{}" on tier {}'.format(cost_to_upgrade, tier))
 
-                if len(values['province_modifiers']) > 0:
+                if 'province_modifiers' in values and len(values['province_modifiers']) > 0:
                     province_modifiers = values['province_modifiers'].inline_str(self.parser.parser)[0]
                 else:
                     province_modifiers = None
-                if len(values['area_modifier']) > 0:
+                if 'area_modifier' in values and len(values['area_modifier']) > 0:
                     area_modifier = values['area_modifier'].inline_str(self.parser.parser)[0]
                 else:
                     area_modifier = None
-                if len(values['country_modifiers']) > 0:
+                if 'country_modifiers' in values and len(values['country_modifiers']) > 0:
                     country_modifiers = values['country_modifiers'].inline_str(self.parser.parser)[0]
                 else:
                     country_modifiers = None
-                if len(values['on_upgraded']) > 0:
+                if 'on_upgraded' in values and len(values['on_upgraded']) > 0:
                     on_upgraded = values['on_upgraded'].inline_str(self.parser.parser)[0]
                 else:
                     on_upgraded = None
@@ -405,10 +414,327 @@ class AreaAndRegionsList:
             f.write(content)
 
 
+class GovernmentReforms:
+    icon_map = {'admiral_king_reform': 'Reform admiral king', 'admiralty_reform': 'Reform admiralty',
+                'all_under_tengri_reform': 'Reform all under tengri',
+                'austrian_archduchy_reform': 'Reform austrian archduchy',
+                'austrian_dual_monarchy_reform': 'Reform austrian dual monarchy',
+                'become_rev_empire_reform': 'Reform become rev empire',
+                'become_rev_republic_reform': 'Reform become rev republic', 'black_army_reform': 'Black army reform',
+                'church_and_state_reform': 'Reform church and state', 'commander_king_reform': 'Reform commander king',
+                'conciliarism_reform': 'Reform conciliarism',
+                'consolidate_power_in_cities_reform': 'Reform consolidate power in cities',
+                'consolidate_power_in_doge_reform': 'Reform consolidate power in doge',
+                'crown_highlighted': 'Crown highlighted', 'divine_guidance_reform': 'Reform divine guidance',
+                'egalite_reform': 'Reform egalite',
+                'emperor_of_the_revolution_reform': 'Reform emperor of the revolution',
+                'enlightened_monarchy_reform': 'Reform enlightened monarchy',
+                'equal_electorate_reform': 'Reform equal electorate', 'feuillant_reform': 'Reform feuillant',
+                'fraternite_reform': 'Reform fraternite',
+                'government_for_people_reform': 'Reform government for people',
+                'holy_state_reform': 'Reform holy state', 'horde_riding_highlighted': 'Horde riding highlighted',
+                'imperial_nobility_reform': 'Reform imperial nobility',
+                'integrated_sejmiks_reform': 'Integrated sejmiks reform', 'king_2_highlighted': 'King 2 highlighted',
+                'king_highlighted': 'King highlighted', 'kingdom_of_god': 'Reform kingdom of god',
+                'legion_of_honor_reform': 'Reform legion of honor',
+                'legislative_assembly_reform': 'Reform legislative assembly',
+                'legislative_sejm_reform': 'Legislative sejm reform', 'liberte_reform': 'Reform liberte',
+                'military_dictatorship_reform': 'Reform military dictatorship',
+                'mission_to_civilize_reform': 'Reform mission to civilize',
+                'mission_to_kill_pirates_reform': 'Reform mission to kill pirates',
+                'monastic_breweries_reform': 'Reform monastic breweries',
+                'monastic_elections_reform': 'Reform monastic elections', 'muslim_highlighted': 'Muslim highlighted',
+                'national_constituent_reform': 'Reform national constituent',
+                'native_clan_council_reform': 'Native clan council reform',
+                'native_codified_power_reform': 'Native codified power reform',
+                'native_land_tradition_reform': 'Native land tradition reform',
+                'native_martial_tradition_reform': 'Native martial tradition reform',
+                'native_oral_tradition_reform': 'Native oral tradition reform',
+                'native_seasonal_travel_reform': 'Native seasonal travel reform',
+                'native_settle_down_reform': 'Native settle down reform',
+                'native_trading_with_foreigners_reform': 'Native trading with foreigners reform',
+                'native_war_band_reform': 'Native war band reform',
+                'organising_our_religion_reform': 'Reform organising our religion',
+                'parliament_highlighted': 'Parliament highlighted',
+                'partial_secularisation_reform': 'Reform partial secularisation',
+                'pope_highlighted': 'Pope highlighted',
+                'protectorate_parliament_reform': 'Reform protectorate parliament',
+                'regionally_elected_commanders': 'Reform regionally elected commanders',
+                'religious_harmony_reform': 'Reform religious harmony',
+                'religious_leader_highlighted': 'Religious leader highlighted',
+                'religious_permanent_revolution_reform': 'Reform religious permanent revolution',
+                'revolutionary_council_reform': 'Reform revolutionary council',
+                'sakdina_system_reform': 'Sakdina system reform', 'signoria_reform': 'Reform signoria',
+                'three_classes_reform': 'Reform three classes', 'united_cantons_reform': 'Reform united cantons',
+                'uparaja_reform': 'Uparaja reform', 'warrior_monks_reform': 'Reform warrior monks'}
+    table_header = '''{| class="mildtable sortable" style="width:100%"
+! style="width:150px" | Type
+! style="width:300px" class="unsortable" | Effects
+! class="unsortable" | Description & notes'''
+
+    icon_table_header = '''{{| class="eu4box-inline mw-collapsible mw-collapsed" style="text-align: center; margin: auto; max-width: 550px;"
+|+ <span style="white-space: nowrap;">{{{{icon|gov_{icon}|32px}}}} \'\'\'{adjective} government reforms\'\'\'</span>'''
+
+    def __init__(self):
+        self.parser = Eu4Parser()
+        self._reforms_have_been_converted_to_wikitext = False
+
+    def get_icon(self, reform):
+        if reform.icon in self.icon_map:
+            return self.icon_map[reform.icon]
+        else:
+            return self.pretty_icon_name('Gov ' + reform.icon)
+
+    def pretty_icon_name(self, icon):
+        return icon.capitalize().replace('_', ' ')
+
+    def run(self):
+        for gov_type, adjective in [('monarchy', 'Monarchic'), ('republic', 'Republican'), ('theocracy', 'Theocratic'),
+                                    ('tribal', 'Tribal'), ('native', 'Native')]:
+            self.writeFile('government_reform_' + gov_type, self.generate(gov_type, adjective))
+            self.writeFile('government_reform_' + gov_type + '_icons', self.generate_icon_table(gov_type, adjective))
+        self.writeFile('government_reform_common', self.generate_common_reforms())
+
+    def format_reform_attribute(self, attribute_name, value):
+        mapping_if_true = {
+            'lock_level_when_selected': '* {{Locked reform}}',
+            'locked_government_type': '* Prohibits switching [[government type]].',
+            'can_use_trade_post': '{{#lst:Republic|trade_post}}',
+            'can_form_trade_league': '{{#lst:Republic|trade_league}}',
+            'boost_income': '{{#lst:Republic|merchant_republic_mechanics}}<!-- boost_income = yes -->',
+            'is_merchant_republic': '{{#lst:Republic|is_merchant_republic}}<!-- is_merchant_republic = yes -->',
+            'has_parliament': '* Has access to {{icon|parliament}} parliament',
+            'rulers_can_be_generals': '* Rulers can be generals.',
+            'heirs_can_be_generals': '* Heirs can be generals.',
+            'enables_aristocratic_idea_group': '* Enables the [[Aristocratic ideas|Aristocratic]] idea group.',
+            'enables_plutocratic_idea_group': '* Enables the [[Plutocratic]] idea group.',
+            'enables_divine_idea_group': '* Enables the [[Idea_groups#Divine|Divine]] idea group.',
+            'royal_marriage': '* Allows royal marriages.',
+            'militarised_society': '* Uses {{icon|militarization of state}} militarization mechanics\n{{see also|Prussia#Prussian monarchy{{!}}Prussia § Prussian monarchy}}',
+            'disables_nobility': '* Disables the {{icon|nobility}} nobility estate.',
+            'blocked_call_diet': '* Disables “[[Call diet]]”'
+        }
+        mapping_if_false = {
+            'has_term_election': '* Ruler reigns for life. No elections.',
+            'enables_plutocratic_idea_group': '* Disables the [[Plutocratic]] idea group.',
+            'enables_aristocratic_idea_group': '* Disables the [[Aristocratic ideas|Aristocratic]] idea group.',
+            'enables_divine_idea_group': '* Disables the [[Idea_groups#Divine|Divine]] idea group.',
+        }
+        if attribute_name in mapping_if_true and value is True:
+            return mapping_if_true[attribute_name]
+        elif attribute_name in mapping_if_false and value is False:
+            return mapping_if_false[attribute_name]
+        elif attribute_name == 'fixed_rank':
+            if value == 0:
+                return '* Unlocks the ability to change [[Government rank]]'
+            ranks = ['', 'Duchy', 'Kingdom', 'Empire']
+            return '* Fixed rank: {{{{icon|{0}}}}} {0}'.format(ranks[value])
+        elif attribute_name == 'trade_city_reform':  # the wiki doesnt really mention it
+            return ''
+
+        else:
+            if isinstance(value, Obj):
+                value = value.str(self.parser.parser)
+            return '* <pre>{}: {}</pre>'.format(attribute_name, value)
+
+    def _compare_attributes(self, attributes1, attributes2):
+        if len(attributes1) != len(attributes2):
+            return False
+        for k, v in attributes1.items():
+            if k not in attributes2:
+                return False
+            if type(v) != type(attributes2[k]):
+                return False
+            if isinstance(v, Obj):
+                if v.str(self.parser.parser) != attributes2[k].str(self.parser.parser):
+                    return False
+            else:
+                if v != attributes2[k]:
+                    return False
+
+        return True
+
+    def simplify_dlc_conditionals(self, conditionals):
+        one_dlc_conditions_mapping = {}
+        multiple_dlc_conditions = []
+        processed_conditions = []
+        for condition, condition_attributes in conditionals:
+            if len(condition) > 1 and condition.contents[0].key == 'has_dlc':
+                needed_dlcs, not_dlcs = self.get_dlcs(condition)
+                if len(needed_dlcs) == 1:
+                    if needed_dlcs[0] in one_dlc_conditions_mapping:
+                        raise Exception('two conditionals for the same dlc')
+                    one_dlc_conditions_mapping[needed_dlcs[0]] = condition_attributes
+                    processed_conditions.append((Obj([Pair('has_dlc', needed_dlcs[0])]), condition_attributes))
+                else:
+                    multiple_dlc_conditions.append((needed_dlcs, condition_attributes))
+            else:
+                processed_conditions.append((condition, condition_attributes))
+
+        for dlcs, condition_attributes in multiple_dlc_conditions:
+            attributes_from_single_dlcs = {k: v for dlc in dlcs for k, v in one_dlc_conditions_mapping[dlc].items()}
+            if not self._compare_attributes(attributes_from_single_dlcs, condition_attributes):
+                raise Exception('multiple DLC conditions dont match: {}\n{}'.format(attributes_from_single_dlcs, condition_attributes))
+
+        return processed_conditions
+
+    def get_dlcs(self, condition):
+        needed_dlcs = []
+        not_dlcs = []
+        for k, v in condition:
+            if k == 'has_dlc':
+                needed_dlcs.append(v.val)
+            elif k == 'NOT' and len(v) == 1 and v.contents[0].key == 'has_dlc':
+                not_dlcs.append(v.contents[0].value.val)
+            else:
+                raise Exception(
+                    'dont know what to do with the dlc condition: {}'.format(condition.str(self.parser.parser)))
+        return needed_dlcs, not_dlcs
+
+    def generate_common_reforms(self, excluded_reforms=None):
+        if not excluded_reforms:
+            excluded_reforms = set()
+        print(set(self.parser.common_government_reforms.keys()) - set(excluded_reforms))
+        lines = [self.table_header,
+                 '! style="width:50px" | {{nowrap|{{icon|monarchy}} Tier}}',
+                 '! style="width:50px" | {{nowrap|{{icon|republic}} Tier}}',
+                 '! style="width:50px" | {{nowrap|{{icon|theocracy}} Tier}}']
+        for reform_id, gov_tiers in self.parser.common_government_reforms.items():
+            if reform_id in excluded_reforms:
+                continue
+            reform = self.parser.all_government_reforms[reform_id]
+            lines.append('<section begin={}/>'.format(reform.display_name))
+            lines.extend(self.get_reform_lines(reform))
+            lines.append('<section end={}/>'.format(reform.display_name))
+            for gov_type in ['monarchy', 'republic', 'theocracy']:
+                if gov_type in gov_tiers:
+                    lines.append('| {}'.format(gov_tiers[gov_type]))
+                else:
+                    lines.append('|')
+            lines.append('|}')
+            lines.append('')
+        return '\n'.join(lines)
+
+    def generate(self, government_type, adjective, excluded_reforms=None):
+        if not excluded_reforms:
+            excluded_reforms = set()
+        # return self.generate_icon_table(government_type, adjective)
+        self.convert_reform_attributes_to_wikitext(self.parser.all_government_reforms)
+        lines = []
+        for tier, reforms_ids in self.parser.government_type_with_reform_tiers[government_type].items():
+            if tier == 'basic' or len(set(reforms_ids) - set(excluded_reforms)) == 0:
+                continue
+            lines.append('=== {} ==='.format(self.parser.localize(tier)))
+            lines.append(self.table_header)
+            for reform_id in reforms_ids:
+                if reform_id in excluded_reforms:
+                    continue
+                reform = self.parser.all_government_reforms[reform_id]
+                if reform_id in self.parser.common_government_reforms:
+                    lines.append('<!-- transcluded from the page "Common government reforms" -->')
+                    lines.append('{{{{#lst:Common government reforms|{}}}}}'.format(reform.display_name))
+                else:
+                    lines.extend(self.get_reform_lines(reform))
+
+                lines.append('')
+            lines.append('|}')
+            lines.append('')
+        return '\n'.join(lines)
+
+    def get_reform_lines(self, reform):
+        lines = ['|-', "| id=\"{0}\" | '''{0}'''".format(reform.display_name), '|']
+        if reform.modifiers:
+            lines.append(reform.modifiers)
+        lines.append(
+            '| {{{{desc|{}|{}|image={}}}}}'.format(reform.display_name, self.parser.localize(reform.name + '_desc'),
+                                                   self.get_icon(reform)))
+        if reform.potential:
+            lines.append('Conditions to see the reform:')
+            lines.append(reform.potential)
+        if reform.trigger:
+            lines.append('Conditions to enact the reform:')
+            lines.append(reform.trigger)
+        if reform.potential or reform.trigger:
+            lines.append('----')
+        if reform.effect:
+            lines.append('Effect when enacting:')
+            lines.append(reform.effect)
+        if reform.removed_effect:
+            lines.append('Effect when removing:')
+            lines.append(reform.removed_effect)
+        if reform.post_removed_effect:
+            lines.append('Effect after removing:')
+            lines.append(reform.post_removed_effect)
+        if reform.effect or reform.removed_effect or reform.post_removed_effect:
+            lines.append('----')
+        for attribute_name, value in reform.attributes.items():
+            lines.append(self.format_reform_attribute(attribute_name, value))
+        for condition, condition_attributes in self.simplify_dlc_conditionals(reform.conditional):
+            if len(condition) == 1 and condition.contents[0].key == 'has_dlc':
+                lines.append('{{{{expansion|{}}}}}'.format(self.parser.get_dlc_icon(condition.contents[0].value)))
+            else:
+                lines.append(condition.str(self.parser.parser))
+            for attribute_name, value in condition_attributes.items():
+                lines.append(self.format_reform_attribute(attribute_name, value))
+        return lines
+
+    def generate_icon_table(self, government_type, adjective):
+        lines = [self.icon_table_header.format(icon=government_type, adjective=adjective)]
+        tier_num = 0
+        for tier, reforms_ids in self.parser.government_type_with_reform_tiers[government_type].items():
+            if tier_num == 0:
+                tier_num += 1
+                continue
+            lines.append('')
+            lines.append('|-')
+            lines.append('! class="gridBG header" style="text-align: left; color: white;" | Tier {tier_num}: [[#{tier}|{tier}]]'.format(
+                tier_num=tier_num,
+                tier=self.parser.localize(tier)))
+            lines.append('|-')
+            lines.append('| {{box wrapper}}')
+            for reform_id in reforms_ids:
+                reform = self.parser.all_government_reforms[reform_id]
+                lines.append('{{{{Navicon|{}|{}}}}}'.format(self.get_icon(reform), reform.display_name))
+            lines.append('{{end box wrapper}}')
+            tier_num += 1
+        lines.append('|}')
+        lines.append('')
+        return '\n'.join(lines)
+
+    def convert_reform_attributes_to_wikitext(self, reforms: Dict[str, GovernmentReform]):
+        if self._reforms_have_been_converted_to_wikitext:
+            return reforms
+        modifiers = {reform.name: reform.modifiers.str(self.parser.parser) for reform in reforms.values() if reform.modifiers}
+        country_scope = {}
+        for reform in reforms.values():
+            for attribute in ['potential', 'trigger', 'effect', 'removed_effect', 'post_removed_effect']:
+                value = getattr(reform, attribute)
+                if value:
+                    country_scope[reform.name + '_' + attribute] = value.str(self.parser.parser)
+        converter = WikiTextConverter()
+        converter.to_wikitext(modifiers=modifiers, country_scope=country_scope, strip_icon_sizes=True)
+
+        for reform_name, wikified_modifiers in modifiers.items():
+            reforms[reform_name].modifiers = wikified_modifiers
+
+        for reform in reforms.values():
+            for attribute in ['potential', 'trigger', 'effect', 'removed_effect', 'post_removed_effect']:
+                if getattr(reform, attribute):
+                    setattr(reform, attribute, country_scope[reform.name + '_' + attribute])
+
+        self._reforms_have_been_converted_to_wikitext = True
+        return reforms
+
+    def writeFile(self, name, content):
+        output_file = eu4outpath / 'eu4{}.txt'.format(name)
+        with output_file.open('w') as f:
+            f.write(content)
+
+
 if __name__ == '__main__':
     # for correct sorting. en_US seems to work even for non english characters, but the default None sorts all non-ascii characters to the end
     setlocale(LC_COLLATE, 'en_US.utf8')
-
+    GovernmentReforms().run()
     MonumentList().generate()
 
     list_generator = AreaAndRegionsList()

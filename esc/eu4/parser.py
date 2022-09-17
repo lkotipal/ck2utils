@@ -4,10 +4,10 @@ import re
 from collections import OrderedDict
 # add the parent folder to the path so that imports work even if the working directory is the eu4 folder
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
-from ck2parser import SimpleParser, Obj
+from ck2parser import SimpleParser, Obj, String, Number
 from localpaths import eu4dir
 from eu4.paths import eu4_version, eu4_major_version
-from eu4.eu4lib import Religion, Idea, IdeaGroup, Policy, Eu4Color, Country
+from eu4.eu4lib import Religion, Idea, IdeaGroup, Policy, Eu4Color, Country, Mission, MissionGroup, GovernmentReform
 from eu4.cache import disk_cache, cached_property
 
 
@@ -20,6 +20,12 @@ class Eu4Parser:
 
     # allows the overriding of localisation strings
     localizationOverrides = {}
+
+    dlcs = {'Conquest of Paradise': 'cop', 'Wealth of Nations': 'won', 'Res Publica': 'rp', 'Art of War': 'aow',
+            'El Dorado': 'ed', 'Common Sense': 'cs', 'The Cossacks': 'cos', 'Mare Nostrum': 'mn',
+            'Rights of Man': 'rom', 'Mandate of Heaven': 'moh', 'Third Rome': 'tr', 'Cradle of Civilization': 'coc',
+            'Rule Britannia': 'rb', 'Golden Century': 'gc', 'Dharma': 'dhr', 'Emperor': 'emp', 'Leviathan': 'lev',
+            'Origins': 'org', 'Lions of the North': 'lon'}
 
     def __init__(self):
         self.parser = SimpleParser()
@@ -56,6 +62,9 @@ class Eu4Parser:
     @cached_property
     def eu4_major_version(self):
         return eu4_major_version()
+
+    def get_dlc_icon(self, dlc_name):
+        return self.dlcs[dlc_name]
 
     @cached_property
     def all_religions(self):
@@ -180,6 +189,23 @@ class Eu4Parser:
         return all_policies
 
     @cached_property
+    def all_mission_groups(self):
+        all_mission_groups = {}
+        for file, tree in self.parser.parse_files('missions/*'):
+            for k, v in tree:
+                mission_group_id = k.val_str()
+                potential = ''
+                missions = []
+                for k2, v2 in v:
+                    possible_mission_id = k2.val_str()
+                    if possible_mission_id not in ['has_country_shield', 'ai', 'generic', 'potential', 'slot', 'potential_on_load']:
+                        missions.append(Mission(possible_mission_id, self.localize(possible_mission_id)))
+                    elif possible_mission_id == 'potential':
+                        potential = v2
+                all_mission_groups[mission_group_id] = MissionGroup(mission_group_id, file.name, potential, missions)
+        return all_mission_groups
+
+    @cached_property
     def culture_groups(self):
         """Script names of the culture groups.
 
@@ -222,6 +248,98 @@ class Eu4Parser:
     def get_country_color(self, country):
         return self.tag_to_color_mapping[country.tag]
 
+    def _parse_government_attribute_value(self, value):
+        if isinstance(value, String):
+            if value.val.lower() == 'yes':
+                return True
+            if value.val.lower() == 'no':
+                return False
+            return value.val
+        if isinstance(value, Number):
+            return value.val
+        return value
+
+    @cached_property
+    def government_type_with_reform_tiers(self):
+        result = {}
+        for gov_type, gov_data in self.parser.merge_parse('common/governments/*'):
+            if gov_type == 'pre_dharma_mapping':
+                continue
+            tiers = {'basic': [str(gov_data['basic_reform'])]}
+            for tier, reforms in gov_data['reform_levels']:
+                reforms = [str(reform) for reform in reforms['reforms']]
+                tiers[str(tier)] = reforms
+            result[str(gov_type)] = tiers
+        return result
+
+    @cached_property
+    def all_government_reforms(self):
+        reforms_to_type_and_tier = {}
+        for gov_type, tiers in self.government_type_with_reform_tiers.items():
+            tier_num = 0
+            for tier, reforms in tiers.items():
+                for reform in reforms:
+                    reforms_to_type_and_tier[reform] = (gov_type, tier, tier_num)
+                tier_num += 1
+        all_reforms = {}
+        for file, file_data in self.parser.parse_files('common/government_reforms/*'):
+            for reform, reform_data in file_data:
+                # legacy reforms are not used since patch 1.30 and some of them have the same key as normal reforms,
+                # so we can't put them in the same dictionary anyway
+                if 'legacy_government' in reform_data and reform_data['legacy_government'] == 'yes':
+                    continue
+                reform_name = str(reform)
+                if reform_name == 'defaults_reform':
+                    continue
+                basic_attributes = {'basic_reform': False, 'icon': None, 'modifiers': None, 'potential': None,
+                                    'trigger': None, 'effect': None, 'removed_effect': None,
+                                    'post_removed_effect': None, 'conditional': []}
+                other_attributes = {}
+                for k, v in reform_data:
+                    # 'allow_normal_conversion' is ignored, because it doesnt seem to have a gameplay impact
+                    if k in ['allow_normal_conversion', 'ai', 'legacy_equivalent', 'valid_for_nation_designer', 'nation_designer_cost', 'nation_designer_trigger']:
+                        continue
+                    if k == 'basic_reform' and v == 'yes':
+                        basic_attributes['basic_reform'] = True
+                    elif k == 'custom_attributes':
+                        for attribute_key, attribute_value in v:
+                            other_attributes[str(attribute_key)] = self._parse_government_attribute_value(attribute_value)
+                    elif k == 'conditional':
+                        condition = ''
+                        condition_attributes = {}
+                        for conditional_key, conditional_value in v:
+                            if conditional_key == 'allow':
+                                condition = conditional_value
+                            elif conditional_key == 'custom_attributes':
+                                for attribute_key, attribute_value in conditional_value:
+                                    condition_attributes[str(attribute_key)] = self._parse_government_attribute_value(
+                                        attribute_value)
+                            else:
+                                condition_attributes[str(conditional_key)] = self._parse_government_attribute_value(conditional_value)
+                        basic_attributes['conditional'].append((condition, condition_attributes))
+                    elif k in basic_attributes:
+                        basic_attributes[k] = self._parse_government_attribute_value(v)
+                    else:
+                        other_attributes[str(k)] = self._parse_government_attribute_value(v)
+                gov_type, tier, tier_num = reforms_to_type_and_tier[reform_name]
+                all_reforms[reform_name] = GovernmentReform(reform_name, self.localize(reform_name), gov_type, tier,
+                                                            tier_num, attributes=other_attributes, **basic_attributes)
+        return all_reforms
+
+    @cached_property
+    def common_government_reforms(self):
+        common_reforms = {}
+        all_reforms = {}
+        for gov_type, tiers in self.government_type_with_reform_tiers.items():
+            for tier_num, (tier, reforms) in enumerate(tiers.items()):
+                for reform_id in reforms:
+                    if reform_id in all_reforms:
+                        if reform_id not in common_reforms:
+                            common_reforms[reform_id] = all_reforms[reform_id]
+                        common_reforms[reform_id][gov_type] = tier_num
+                    else:
+                        all_reforms[reform_id] = {gov_type: tier_num}
+        return common_reforms
 
 if __name__ == '__main__':
     if len(sys.argv) == 2 and sys.argv[1] == '--eu4-version':

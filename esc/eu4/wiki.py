@@ -19,6 +19,12 @@ def get_SVersion_header(scope=None):
     version_header += '}}'
     return version_header
 
+def get_version_header():
+    """generate a Version wiki template for the current version
+
+    for example {{Version|1.33}}
+    """
+    return '{{Version|' + eu4_major_version() + '}}'
 
 class WikiTextConverter:
     """Uses pdxparse to convert game code to wikitext.
@@ -45,16 +51,19 @@ class WikiTextConverter:
             pdxparse_arguments = ['pdxparse', '--nowait', '-e']
             if country_scope:
                 for file in country_scope.values():
-                    pdxparse_arguments.append('--countryscope')
-                    pdxparse_arguments.append(file)
+                    if len(file) > 0:
+                        pdxparse_arguments.append('--countryscope')
+                        pdxparse_arguments.append(file)
             if province_scope:
                 for file in province_scope.values():
-                    pdxparse_arguments.append('--provincescope')
-                    pdxparse_arguments.append(file)
+                    if len(file) > 0:
+                        pdxparse_arguments.append('--provincescope')
+                        pdxparse_arguments.append(file)
             if modifiers:
                 for file in modifiers.values():
-                    pdxparse_arguments.append('--modifiers')
-                    pdxparse_arguments.append(file)
+                    if len(file) > 0:
+                        pdxparse_arguments.append('--modifiers')
+                        pdxparse_arguments.append(file)
 
             subprocess.run(pdxparse_arguments, check=True, cwd=tmpfolder)
 
@@ -127,12 +136,16 @@ class WikiTextConverter:
         if dictionary:
             for key in dictionary:
                 value = self.remove_surrounding_brackets(dictionary[key])
-                dictionary[key] = self._create_temp_file(folder, value)
+                if len(value) > 0:
+                    dictionary[key] = self._create_temp_file(folder, value)
+                else:
+                    dictionary[key] = ''
 
     def _replace_filenames_with_values(self, folder, dictionary):
         if dictionary:
             for key in dictionary:
-                dictionary[key] = self._readfile(folder + dictionary[key] + '/' + os.path.basename(dictionary[key]))
+                if len(dictionary[key]) > 0:
+                    dictionary[key] = self._readfile(folder + dictionary[key] + '/' + os.path.basename(dictionary[key]))
 
     def _strip_icon_sizes(self, dictionary):
         if dictionary:

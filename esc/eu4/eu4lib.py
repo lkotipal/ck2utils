@@ -1,5 +1,7 @@
 import re
 from colormath.color_objects import sRGBColor
+
+from ck2parser import String
 from eu4.provincelists import coastal_provinces
 from eu4.cache import cached_property
 
@@ -159,6 +161,7 @@ class Region(NameableEntity):
         self.area_names = area_names
         self.parser = parser
         self._provinceIDs = None
+        self._provinces = None
 
     @property
     def areas(self):
@@ -189,10 +192,15 @@ class Region(NameableEntity):
     def provinceIDs(self):
         if self._provinceIDs is None:
             self._provinceIDs = []
-            #             [provinceID for area in self.areas for provinceID in area.provinceIDs ]
             for area in self.areas:
                 self._provinceIDs.extend(area.provinceIDs)
         return self._provinceIDs
+
+    @cached_property
+    def provinces(self):
+        if self._provinces is None:
+            self._provinces = [self.parser.all_provinces[provinceID] for provinceID in self.provinceIDs]
+        return self._provinces
 
     @cached_property
     def color(self):
@@ -513,3 +521,40 @@ class ConstantModifier(ModifierType):
 class AdditiveModifierWithPercentageSign(AdditiveModifier):
     def format_value(self, value, other_values):
         return super().format_value(value, other_values) + '%'
+
+
+class Mission(NameableEntity):
+    def __init__(self, name, display_name, mission_group=None):
+        super().__init__(name, display_name)
+        self.mission_group = mission_group
+
+
+class MissionGroup:
+    def __init__(self, name, source_file, potential, missions):
+        self.name = name
+        self.source_file = source_file
+        self.potential = potential
+        self.missions = missions
+        for mission in missions:
+            mission.mission_group = self
+
+
+class GovernmentReform(NameableEntity):
+
+    def __init__(self, name, display_name, government_type, tier_name, tier_number, basic_reform, attributes, icon,
+                 modifiers, potential, trigger, effect, removed_effect, post_removed_effect, conditional
+                 ):
+        super().__init__(name, display_name)
+        self.government_type = government_type
+        self.tier_name = tier_name
+        self.tier_number = tier_number
+        self.basic_reform = basic_reform
+        self.attributes = attributes
+        self.icon = icon
+        self.modifiers = modifiers
+        self.potential = potential
+        self.trigger = trigger
+        self.effect = effect
+        self.removed_effect = removed_effect
+        self.post_removed_effect = post_removed_effect
+        self.conditional = conditional
