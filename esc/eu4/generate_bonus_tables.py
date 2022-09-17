@@ -337,9 +337,50 @@ class PolicyListGenerator:
                 f.write("\n")
 
 
+class StaticModifiersGenerator:
+
+    def __init__(self):
+        self.parser = Eu4Parser()
+
+    def extract_data_from_modifier_line(self, line):
+        if line.startswith('* <pre>'):
+            line = line.replace('* ', "")
+            return '', line, line, ''
+        match = re.match(
+            r'\* (?P<icon>\{\{icon\|[^}]*\}\}|\[\[[Ff]ile:[^]]*\]\]) (?P<colored_value>(\{\{(red|green)\|)?(?P<value>[^} ]*)(\}\})?) (?P<name>.*)$',
+            line)
+        if not match:
+            raise Exception('Unhandled modifier line: ' + line)
+        return match.group('icon'), match.group('colored_value'), match.group('value'), match.group('name')
+
+    def run(self):
+        wiki_converter = WikiTextConverter()
+
+        static_modifiers = {name: modifiers.str(self.parser.parser) for name, modifiers in
+                            self.parser.parser.merge_parse('common/static_modifiers/*')}
+        wiki_converter.to_wikitext(modifiers=static_modifiers, strip_icon_sizes=True)
+
+        lines = []
+        for name, modifiers in static_modifiers.items():
+            display_name = self.parser.localize(name)
+
+            lines.append('==={}==='.format(display_name))
+            lines.append(get_SVersion_header('table'))
+            lines.append('{|')
+            for line in modifiers.splitlines():
+                icon, colored_value, value, name = self.extract_data_from_modifier_line(line)
+                lines.append('| {} || style="text-align:right" | {} || {}'.format(icon, colored_value, name))
+                lines.append('|-')
+            lines.pop()  # remove extra |-
+            lines.append('|}')
+            lines.append('')
+
+        PolicyListGenerator.writeFile('static_modifiers', lines)
+
+
 if __name__ == '__main__':
+    StaticModifiersGenerator().run()
     PolicyListGenerator().run()
-    generator = BonusTableGenerator()
-    generator.run()
+    BonusTableGenerator().run()
 
 
