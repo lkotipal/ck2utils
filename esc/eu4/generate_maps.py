@@ -23,7 +23,7 @@ class MapGenerator:
 
     def decision_maps(self):
         # change the version number after verifying that the provinces/areas are still correct
-        verified_for_version('1.33.3')
+        verified_for_version('1.34.2')
 
         self.color_map_generator.create_shaded_image({
             'yellow': [prov.id for prov in self.mapparser.all_land_provinces.values() if
@@ -338,7 +338,7 @@ class MapGenerator:
     def achievement_maps(self):
         # change the version number after verifying that the provinces/areas are still correct
         # for the first two achievements, the decision file has to be checked
-        verified_for_version('1.33.3', 'Files to validate are:\n* ' + '\n* '.join(['common/achievements.txt', 'decisions/Religion.txt', 'decisions/Muslim.txt']))
+        verified_for_version('1.34.2', 'Files to validate are:\n* ' + '\n* '.join(['common/achievements.txt', 'decisions/Religion.txt', 'decisions/Muslim.txt']))
 
         # from the decision zoroastrian_royal_fires in decisions/Religion.txt
         self.achievement_map('Royal Fires', '2221 2207 2235 2236 2218 441 2223')
@@ -346,6 +346,9 @@ class MapGenerator:
         self.map(name='Unify Islam', where='504 225 151 410 385 384 124 125 425 382 454 347 388 400')
 
         self.achievement_map('Albania or Iberia', 'iberia_region caucasia_region')
+        self.achievement_map('Almost Prussian Blue', 'east_prussia_area west_prussia_area 1859 4523 4526 254 2963 1931 silesia_area ' + ' '.join([
+            str(province.id) for province in self.mapparser.all_regions['north_german_region'].provinces if province.area.name not in ['bohemia_area', 'moravia_area', 'erzgebirge_area']
+        ]))
         self.achievement_map('An Industrial Evolution', 'home_counties_area east_midlands_area west_midlands_area east_anglia_area wessex_area yorkshire_area')
         self.map(name='Azur semé de lis or Map', where='167 168 173 174 177 179 180 183 185 186 194 195 196 200 203 204 1879 2753 4111 4112 4385 4386 4388 4389 4390 4391 4695')
         self.achievement_map('Around the World in 80 Years', '965 869 2315 529 561 667 1028')
@@ -368,7 +371,7 @@ class MapGenerator:
         self.achievement_map('Knights of the Caribbean', '320 321 163 164 2348 3003 4700 4698 142 2982 124 125 4737 4736 2954 126 127 1247 4559 4560 333 112 4735 2986')
         self.achievement_map('Laughingstock', '1983 2470 4073')
         self.achievement_map('The Levant Turnabout', '149 151 317 326')
-        self.map(name='Requirements_Mare_Nostrum', where='4752 4753 4699 4701 4700 4779 4706 4175 4174 2297 101 102 4729 111 112 113 114 115 117 118 119 120 121 122 123 124 125 126 127 130 136 137 4754 142 143 144 145 146 147 148 149 151 159 163 164 197 200 201 212 213 220 221 222 222 223 226 282 284 285 286 287 316 317 318 319 320 321 325 327 328 330 333 335 337 338 339 341 341 353 354 355 356 357 358 362 363 364 378 462 1247 1750 1751 1756 1764 4738 1773 1774 1826 1854 1855 1856 1882 1933 1934 1974 2195 2196 2296 2298 2299 2302 2304 2313 2325 2326 2348 2406 2410 2412 2447 2451 2452 2453 2455 2461 2473 2753 2954 2977 2980 2982 2983 2984 2984 2985 2986 2988 2991 2992 3003 4316 4546 4549 4550 4561 4562 4560 4559 4696 4732 4737 4736 4733 4705 4698 4735')
+        self.map(name='Requirements_Mare_Nostrum', where='101 102 111 112 113 114 115 117 118 119 120 121 122 123 124 125 126 127 130 136 137 142 143 144 145 146 147 148 149 151 159 163 164 197 200 201 212 213 220 221 222 223 226 282 284 285 286 287 316 317 318 319 320 321 325 327 328 330 333 335 337 338 339 341 353 354 355 356 357 358 362 363 364 378 462 1247 1750 1751 1756 1764 1773 1774 1826 1854 1855 1856 1882 1933 1934 1974 2195 2196 2296 2297 2298 2299 2302 2304 2313 2325 2326 2348 2406 2410 2412 2447 2451 2452 2453 2455 2461 2473 2753 2954 2977 2980 2982 2983 2984 2985 2986 2988 2992 3003 4706 4174 4175 4316 4546 4549 4550 4559 4560 4561 4562 4696 4698 4699 4700 4701 4705 4729 4732 4733 4735 4736 4737 4738 4752 4753 4754 4779')
         self.achievement_map('No Trail of Tears', 'susquehanna_area delaware_valley_area hudson_valley_area massachusetts_bay_area connecticut_valley_area chesapeake_area great_valley_area piedmont_north_america_area carolinas_area south_carolina_area appalachia_area south_appalachia_area 929 971 2526 2539 2540 2564 2565 2566')
         self.achievement_map('On the Rhodes Again', '151 2313 379')
         self.achievement_map('Pandya Empire', 'coromandel_region malabar_area mysore_area rayalaseema_area', margin=50)
@@ -391,7 +394,7 @@ class MapGenerator:
         self.achievement_map('Take that, von Habsburgs!', 'inner_austria_area austria_proper_area carinthia_area tirol_area')
         self.achievement_map('Tatarstan', 'astrakhani bashkir crimean kazani mishary nogaybak siberian')
         self.map(name='EU4TheGreatKhanRequirements', where='russia_region ural_region crimea_region south_china_region xinan_region north_china_region persia_region khorasan_region')
-        self.achievement_map('The Sun Never Sets on the Indian Empire', '236 1177 667 2585')
+        self.achievement_map('The Sun Never Sets on the Indian Empire', '236 1177 667 4890')
         self.achievement_map('The White Elephant', 'indo_china_region burma_region')
         self.achievement_map('This is Persia!', 'anatolia_region morea_area northern_greece_area macedonia_area egypt_region')
         self.achievement_map('Tiger of Mysore', 'deccan_region coromandel_region')
@@ -408,6 +411,11 @@ class MapGenerator:
 
         desert_and_coastal_desert = terrain_to_provinces['coastal_desert'] + terrain_to_provinces['desert']
         self.achievement_map('I dont like sand', desert_and_coastal_desert, crop=False)
+
+        tropical_wood_provinces = [province.id for province in self.mapparser.all_land_provinces.values() if province['Trade good'] == 'tropical_wood']
+        tropical_provs = [n.val for n in self.mapparser.parser.parse_file(self.mapparser.map_path('climate'))['tropical']]
+        possible_provs = [province.id for province in self.mapparser.all_land_provinces.values() if not 'Owner' in province and (province.id in tropical_provs or province.id in terrain_to_provinces['jungle'])]
+        self.color_map_generator.generate_mapimage_with_several_colors({'important': tropical_wood_provinces, Eu4Color(218, 220, 57): possible_provs}, 'Tropical Wood map')
 
     # the tags are chosen kind of arbitrary
     provincelist_definitions = [{'variable_name': 'coastal_provinces', 'condition': 'has_port = yes', 'tag': 'POR'},
