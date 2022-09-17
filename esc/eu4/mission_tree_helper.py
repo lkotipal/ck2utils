@@ -139,14 +139,17 @@ class MissionTreeHelper():
                 for k2, v2 in v:
                     mission = k2.val_str()
                     if mission not in ['has_country_shield', 'ai', 'generic', 'potential', 'slot', 'potential_on_load']:
-                        allmissions.append(mission)
+                        if v2['icon'] not in ['mission_unknown_mission', 'mission_locked_mission']:  # Skipping locked/branching mission
+                            allmissions.append(mission)
                     elif mission == 'potential':
                         for condition, condition_value in v2:
-                            if condition.val_str() == 'has_country_flag':
+                            if condition.val_str() == 'has_country_flag' and condition_value.val not in mission_flags:
                                 mission_flags.append(condition_value.val)
         decision_template = """    {}_decision = {{
+         {}
          potential = {{
             ai = no
+            {}
         }}
         allow = {{
             always = yes
@@ -156,12 +159,17 @@ class MissionTreeHelper():
         }}
     }}"""
         print("country_decisions = {")
-        print(decision_template.format('complete_all_missions', "\n".join(["\t\tcomplete_mission = {}".format(mission) for mission in allmissions])))
-        clear_effect = "\n".join(["clr_country_flag = {}".format(flag_to_clear) for flag_to_clear in mission_flags])
+        print(decision_template.format('complete_all_missions', 'major = yes', '',  "\n".join(["\t\tcomplete_mission = {}".format(mission) for mission in allmissions])))
+        #clear_effect = "\n".join(["clr_country_flag = {}".format(flag_to_clear) for flag_to_clear in mission_flags])
         for flag in mission_flags:
-            name = "activate_{}_missions".format(flag)
-            effect = "{}\nset_country_flag = {}\nswap_non_generic_missions = yes".format(clear_effect, flag)
-            print(decision_template.format(name,effect))
+            name = "{}_activate".format(flag)
+            potential = 'NOT = {{ has_country_flag = {} }}'.format(flag)
+            effect = "set_country_flag = {}\nswap_non_generic_missions = yes".format(flag)
+            print(decision_template.format(name, '', potential, effect))
+            name = "{}_deactivate".format(flag)
+            potential = 'has_country_flag = {}'.format(flag)
+            effect = "clr_country_flag = {}\nswap_non_generic_missions = yes".format(flag)
+            print(decision_template.format(name, '', potential, effect))
         print("}")
 if __name__ == '__main__':
     MissionTreeHelper().main()
