@@ -15,7 +15,7 @@ class Eu4DecisionParser(Eu4Parser):
                     attributes = {}
                     for n2, v2 in v:
                         attributes[n2.val] = v2
-                    decision = Decision(self, decision_id, attributes)
+                    decision = Decision(self, decision_id, attributes, decisionfile.name)
                     if decision.id in decisions:
                         raise Exception('duplicate decision id "{}"'.format(decision.id))
                     decisions[decision.id] = decision

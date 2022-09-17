@@ -24,7 +24,7 @@ class Eu4EventParser(Eu4Parser):
                     missing_attributes = [a for a in mandatory_attributes if a not in attributes]
                     if len(missing_attributes) > 0:
                         raise Exception('Event is missing attributes {}'.format(', '.join(missing_attributes)))
-                    event = Event(self, attributes)
+                    event = Event(self, attributes, eventfile.name)
                     if event.id in events:
                         raise Exception('duplicate event id "{}"'.format(event.id))
                     events[event.id] = event

@@ -245,22 +245,27 @@ class Country(NameableEntity):
 
 class Event:
 
-    def __init__(self, parser, attributes):
+    def __init__(self, parser, attributes, source_file=None):
         self.parser = parser
         self.attributes = attributes
         self.id = attributes['id'].val_str()
         self.title = parser.localize(attributes['title'].val_str())
-        self.desc = parser.localize(attributes['desc'].val_str(), 'variable desc')
+        self.source_file = source_file
+        if isinstance(attributes['desc'], String):
+            self.desc = parser.localize(attributes['desc'].val_str(), 'variable desc')
+        else:
+            self.desc = 'variable desc'
 
 
 class Decision:
 
-    def __init__(self, parser, decision_id, attributes):
+    def __init__(self, parser, decision_id, attributes, source_file=None):
         self.parser = parser
         self.attributes = attributes
         self.id = decision_id
         self.title = parser.localize('{}_title'.format(decision_id))
         self.desc = parser.localize('{}_desc'.format(decision_id), 'no desc')
+        self.source_file = source_file
 
 
 class Religion:
