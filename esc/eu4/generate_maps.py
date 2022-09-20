@@ -521,6 +521,7 @@ every_province = {
         self.colonial_region_map()
         self.country_map()
         self.continent_map()
+        self.techgroup_map()
         self.mission_map()
 
 
