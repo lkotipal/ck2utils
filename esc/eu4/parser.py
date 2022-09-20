@@ -41,7 +41,6 @@ class Eu4Parser:
                     match = re.fullmatch(r'\s*([^#\s:]+):\d?\s*"(.*)"[^"]*', line)
                     if match:
                         localisation_dict[match.group(1)] = match.group(2)
-        localisation_dict.update(self.localizationOverrides)
         return localisation_dict
 
     def localize(self, key: str, default: str = None) -> str:
@@ -53,7 +52,10 @@ class Eu4Parser:
         if default is None:
             default = key
 
-        return self._localisation_dict.get(key, default)
+        if key in self.localizationOverrides:
+            return self.localizationOverrides[key]
+        else:
+            return self._localisation_dict.get(key, default)
 
     @cached_property
     def eu4_version(self):
