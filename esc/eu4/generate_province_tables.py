@@ -7,35 +7,28 @@ from collections import defaultdict
 from locale import strxfrm, setlocale, LC_COLLATE
 from eu4.mapparser import Eu4MapParser
 from eu4.paths import eu4outpath
+from eu4.wiki import get_version_header
 
 
-class ProvinceTables(object):
+class ProvinceTables:
 
     def __init__(self):
         self.parser = Eu4MapParser()
-
-    def main(self):
         # for correct sorting. en_US seems to work even for non english characters, but the default None sorts all non-ascii characters to the end
         setlocale(LC_COLLATE, 'en_US.utf8')
+
+        self._analyzed_continents = None
+        self._notes = None
+        self._provinces_to_include_in_continent = None
+
+    def main(self):
         provinces = self.parser.all_provinces
         continents = self.analyze_continents(provinces)
-        notes, provinces_to_include_in_continent = self.find_oddities(provinces)
 
-        tables = [
-            (('ID,Name,Development,BT,BP,BM,'
-              'Trade good,Trade node,Modifiers').split(','),
-             'eu4economic.txt'),
-            ('ID,Name,Type,Continent,Superregion,Region,Area'.split(','),
-             'eu4geographical.txt'),
-            ('ID,Name,Owner (1444),Religion,Culture,Culture Group'.split(','),
-             'eu4political.txt'),
-        ]
 
-        for headings, filename in tables:
-            output = self.format_output(provinces, headings)
-            output_file = eu4outpath / filename
-            with output_file.open('w') as f:
-                f.write(output)
+        self.write_file('economic', self.generate_economic_list_of_provinces())
+        self.write_file('geographical', self.generate_geographical_list_of_provinces())
+        self.write_file('political', self.generate_political_list_of_provinces())
 
         output = self.format_continent_output(continents,
             ('Provinces,Base Tax,Base Production,Base Manpower,'
@@ -43,100 +36,138 @@ class ProvinceTables(object):
         output_file = eu4outpath / 'eu4continenttable.txt'
         with output_file.open('w') as f:
             f.write(output)
-        map_filenames = {'Africa': 'superregion_africa.png', 'Asia': 'Asian regions.png', 'East Indies': 'Superregion east indies.png',  'Europe': 'European regions.png', 'India': 'Superregion india.png', 'Oceania': 'Oceanian regions.png', 'North America': 'North American regions.png', 'South America': 'Superregion_south_america.png'}
-        for continent in continents:
+
+        for continent in ['India', 'East Indies'] + list(continents.keys()):
             if continent == 'Total':
                 continue
-            provinces_to_include = [p for p, c in provinces_to_include_in_continent.items() if c == continent]
-            provinces_to_exclude = [p for p, c in provinces_to_include_in_continent.items() if c != continent]
-            if continent == 'Asia':
-                provincesOnContinent = [x for x in provinces.values() if x.get('Superregion') == 'India' and x.get('Continent') == continent and x.get('Type').endswith('Land') and (x.get('ID') not in provinces_to_exclude)]
-                self.write_region_list(provincesOnContinent, continent, notes, map_filenames['India'], 'India')
-                provincesOnContinent = [x for x in provinces.values() if x.get('Superregion') == 'East Indies' and x.get('Continent') == continent and x.get('Type').endswith('Land') and (x.get('ID') not in provinces_to_exclude)]
-                self.write_region_list(provincesOnContinent, continent, notes, map_filenames['East Indies'], 'East Indies')
-                excluded_superregions = ['India', 'East Indies']
-            else:
-                excluded_superregions = []
-            provincesOnContinent = [x for x in provinces.values() if x.get('ID') in provinces_to_include or (x.get('Continent') == continent and x.get('Type').endswith('Land') and (x.get('Superregion') not in excluded_superregions) and (x.get('ID') not in provinces_to_exclude))]
-            self.write_region_list(provincesOnContinent, continent, notes, map_filenames[continent])
+            self.write_file('regiontable_' + continent, self.generate_region_list(continent))
+
+    def generate_economic_list_of_provinces(self):
+        return self.format_output(['ID', 'Name', 'Development', 'BT', 'BP', 'BM', 'Trade good', 'Trade node', 'Modifiers'])
+
+    def generate_geographical_list_of_provinces(self):
+        return self.format_output(['ID', 'Name', 'Type', 'Continent', 'Superregion', 'Region', 'Area'])
+
+    def generate_political_list_of_provinces(self):
+        return self.format_output(['ID', 'Name', 'Owner (1444)', 'Religion', 'Culture', 'Culture Group'])
+
+    def generate_region_list(self, continent_or_superregion):
+        """India and East Indies are the only supported superregions and they are not included when requesting Asia"""
+        map_filenames = {'Africa': 'superregion_africa.png', 'Asia': 'Asian regions.png',
+                         'East Indies': 'Superregion east indies.png', 'Europe': 'European regions.png',
+                         'India': 'Superregion india.png', 'Oceania': 'Oceanian regions.png',
+                         'North America': 'North American regions.png',
+                         'South America': 'Superregion_south_america.png'}
+        notes, provinces_to_include_in_continent = self.find_oddities(self.parser.all_provinces)
+        if continent_or_superregion == 'Asia':
+            continent = 'Asia'
+            excluded_superregions = ['India', 'East Indies']
+        elif continent_or_superregion in ['India', 'East Indies']:
+            continent = 'Asia'
+            excluded_superregions = [s.display_name for s in self.parser.all_superregions.values() if
+                                     s.display_name != continent_or_superregion]
+        else:
+            continent = continent_or_superregion
+            excluded_superregions = []
+        provinces_to_include = [p for p, c in provinces_to_include_in_continent.items() if c == continent]
+        provinces_to_exclude = [p for p, c in provinces_to_include_in_continent.items() if c != continent]
+
+        provinces_on_continent = [p for p in self.parser.all_land_provinces.values() if
+                                  p.id in provinces_to_include or (
+                                          p.get('Continent') == continent and
+                                          p.get('Superregion') not in excluded_superregions and
+                                          p.id not in provinces_to_exclude)]
+        return self.format_regions_output(provinces_on_continent, continent, notes, map_filenames[continent_or_superregion])
 
     def find_oddities(self, provinces):
-        '''look for areas and provinces that are on different continents than the rest of their region/area'''
-        print('Some areas and regions spawn multiple continents. Notes for this have been added to the regions tables, but they need manual review')
-        areas_to_continents = {}
-        regions_to_continents = {}
-        provinces_to_include_in_continent = {}
-        areas_on_multiple_continents = {}
-        for prov in provinces.values():
-            if not prov.get('Type').endswith('Land'):
-                continue
-            if not prov.area.name in areas_to_continents:
-                areas_to_continents[prov.area.name] = {}
-            if not prov['Continent'] in areas_to_continents[prov.area.name]:
-                areas_to_continents[prov.area.name][prov['Continent']] = []
-            areas_to_continents[prov.area.name][prov['Continent']].append(prov)
+        """look for areas and provinces that are on different continents than the rest of their region/area"""
 
-        notes = {}
-        for area, continents in areas_to_continents.items():
-            if len(continents) > 1:
-                if len(continents) > 2:
-                    print('Areas in more than 2 continents are not handled. You may be missing some notes. The affected area is ' + area)
+        if not self._notes:
+            print('Some areas and regions spawn multiple continents. Notes for this have been added to the regions tables, but they need manual review')
+            areas_to_continents = {}
+            regions_to_continents = {}
+            provinces_to_include_in_continent = {}
+            areas_on_multiple_continents = {}
+            for prov in provinces.values():
+                if not prov.get('Type').endswith('Land'):
+                    continue
+                if not prov.area.name in areas_to_continents:
+                    areas_to_continents[prov.area.name] = {}
+                if not prov['Continent'] in areas_to_continents[prov.area.name]:
+                    areas_to_continents[prov.area.name][prov['Continent']] = []
+                areas_to_continents[prov.area.name][prov['Continent']].append(prov)
 
-                sorted_continents = sorted([{'continent': k, 'provinces': v} for k, v in continents.items()], key=lambda c: len(c['provinces']), reverse=True)
+            notes = {}
+            for area, continents in areas_to_continents.items():
+                if len(continents) > 1:
+                    if len(continents) > 2:
+                        print('Areas in more than 2 continents are not handled. You may be missing some notes. The affected area is ' + area)
 
-                areas_on_multiple_continents[area] = sorted_continents[0]['continent']
-                for p in sorted_continents[1]['provinces']:
-                    provinces_to_include_in_continent[p['ID']] = sorted_continents[0]['continent']
+                    sorted_continents = sorted([{'continent': k, 'provinces': v} for k, v in continents.items()], key=lambda c: len(c['provinces']), reverse=True)
 
-                # this code also handles the case that there is more than one province in the continent with the fewer provinces
-                # as this doesn't exist yet, I didn't add correct grammar for that case
-                notes[area] = "'''Note:''' The province of {} belongs to [[{}]].".format(', '.join( '{} ({})'.format(p['Name'], p['ID']) for p in sorted_continents[1]['provinces']), sorted_continents[1]['continent'])
+                    areas_on_multiple_continents[area] = sorted_continents[0]['continent']
+                    for p in sorted_continents[1]['provinces']:
+                        provinces_to_include_in_continent[p['ID']] = sorted_continents[0]['continent']
 
-                print('Area {} is in continents {}. But mostly in {}'.format(area, ', '.join(map(str, continents.keys())), sorted_continents[0]['continent']))
-        for prov in provinces.values():
-            if not prov.get('Type').endswith('Land'):
-                continue
-            if prov.area.name in areas_on_multiple_continents and areas_on_multiple_continents[prov.area.name] != prov['Continent']:
-                continue
-            if not prov['Region'] in regions_to_continents:
-                regions_to_continents[prov['Region']] = {}
-            if not prov['Continent'] in regions_to_continents[prov['Region']]:
-                regions_to_continents[prov['Region']][prov['Continent']] = set()
+                    # this code also handles the case that there is more than one province in the continent with the fewer provinces
+                    # as this doesn't exist yet, I didn't add correct grammar for that case
+                    notes[area] = "'''Note:''' The province of {} belongs to [[{}]].".format(', '.join( '{} ({})'.format(p['Name'], p['ID']) for p in sorted_continents[1]['provinces']), sorted_continents[1]['continent'])
 
-            regions_to_continents[prov['Region']][prov['Continent']].add(prov.area.name)
+                    print('Area {} is in continents {}. But mostly in {}'.format(area, ', '.join(map(str, continents.keys())), sorted_continents[0]['continent']))
+            for prov in provinces.values():
+                if not prov.get('Type').endswith('Land'):
+                    continue
+                if prov.area.name in areas_on_multiple_continents and areas_on_multiple_continents[prov.area.name] != prov['Continent']:
+                    continue
+                if not prov['Region'] in regions_to_continents:
+                    regions_to_continents[prov['Region']] = {}
+                if not prov['Continent'] in regions_to_continents[prov['Region']]:
+                    regions_to_continents[prov['Region']][prov['Continent']] = set()
 
-        for region, continents in regions_to_continents.items():
-            if len(continents) > 1:
-                if len(continents) > 2:
-                    print('Regions in more than 2 continents are not handled. You may be missing some notes. The affected region is ' + region)
-                sorted_continents = sorted([{'continent': k, 'areas': v} for k, v in continents.items()], key=lambda c: len(c['areas']), reverse=True)
-                print('Region {} is in continents {}. But mostly in {}'.format(region, ', '.join(map(str, continents.keys())), sorted_continents[0]['continent']))
-                notes[region] = {}
-                notes[region][sorted_continents[0]['continent'].display_name] = "'''Note:''' The area of {} belongs to {}.".format(', '.join(sorted('[[{}]]'.format(self.parser.localize(a)) for a in sorted_continents[1]['areas'])), sorted_continents[1]['continent'])
-                notes[region][sorted_continents[1]['continent'].display_name] = "'''Note:''' The region [[{}]] belongs mainly to {}.".format(region, sorted_continents[0]['continent'])
-        return notes, provinces_to_include_in_continent
+                regions_to_continents[prov['Region']][prov['Continent']].add(prov.area.name)
+
+            for region, continents in regions_to_continents.items():
+                if len(continents) > 1:
+                    if len(continents) > 2:
+                        print('Regions in more than 2 continents are not handled. You may be missing some notes. The affected region is ' + region)
+                    sorted_continents = sorted([{'continent': k, 'areas': v} for k, v in continents.items()], key=lambda c: len(c['areas']), reverse=True)
+                    print('Region {} is in continents {}. But mostly in {}'.format(region, ', '.join(map(str, continents.keys())), sorted_continents[0]['continent']))
+                    notes[region] = {}
+                    notes[region][sorted_continents[0]['continent'].display_name] = "'''Note:''' The area of {} belongs to {}.".format(', '.join(self._get_note_link(a) for a in sorted(self.parser.localize(a) for a in sorted_continents[1]['areas'])), sorted_continents[1]['continent'])
+                    notes[region][sorted_continents[1]['continent'].display_name] = "'''Note:''' The region [[{}]] belongs mainly to {}.".format(region, sorted_continents[0]['continent'])
+            self._notes = notes
+            self._provinces_to_include_in_continent = provinces_to_include_in_continent
+        return self._notes, self._provinces_to_include_in_continent
+
+    def _get_note_link(self, area):
+        link_overrides = {'Armenia': 'Asian regions#Armenia', 'Shirvan': 'Asian regions#Shirvan'}
+        if area in link_overrides:
+            return '[[{}|{}]]'.format(link_overrides[area], area)
+        else:
+            return '[[{}]]'.format(area)
 
     def analyze_continents(self, provinces):
-        continents = {}
-        for prov in provinces.values():
-    #         if prov.get('Type').endswith('Land'):
-            if prov.type == 'Land':
-                continent_name = prov['Continent'].display_name
-                if continent_name not in continents:
-                    continents[continent_name] = defaultdict(int)
-                cont = continents[continent_name]
-                cont['Provinces'] += 1
-                cont['Base Tax'] += int(prov['BT']) if prov['BT'] else 0
-                cont['Base Production'] += int(prov['BP']) if prov['BP'] else 0
-                cont['Base Manpower'] += int(prov['BM']) if prov['BM'] else 0
-                cont['Development'] += (int(prov['Development'])
-                    if prov['Development'] else 0)
-        total = defaultdict(int)
-        for cont in continents.values():
-            for key, val in cont.items():
-                total[key] += val
-        continents['Total'] = total
-        return continents
+        if not self._analyzed_continents:
+            continents = {}
+            for prov in provinces.values():
+                if prov.type == 'Land':
+                    continent_name = prov['Continent'].display_name
+                    if continent_name not in continents:
+                        continents[continent_name] = defaultdict(int)
+                    cont = continents[continent_name]
+                    cont['Provinces'] += 1
+                    cont['Base Tax'] += int(prov['BT']) if prov['BT'] else 0
+                    cont['Base Production'] += int(prov['BP']) if prov['BP'] else 0
+                    cont['Base Manpower'] += int(prov['BM']) if prov['BM'] else 0
+                    cont['Development'] += (int(prov['Development'])
+                        if prov['Development'] else 0)
+            total = defaultdict(int)
+            for cont in continents.values():
+                for key, val in cont.items():
+                    total[key] += val
+            continents['Total'] = total
+            self._analyzed_continents = continents
+        return self._analyzed_continents
 
     def add_estuary_icon(self, localized_modifier_name):
         if 'Estuary' in localized_modifier_name:
@@ -179,15 +210,13 @@ class ProvinceTables(object):
         colors = {'Land': '#AAFFAA', 'Wasteland': '#E5E5E5', 'Inland sea': '#CCDDFF', 'Sea': '#CCDDFF', 'Open sea': '#CCDDFF', 'Lake': '#CCDDFF'}
         return 'bgcolor=' + colors[province_type] + '|' + province_type
 
-    def format_output(self, provinces, headings):
-        lines = ['{| class="wikitable sortable" '
+    def format_output(self, headings):
+        lines = [get_version_header(), '{| class="wikitable sortable" '
                   'style="font-size:95%; text-align:left"']
         lines.extend('! {}'.format(head) for head in headings)
-        for prov in provinces.values():
+        for prov in self.parser.all_provinces.values():
             lines.append('|-')
             for head in headings:
-    #             value = prov.get(head, '')
-    #             if head == 'Type':
                 if head == 'Owner (1444)':
                     head = 'Owner'
                 value = self.formatForProvinceTable(head, prov)
@@ -224,7 +253,7 @@ class ProvinceTables(object):
     def format_regions_output(self, provinces, continent, notes, map_filename):
         sortedProvinces = sorted(sorted(provinces, key=lambda p: strxfrm(p.area.display_name)), key=lambda p: strxfrm(p.region.display_name))
         region_list = {p.get('Region').display_name for p in sortedProvinces}
-        toc_lines = ['{| class="toccolours"',
+        toc_lines = [get_version_header(), '{| class="toccolours"',
     '! colspan="4" | Contents',
     '|-',
     '| style="text-align: center;" | \'\'\'Map\'\'\'',
@@ -238,10 +267,6 @@ class ProvinceTables(object):
         currentRegion = ''
         areas_in_current_region = []
         for province in sortedProvinces:
-    #     for province in provinces.values():
-    #         print(province.get('Area', 'none'))
-    #         print(province.get('Region', 'rnone'))
-    #         print(province.get('Continent', 'cnone'))
             if province.area.name != currentArea:
                 if currentArea != '':
                     lines.append('}}')
@@ -268,18 +293,9 @@ class ProvinceTables(object):
                 lines.append('|rows=')
             lines.append('{{{{RTR|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}}}}}'.format(province['ID'], province.get('Name'), self.parser.localize(province.get('Owner', 'Natives')), province.get('BT'), province.get('BP'), province.get('BM'), self.parser.localize(province.get('Religion')), self.parser.localize(province.get('Culture', '')), self.parser.localize(province.get('Trade good')), province.tradenode.display_name, self.formatModifiers(province)))
         lines.append('}}')
-        #toc_lines.append('| style="padding-left:0.5em" | {{{{TOCcell|{}|end}}}}'.format('}} {{TOCcell|'.join(areas_in_current_region)))
         toc_lines.append(self.create_toc_area_line(region_list, areas_in_current_region))
         toc_lines.append('|}')
         return '\n'.join(toc_lines + lines)
-
-    def write_region_list(self, provinces, continent, notes, map_filename, continent_for_filename=None):
-        if not continent_for_filename:
-            continent_for_filename = continent
-        output = self.format_regions_output(provinces, continent, notes, map_filename)
-        output_file = eu4outpath / 'eu4regiontable_{}.txt'.format(continent_for_filename)
-        with output_file.open('w') as f:
-            f.write(output)
 
     def create_toc_area_line(self, region_list, areas_in_current_region):
         toc_line_area = '| style="padding-left:0.5em" | {{{{TOCcell|{}|end}}}}'.format('}} {{TOCcell|'.join([area.display_name for area in areas_in_current_region]))
@@ -291,6 +307,11 @@ class ProvinceTables(object):
 
         return toc_line_area
 
+    @staticmethod
+    def write_file(name, content):
+        output_file = eu4outpath / 'eu4{}.txt'.format(name)
+        with output_file.open('w') as f:
+            f.write(content)
 
 if __name__ == '__main__':
     ProvinceTables().main()
