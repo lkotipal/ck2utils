@@ -1,8 +1,9 @@
-import pathlib
+from pathlib import Path
 from PIL import Image, ImageChops
 from argparse import ArgumentParser
 import os
 import sys
+
 # add the parent folder to the path so that imports work even if the working directory is the eu4 folder
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 import ck2parser
@@ -11,9 +12,9 @@ from localpaths import eu4dir
 class MissionTreeHelper():
 
     box_left = 10
-    box_upper = 262
+    box_upper = 263
     box_width = 519
-    box_height = 730
+    box_height = 729
 
     comparison_height = 150
     y_skip_on_other_images = 40
@@ -25,11 +26,14 @@ class MissionTreeHelper():
 
     def main(self):
         parser = ArgumentParser(description='helpers to generate mission images for the wiki')
-        parser.add_argument('screenshots', help='screenshots to crop', type=pathlib.Path, nargs='*')
-        parser.add_argument('--out', help='output image', type=pathlib.Path)
+        parser.add_argument('screenshots', help='screenshots to crop', type=Path, nargs='*')
+        parser.add_argument('--out', help='output image', type=Path)
         parser.add_argument('--generate-mission-tree-completion-decisions', help='generate decisions which can be used to complete missions to make nice screenshots for the wiki', action='store_true')
+        parser.add_argument('--cut', nargs=4, type=int, metavar=('left', 'upper', 'right', 'lower'), help='get some of the missions from an already processes mission image. The arguments are the position of the top left and bottom right corner of the missions which should be in the new image. The top left mission would be 1 1.')
         args = parser.parse_args()
-        if args.screenshots:
+        if args.cut:
+            self.cut(args.screenshots[0], args.out, *args.cut)
+        elif args.screenshots:
             self.process_screenshots(args.screenshots, args.out)
         elif args.generate_mission_tree_completion_decisions:
             self.generate_mission_tree_completion_decisions()
@@ -129,7 +133,7 @@ class MissionTreeHelper():
     def generate_mission_tree_completion_decisions(self):
         """ To create the images for mission trees on the wiki"""
 
-        parser =  ck2parser.SimpleParser()
+        parser = ck2parser.SimpleParser()
         parser.basedir = eu4dir
 
         allmissions = []
@@ -171,5 +175,19 @@ class MissionTreeHelper():
             effect = "clr_country_flag = {}\nswap_non_generic_missions = yes".format(flag)
             print(decision_template.format(name, '', potential, effect))
         print("}")
+
+    def cut(self, screenshot: Path, out_file: Path, left: int, upper: int, right: int, lower: int):
+        mission_width = 104
+        mission_height = 152  # this includes the arrow to the next mission(or empty space)
+        space_below_mission = 26  # this is removed from the bottom mission
+
+        with Image.open(screenshot) as im:
+            left_x = (left - 1) * mission_width
+            upper_y = (upper - 1) * mission_height
+            right_x = min(right * mission_width, im.width)
+            lower_y = lower * mission_height - space_below_mission
+            cropped_im = im.crop((left_x, upper_y, right_x, lower_y))
+            cropped_im.save(out_file)
+
 if __name__ == '__main__':
     MissionTreeHelper().main()
