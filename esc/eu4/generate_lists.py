@@ -107,6 +107,10 @@ class MonumentList:
                     area_modifier = values['area_modifier'].inline_str(self.parser.parser)[0]
                 else:
                     area_modifier = None
+                if 'region_modifier' in values and len(values['region_modifier']) > 0:
+                    region_modifier = values['region_modifier'].inline_str(self.parser.parser)[0]
+                else:
+                    region_modifier = None
                 if 'country_modifiers' in values and len(values['country_modifiers']) > 0:
                     country_modifiers = values['country_modifiers'].inline_str(self.parser.parser)[0]
                 else:
@@ -116,6 +120,7 @@ class MonumentList:
                 else:
                     on_upgraded = None
                 tier_data.append({'province_modifiers': province_modifiers, 'area_modifier': area_modifier,
+                                  'region_modifier': region_modifier,
                                   'country_modifiers': country_modifiers, 'on_upgraded': on_upgraded})
             monuments[monumentid] = {'name': name, 'provinceID': provinceID, 'province': prov,
                                      'can_be_moved': can_be_moved, 'level': level, 'trigger': trigger,
@@ -192,6 +197,9 @@ class MonumentList:
 
         return requirements
 
+    def run(self):
+        self._writeFile('monuments', self.generate())
+
     def generate(self):
 
         wiki_converter = WikiTextConverter()
@@ -205,7 +213,7 @@ class MonumentList:
                 trigger_and_effects[self._get_unique_key(monument, 'trigger')] = data['trigger']
             for tier in range(4):
                 tier_data = data['tiers'][tier]
-                for mod_type in ['province_modifiers', 'area_modifier', 'country_modifiers']:
+                for mod_type in ['province_modifiers', 'area_modifier', 'region_modifier', 'country_modifiers']:
                     if tier_data[mod_type]:
                         modifiers[self._get_unique_key(monument, mod_type,
                                                        tier)] = wiki_converter.remove_surrounding_brackets(
@@ -229,6 +237,7 @@ class MonumentList:
                 tier_data = data['tiers'][tier]
                 for effect_type, description in {'province_modifiers': 'Province modifiers',
                                                  'area_modifier': 'Area modifiers',
+                                                 'region_modifier': 'Region modifiers',
                                                  'country_modifiers': 'Global modifiers',
                                                  'on_upgraded': 'When upgraded'}.items():
                     if self._get_unique_key(monument, effect_type, tier) in trigger_effects_modifiers:
@@ -269,7 +278,7 @@ class MonumentList:
         dialect.row_cell_delimiter = '\n| '
 
         table = make_table(monuments, 'wiki', column_specs, table_style='', table_classes=['mildtable'], sortable=True)
-        self._writeFile('monuments', table)
+        return get_SVersion_header(scope='table') + '\n' + table
 
     @staticmethod
     def _writeFile(name, content):
@@ -735,7 +744,7 @@ if __name__ == '__main__':
     # for correct sorting. en_US seems to work even for non english characters, but the default None sorts all non-ascii characters to the end
     setlocale(LC_COLLATE, 'en_US.utf8')
     GovernmentReforms().run()
-    MonumentList().generate()
+    MonumentList().run()
 
     list_generator = AreaAndRegionsList()
     list_generator.writeSuperRegionsList()
