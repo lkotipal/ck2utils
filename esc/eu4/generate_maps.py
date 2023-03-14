@@ -23,7 +23,7 @@ class MapGenerator:
 
     def decision_maps(self):
         # change the version number after verifying that the provinces/areas are still correct
-        verified_for_version('1.34.2')
+        verified_for_version('1.34.5')
 
         self.color_map_generator.create_shaded_image({
             'yellow': [prov.id for prov in self.mapparser.all_land_provinces.values() if
@@ -72,6 +72,13 @@ class MapGenerator:
             'important': set(coastal_provinces) & set(province_is_on_an_island),
             'pink': set(coastal_provinces) & set(self.mapparser.all_regions['maghreb_region'].provinceIDs),
             }, 'Province is on an island or maghreb map')
+
+        self.color_map_generator.generate_mapimage_with_several_colors({
+            # owned directly
+            'orange': ['mongolia_region', 'central_asia_region', 'crimea_region', 1816, 1821, 667],
+            # owned directly or by a non-tributary subject
+            'brightred': ['khorasan_region', 'persia_region', 295, 280],
+            }, 'Formmongols', crop_to_color=True)
 
 # currently not used by the wiki
 #         self.color_map_generator.generate_mapimage_with_several_colors({
