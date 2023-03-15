@@ -345,7 +345,7 @@ class MapGenerator:
     def achievement_maps(self):
         # change the version number after verifying that the provinces/areas are still correct
         # for the first two achievements, the decision file has to be checked
-        verified_for_version('1.34.2', 'Files to validate are:\n* ' + '\n* '.join(['common/achievements.txt', 'decisions/Religion.txt', 'decisions/Muslim.txt']))
+        verified_for_version('1.34.5', 'Files to validate are:\n* ' + '\n* '.join(['common/achievements.txt', 'decisions/Religion.txt', 'decisions/Muslim.txt']))
 
         # from the decision zoroastrian_royal_fires in decisions/Religion.txt
         self.achievement_map('Royal Fires', '2221 2207 2235 2236 2218 441 2223')
