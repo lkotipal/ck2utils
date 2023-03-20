@@ -8,7 +8,7 @@ from ck2parser import SimpleParser, Obj, String, Number
 from localpaths import eu4dir
 from eu4.paths import eu4_version, eu4_major_version
 from eu4.eu4lib import Religion, Idea, IdeaGroup, Policy, Eu4Color, Country, Mission, MissionGroup, GovernmentReform, \
-    CultureGroup, Culture
+    CultureGroup, Culture, DLC, BaseGame
 from eu4.cache import disk_cache, cached_property
 
 
@@ -21,12 +21,6 @@ class Eu4Parser:
 
     # allows the overriding of localisation strings
     localizationOverrides = {}
-
-    dlcs = {'Conquest of Paradise': 'cop', 'Wealth of Nations': 'won', 'Res Publica': 'rp', 'Art of War': 'aow',
-            'El Dorado': 'ed', 'Common Sense': 'cs', 'The Cossacks': 'cos', 'Mare Nostrum': 'mn',
-            'Rights of Man': 'rom', 'Mandate of Heaven': 'moh', 'Third Rome': 'tr', 'Cradle of Civilization': 'coc',
-            'Rule Britannia': 'rb', 'Golden Century': 'gc', 'Dharma': 'dhr', 'Emperor': 'emp', 'Leviathan': 'lev',
-            'Origins': 'org', 'Lions of the North': 'lon'}
 
     def __init__(self):
         self.parser = SimpleParser()
@@ -66,8 +60,24 @@ class Eu4Parser:
     def eu4_major_version(self):
         return eu4_major_version()
 
-    def get_dlc_icon(self, dlc_name):
-        return self.dlcs[dlc_name]
+    @cached_property
+    def dlcs(self) -> list[DLC]:
+        dlcs = []
+        for file, contents in self.parser.parse_files('dlc/*/*.dlc'):
+            name = contents['archive'].val.split('/')[1]
+            display_name = contents['name'].val
+            category = contents['category'].val
+            archive = self.parser.basedir / contents['archive'].val
+            dlcs.append(DLC(name, display_name, category, archive))
+        return dlcs
+
+    @cached_property
+    def dlcs_including_base_game(self) -> list[DLC]:
+        return [BaseGame(self.parser)] + self.dlcs
+
+    @cached_property
+    def dlcs_by_name(self) -> dict[str, DLC]:
+        return {dlc.display_name: dlc for dlc in self.dlcs}
 
     @cached_property
     def all_religions(self):
@@ -343,6 +353,7 @@ class Eu4Parser:
                     else:
                         all_reforms[reform_id] = {gov_type: tier_num}
         return common_reforms
+
 
 if __name__ == '__main__':
     if len(sys.argv) == 2 and sys.argv[1] == '--eu4-version':

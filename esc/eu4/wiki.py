@@ -121,7 +121,8 @@ class WikiTextConverter:
         with open(filename) as file:
             return file.read()
 
-    def remove_surrounding_brackets(self, string):
+    @staticmethod
+    def remove_surrounding_brackets(string):
         """ remove {} from around a string
 
             this is needed, because ck2utils has no way of getting the inner code of a section

@@ -1,13 +1,16 @@
 #!/usr/bin/env python3
+import math
 import os
 import re
-from pathlib import Path
-
 import sys
-import math
 from locale import strxfrm, setlocale, LC_COLLATE
-from typing import List, Dict
+from operator import attrgetter
+from pathlib import Path
+from typing import Dict
 
+# the MonumentList needs pyradox which needs to be imported in some way
+sys.path.append(os.path.dirname(os.path.realpath(__file__)) + '/../../../../pyradox')
+from pyradox.filetype.table import make_table, WikiDialect
 
 # add the parent folder to the path so that imports work even if the working directory is the eu4 folder
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
@@ -16,11 +19,10 @@ from eu4.paths import eu4outpath
 from eu4.parser import Eu4Parser
 from eu4.mapparser import Eu4MapParser
 from eu4.eu4lib import GovernmentReform
+from eu4.eu4_file_generator import Eu4FileGenerator
+from eu4.eventparser import Eu4EventParser
 from ck2parser import Obj, Pair
 
-# the MonumentList needs pyradox which needs to be imported in some way
-sys.path.append(os.path.dirname(os.path.realpath(__file__)) + '/../../../../pyradox')
-from pyradox.filetype.table import make_table, WikiDialect
 
 
 class MonumentList:
@@ -497,6 +499,45 @@ class GovernmentReforms:
     def pretty_icon_name(self, icon):
         return icon.capitalize().replace('_', ' ')
 
+    def create_icon_mapping(self):
+        name_icon_mapping = {}
+        with open(Path('~/Daten/eu4/temp/2022-09-14_reform_icons.txt').expanduser()) as file:
+            for icon, name in re.findall(r'\{\{Navicon\|([^|]*)\|([^}]*)}}', file.read()):
+                name_icon_mapping[name] = self.pretty_icon_name(icon)
+        reform_icon_mapper = {}
+        gov_counter = 0
+        reform_counter = 0
+        found_counter = 0
+        total = 0
+        for reform in self.parser.all_government_reforms.values():
+            if reform.basic_reform:
+                continue
+            if reform.display_name in name_icon_mapping:
+                total += 1
+                icon = self.pretty_icon_name(reform.icon)
+                if icon != name_icon_mapping[reform.display_name]:
+                    gov_icon = self.pretty_icon_name('Gov ' + icon)
+                    if gov_icon != name_icon_mapping[reform.display_name]:
+                        reform_icon = self.pretty_icon_name('Reform ' + icon.replace(' reform', ''))
+                        if reform_icon != name_icon_mapping[reform.display_name]:
+                            print('different icons "{}" / "{}" for {}'.format(name_icon_mapping[reform.display_name],
+                                                                              icon, reform.name))
+                        else:
+                            reform_icon_mapper[reform.icon] = reform_icon
+                            reform_counter += 1
+                    else:
+
+                        gov_counter += 1
+                else:
+                    reform_icon_mapper[reform.icon] = icon
+                    found_counter += 1
+            else:
+                print('missing reform: {}'.format(reform.display_name))
+        print(dict(sorted(reform_icon_mapper.items())))
+        print('total: {}, gov: {}, reform: {}, found: {}, not found: {}'.format(total, gov_counter, reform_counter,
+                                                                                found_counter,
+                                                                                total - gov_counter - found_counter - reform_counter))
+
     def run(self):
         for gov_type, adjective in [('monarchy', 'Monarchic'), ('republic', 'Republican'), ('theocracy', 'Theocratic'),
                                     ('tribal', 'Tribal'), ('native', 'Native')]:
@@ -680,7 +721,7 @@ class GovernmentReforms:
             lines.append(self.format_reform_attribute(attribute_name, value))
         for condition, condition_attributes in self.simplify_dlc_conditionals(reform.conditional):
             if len(condition) == 1 and condition.contents[0].key == 'has_dlc':
-                lines.append('{{{{expansion|{}}}}}'.format(self.parser.get_dlc_icon(condition.contents[0].value)))
+                lines.append('{{{{expansion|{}}}}}'.format(self.parser.dlcs_by_name[condition.contents[0].value].short_name))
             else:
                 lines.append(condition.str(self.parser.parser))
             for attribute_name, value in condition_attributes.items():
@@ -740,11 +781,71 @@ class GovernmentReforms:
             f.write(content)
 
 
+class EventPicturesList(Eu4FileGenerator):
+    parser: Eu4EventParser
+
+    def __init__(self):
+        super().__init__()
+        self.parser = Eu4EventParser()
+
+    def generate_event_pictures(self) -> str:
+        table_data = []
+        for sha, pictures in self.parser.event_pictures_by_hash.items():
+            names = []
+            dlcs = sorted(set(p.dlc for p in pictures), key=attrgetter('archive'))
+            filenames = sorted(set(p.filename.removeprefix("gfx/event_pictures/") for p in pictures))
+            for p in pictures:
+                name = p.name
+                if len(dlcs) > 1:
+                    name += ' (' + p.dlc.get_icon() + ')'
+                if len(p.overridden_by) > 0:
+                    name += ' (' + ', '.join([f'Replaced by [[#{o.filename.removeprefix("gfx/event_pictures/")}|{o.filename.removeprefix("gfx/event_pictures/")}]] with {o.dlc.get_icon()}' for o in p.overridden_by]) + ')'
+                names.append(name)
+            table_data.append({
+            'File': f'id="{pictures[0].filename.removeprefix("gfx/event_pictures/")}"|[[File:{pictures[0].wiki_filename}|frame|{", ".join(filenames)}]]',
+            'Names': self.create_wiki_list(names),
+            'DLC': ' / '.join(dlc.get_icon() for dlc in dlcs),
+        })
+        table = self.make_wiki_table(table_data, table_classes=['mildtable', 'plainlist'],
+                                     one_line_per_cell=True,
+                                     )
+
+        return self.get_SVersion_header() + '\n' + table
+
+    def generate_event_picture_overview(self):
+        dlc_names = [pictures[0].dlc.display_name for pictures in self.parser.event_pictures_by_hash.values()]
+        dlc_names = list(dict.fromkeys(dlc_names))  # remove duplicates without changing order
+        lines = [self.get_SVersion_header()]
+        for dlc in dlc_names:
+            lines.append(f'===={dlc}====')
+            dlc_pictures = [p for p in self.parser.event_pictures_by_hash.values() if p[0].dlc.display_name == dlc]
+            for pictures in dlc_pictures:
+                lines.append(f'[[File:{pictures[0].wiki_filename}|128px|link=#{pictures[0].filename.removeprefix("gfx/event_pictures/")}|{", ".join(sorted(p.name for p in pictures))}]]')
+        return '\n'.join(lines)
+
+    def generate_event_picture_unused(self):
+        table_data = []
+        for sha, pictures in self.parser.unused_event_pictures_by_hash.items():
+            dlcs = sorted(set(p.dlc for p in pictures), key=attrgetter('archive'))
+            filenames = sorted(set(p.filename.removeprefix("gfx/event_pictures/") for p in pictures))
+            table_data.append({
+                'File': f'id="{pictures[0].filename.removeprefix("gfx/event_pictures/")}"|[[File:{pictures[0].wiki_filename}]]',
+                'Filenames': self.create_wiki_list(filenames),
+                'DLC': ' / '.join(dlc.get_icon() for dlc in dlcs),
+            })
+        table = self.make_wiki_table(table_data, table_classes=['mildtable', 'plainlist'],
+                                     one_line_per_cell=True,
+                                     )
+
+        return self.get_SVersion_header('table') + '\n' + table
+
+
 if __name__ == '__main__':
     # for correct sorting. en_US seems to work even for non english characters, but the default None sorts all non-ascii characters to the end
     setlocale(LC_COLLATE, 'en_US.utf8')
     GovernmentReforms().run()
     MonumentList().run()
+    EventPicturesList().run([])
 
     list_generator = AreaAndRegionsList()
     list_generator.writeSuperRegionsList()

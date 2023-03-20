@@ -1,7 +1,10 @@
 import re
-from colormath.color_objects import sRGBColor
+import zipfile
+from pathlib import Path, PurePath
+from zipfile import ZipFile
 
 from ck2parser import String
+from common.paradox_lib import NameableEntity, PdxColor
 from eu4.provincelists import coastal_provinces
 from eu4.cache import cached_property
 
@@ -73,28 +76,6 @@ class Province(object):
         else:
             cot_names = {1: 'Emporium', 2: 'Market Town', 3: 'World Trade Center'}
         return cot_names[self.center_of_trade]
-
-
-class NameableEntity:
-    def __init__(self, name, display_name):
-        self.name = name
-        self.display_name = display_name
-
-    def __str__(self):
-        return self.display_name
-
-    def __hash__(self):
-        return hash(self.name)
-
-    def __eq__(self, other):
-        if other is None:
-            return False
-        if isinstance(other, str):
-            return other == self.display_name
-        return self.name == other.name
-
-    def __lt__(self, other):
-        return self.display_name < str(other)
 
 
 class NameableEntityWithProvinces(NameableEntity):
@@ -290,7 +271,8 @@ class TradeCompany(NameableEntityWithProvincesAndColor):
 
 class TradeNode(NameableEntityWithProvincesAndColor):
 
-    def __init__(self, name, display_name, location, outgoing_node_names=None, inland=False, endnode=False, provinces=None, provinceIDs=None, parser=None, color=None):
+    def __init__(self, name, display_name, location, outgoing_node_names=None, inland=False, endnode=False,
+                 provinces=None, provinceIDs=None, parser=None, color=None):
         super().__init__(name, display_name, provinces, provinceIDs, parser, color)
         self.location = location
         if outgoing_node_names is not None:
@@ -314,7 +296,7 @@ class IdeaGroup(NameableEntity):
         'horde_gov_ideas': 'Horde government Ideas',
         'latin_ideas': 'Italian (minor) ideas',
         'nubian_ideas': 'Nubian (minor) ideas',
-        'ATJ_ideas':  'Acehnese/Pasai ideas',  # because they are also for Pasai which is not obvious
+        'ATJ_ideas': 'Acehnese/Pasai ideas',  # because they are also for Pasai which is not obvious
     }
 
     def __init__(self, name, display_name, ideas, bonus, traditions=None, category=None):
@@ -420,14 +402,7 @@ class Policy(NameableEntity):
             self.display_name)
 
 
-class Eu4Color(sRGBColor):
-
-    def __init__(self, r, g, b, is_upscaled=True):
-        super().__init__(r, g, b, is_upscaled=is_upscaled)
-
-    def get_css_color_string(self):
-        rgb_r, rgb_g, rgb_b = self.get_upscaled_value_tuple()
-        return 'rgb({},{},{})'.format(rgb_r, rgb_g, rgb_b)
+class Eu4Color(PdxColor):
 
     @classmethod
     def new_from_parser_obj(cls, color_obj):
@@ -440,25 +415,6 @@ class Eu4Color(sRGBColor):
             Eu4Color.new_from_parser_obj(data['color'])
         """
         return cls(color_obj.contents[0].val, color_obj.contents[1].val, color_obj.contents[2].val, is_upscaled=True)
-
-    @classmethod
-    def new_from_rgb_hex(cls, hex_str):
-        """
-        Converts an RGB hex string like #RRGGBB and assigns the values to
-        this sRGBColor object.
-
-        this overrides the parent method, to handle the different is_upscaled correctly
-
-        :rtype: sRGBColor
-        """
-        colorstring = hex_str.strip()
-        if colorstring[0] == '#':
-            colorstring = colorstring[1:]
-        if len(colorstring) != 6:
-            raise ValueError("input #%s is not in #RRGGBB format" % colorstring)
-        r, g, b = colorstring[:2], colorstring[2:4], colorstring[4:]
-        r, g, b = [int(n, 16) for n in (r, g, b)]
-        return cls(r, g, b)
 
 
 class ModifierType:
@@ -478,9 +434,9 @@ class ModifierType:
             else:
                 formatstring = ''
             if value > 0:
-                return ('+{'+formatstring + '}').format(value)
+                return ('+{' + formatstring + '}').format(value)
             else:
-                return ('−{'+formatstring + '}').format(value * -1)
+                return ('−{' + formatstring + '}').format(value * -1)
 
     def max_decimal_places(self, value_list):
         return max([self.count_decimal_places(value) for value in value_list])
@@ -572,3 +528,89 @@ class CultureGroup(NameableEntity):
         self.cultures = cultures
 
 
+class DLC(NameableEntity):
+    short_names = {
+        'Conquest of Paradise': 'cop',
+        'Wealth of Nations': 'won',
+        'Res Publica': 'rp',
+        'Art of War': 'aow',
+        'El Dorado': 'ed',
+        'Common Sense': 'cs',
+        'The Cossacks': 'cos',
+        'Mare Nostrum': 'mn',
+        'Rights of Man': 'rom',
+        'Mandate of Heaven': 'moh',
+        'Third Rome': 'tr',
+        'Cradle of Civilization': 'coc',
+        'Rule Britannia': 'rb',
+        'Golden Century': 'goc',
+        'Dharma': 'dhr',
+        'Emperor': 'emp',
+        'Leviathan': 'lev',
+        'Origins': 'org',
+        'Lions of the North': 'lon',
+    }
+
+    def __init__(self, name: str, display_name: str, category: str, archive: Path = None):
+        super().__init__(name, display_name)
+        self.category = category
+        self.archive = archive
+        if display_name in self.short_names:
+            self.short_name = self.short_names[display_name]
+        else:
+            self.short_name = ''
+
+        self._open_dlc_archive = None
+
+    def get_icon(self):
+        if self.short_name != '':
+            return '{{icon|' + self.short_name + '}}'
+        else:
+            return self.display_name
+
+    def glob(self, glob: str):
+        with ZipFile(self.archive) as dlc_archive:
+            # store opened archive so that get_file_contents doesn't have to open it again
+            self._open_dlc_archive = dlc_archive
+            for filename in dlc_archive.namelist():
+                if PurePath(filename).match(glob):
+                    yield zipfile.Path(dlc_archive, filename)
+            self._open_dlc_archive = None
+
+    def get_file_contents(self, filepath):
+        if self._open_dlc_archive:
+            with self._open_dlc_archive.open(filepath) as file:
+                return file.read()
+        else:
+            with ZipFile(self.archive) as dlc_archive:
+                with dlc_archive.open(filepath) as file:
+                    return file.read()
+
+
+class BaseGame(DLC):
+
+    def __init__(self, ck2parser):
+        super().__init__('base', 'Base game', '')
+        self.parser = ck2parser
+
+    def get_icon(self):
+        return ''
+
+    def glob(self, glob: str):
+        return self.parser.files(glob)
+
+    def get_file_contents(self, filepath):
+        with open(self.parser.file(filepath), 'rb') as file:
+            return file.read()
+
+
+class EventPicture:
+    def __init__(self, name: str, filename: str, wiki_filename: str, dlc: DLC, overridden_by: list['EventPicture'],
+                 sha_hash: str, picture_data: bytes):
+        self.name = name
+        self.filename = filename
+        self.wiki_filename = wiki_filename
+        self.dlc = dlc
+        self.overridden_by = overridden_by
+        self.sha_hash = sha_hash
+        self.picture_data = picture_data
