@@ -1,0 +1,9 @@
+The most important dependencies are funcparserlib numpy and pillow
+some scripts require matplotlib or networkx
+some old eu4 scripts require spectra
+the scripts in the eu4 subfolder also require colormath
+
+to install all of them, you can use
+pip install pillow numpy funcparserlib matplotlib networkx spectra colormath
+or on debian/ubuntu systems
+sudo apt install python3-funcparserlib python3-pil python3-numpy python3-matplotlib python3-networkx python3-spectra python3-colormath
