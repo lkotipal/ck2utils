@@ -558,3 +558,17 @@ class GovernmentReform(NameableEntity):
         self.removed_effect = removed_effect
         self.post_removed_effect = post_removed_effect
         self.conditional = conditional
+
+
+class Culture(NameableEntity):
+
+    def __init__(self, name: str, display_name: str):
+        super().__init__(name, display_name)
+
+
+class CultureGroup(NameableEntity):
+    def __init__(self, name: str, display_name: str, cultures: list[Culture]):
+        super().__init__(name, display_name)
+        self.cultures = cultures
+
+

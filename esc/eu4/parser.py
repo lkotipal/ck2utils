@@ -7,7 +7,8 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 from ck2parser import SimpleParser, Obj, String, Number
 from localpaths import eu4dir
 from eu4.paths import eu4_version, eu4_major_version
-from eu4.eu4lib import Religion, Idea, IdeaGroup, Policy, Eu4Color, Country, Mission, MissionGroup, GovernmentReform
+from eu4.eu4lib import Religion, Idea, IdeaGroup, Policy, Eu4Color, Country, Mission, MissionGroup, GovernmentReform, \
+    CultureGroup, Culture
 from eu4.cache import disk_cache, cached_property
 
 
@@ -208,27 +209,27 @@ class Eu4Parser:
         return all_mission_groups
 
     @cached_property
-    def culture_groups(self):
-        """Script names of the culture groups.
+    def culture_groups(self) -> dict[str, CultureGroup]:
+        """mapping between the script names of the culture groups and CultureGroup objects
 
         preserves the order of the cultures files
         """
-        culture_groups = []
+        culture_groups = {}
         for _, tree in self.parser.parse_files('common/cultures/*'):
-            for n, v in tree:
-                culture_groups.append(n.val)
+            for group_name, group_data in tree:
+                cultures = []
+                for n, value in group_data:
+                    if (isinstance(value, Obj) and
+                            not re.match(r'((fe)?male|dynasty)_names', n.val)):
+                        cultures.append(Culture(n.val, self.localize(n.val)))
+                culture_groups[group_name.val] = CultureGroup(group_name.val, self.localize(group_name.val), cultures)
         return culture_groups
 
     @cached_property
     def culture_to_culture_group_mapping(self):
-        cultures = {}
-        for _, tree in self.parser.parse_files('common/cultures/*'):
-            for n, v in tree:
-                for n2, v2 in v:
-                    if (isinstance(v2, Obj) and
-                            not re.match(r'((fe)?male|dynasty)_names', n2.val)):
-                        cultures[n2.val] = n.val
-        return cultures
+        return {culture.name: culture_group
+                for culture_group in self.culture_groups.values()
+                for culture in culture_group.cultures}
 
     @cached_property
     def all_countries(self):

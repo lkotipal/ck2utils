@@ -397,7 +397,7 @@ class Eu4MapParser(Eu4Parser):
         return colonial_regions
 
     @cached_property
-    def color_list(self):
+    def color_list(self) -> list[Eu4Color]:
         """these colors are used by the game in some map modes"""
         color_list = []
         for _, tree in self.parser.parse_files('common/region_colors/*'):

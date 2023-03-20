@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
+import math
 import os
 import sys
 import re
 import numpy as np
 from PIL import Image
 from pathlib import Path
+from colormath.color_conversions import convert_color
+from colormath.color_objects import LabColor, sRGBColor
 
 # add the parent folder to the path so that imports work even if the working directory is the eu4 folder
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
@@ -177,9 +180,69 @@ class MapGenerator:
 #
 #         self.color_map_generator.generate_mapimage_with_several_colors(color_to_provinces, 'Areas map', crop_to_color=False)
 
+    def get_similar_colors(self, base_color: LabColor, number_of_colors: int, brightness_step: float = 0.1,
+                           color_step: float = 0.1, layers_of_brightness: float = 5) -> list[LabColor]:
+        """Generate at least number_of_colors colors which are close to base_color,
+        but different enough to be easily distinguished
+        @param base_color:
+        @param number_of_colors: generate at least this many colors, but could be more depending on layers_of_brightness
+        @param brightness_step: Distance in lightness between each shade (L in the L*a*b color space)
+        @param color_step: Distance in color (a and b in the L*a*b color space) between each generated color
+        @param layers_of_brightness: How many shades to pick. Should be an uneven number.
+               More shades results in less color variation
+        @return: list of LabColors, one of which may be the base_color
+        """
+        # the rest of the algorithm assumes that l is between 0 and 1 and a, b are between -1 and 1
+        base_l = base_color.lab_l / 100
+        base_a = base_color.lab_a / 128
+        base_b = base_color.lab_b / 128
+
+        # reduce the number of shades if they are not needed, and we would overflow
+        if number_of_colors < 10 and (((base_l - brightness_step * (layers_of_brightness - 1) / 2) < brightness_step) or ((base_l + brightness_step * (layers_of_brightness - 1) / 2) > (1 - brightness_step))):
+            layers_of_brightness = layers_of_brightness - 2
+        minimum_l = base_l - (layers_of_brightness-1) * brightness_step / 2
+        # prevent l from overflowing
+        if minimum_l < brightness_step*2:
+            minimum_l = brightness_step*2
+        if minimum_l + brightness_step*(layers_of_brightness+1) > 1:
+            minimum_l = 1-brightness_step*(layers_of_brightness+2)
+
+        ab_steps = math.ceil(math.sqrt(number_of_colors / layers_of_brightness))
+        # starting points for a and b, but make sure that we never switch the sign, because this leads to very
+        # noticeable color differences
+        a_low = abs(base_a) - (ab_steps - 1) / 2 * color_step
+        if a_low < 0:
+            a_low = 0
+        b_low = abs(base_b) - (ab_steps - 1) / 2 * color_step
+        if b_low < 0:
+            b_low = 0
+        # calculate the a and b values to use and apply the correct sign to them
+        # the list is reversed, so that the more vibrant colors(further away from 0) are used first
+        a_values = reversed([math.copysign(a_low + i * color_step, base_a) for i in range(ab_steps)])
+        b_values = reversed([math.copysign(b_low + i * color_step, base_b) for i in range(ab_steps)])
+        colors = []
+        for a_value in a_values:
+            for b_value in b_values:
+                for level in range(layers_of_brightness):
+                    colors.append(LabColor((minimum_l + level * brightness_step) * 100, a_value * 128, b_value * 128))
+        return colors
+
+    def culture_map(self):
+        """Experimental culture map. Not currently used by the wiki"""
+        color_to_provinces = {}
+        for i, culture_group in enumerate(self.mapparser.culture_groups.values()):
+            group_color = convert_color(self.mapparser.color_list[i+1], LabColor)
+            culture_colors = self.get_similar_colors(group_color, len(culture_group.cultures))
+            for culture, color in zip(culture_group.cultures, culture_colors):
+                provinces = [prov.id for prov in self.mapparser.all_provinces.values() if prov.get('Culture') == culture.name]
+                if len(provinces) > 0:
+                    rgb_color = convert_color(color, sRGBColor)
+                    color_to_provinces[Eu4Color(rgb_color.clamped_rgb_r, rgb_color.clamped_rgb_g, rgb_color.clamped_rgb_b, is_upscaled=False)] = list(provinces)
+        self.color_map_generator.generate_mapimage_with_several_colors(color_to_provinces, 'Cultures')
+
     def culture_group_map(self):
         color_to_provinces = {}
-        for i, culture_group in enumerate(self.mapparser.culture_groups):
+        for i, culture_group in enumerate(self.mapparser.culture_groups.values()):
             provinces = [prov.id for prov in self.mapparser.all_provinces.values() if prov.get('Culture Group') == culture_group]
             if len(provinces) > 0:
                 color_to_provinces[i+1] = list(provinces)
