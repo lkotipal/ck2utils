@@ -226,7 +226,17 @@ class ContainerMixin:
     def find_all(self, key):
         """get a list of values which have the given key"""
         return [(v.val if hasattr(v, 'val') else v) for k, v in self.contents if k.val == key]
-    pass
+
+    def find_all_recursively(self, search_key):
+        """Like find_all, but searches the whole Tree recursively"""
+        results = []
+        if self.has_pairs:
+            for k, v in self.contents:
+                if k.val == search_key:
+                    results.append(v.val if hasattr(v, 'val') else v)
+                elif isinstance(v, ContainerMixin):
+                    results.extend(v.find_all_recursively(search_key))
+        return results
 
 
 class TopLevel(ContainerMixin, Stringifiable):
