@@ -543,7 +543,7 @@ class DLC(NameableEntity):
         'Third Rome': 'tr',
         'Cradle of Civilization': 'coc',
         'Rule Britannia': 'rb',
-        'Golden Century': 'goc',
+        'Golden Century': 'gc',
         'Dharma': 'dhr',
         'Emperor': 'emp',
         'Leviathan': 'lev',
