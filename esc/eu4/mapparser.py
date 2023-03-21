@@ -79,7 +79,7 @@ class Eu4MapParser(Eu4Parser):
         return provinceIDs
 
     @cached_property
-    def all_provinces(self):
+    def all_provinces(self) -> dict[int, Province]:
         """OrderedDict of provinceIDs to Province objects.
 
         The Province objects are prefilled with data from the history
@@ -446,31 +446,38 @@ class Eu4MapParser(Eu4Parser):
             number = int(match.group())
             if number >= self.max_provinces:
                 continue
-            history = {}
+
+            # create a list of entries for each date and use 1.1.1 for entries without a date,
+            # so that they can be sorted properly
+            entries_with_dates = {(1, 1, 1): []}
+            for entry in self.parser.parse_file(path):
+                if isinstance(entry.key.val, tuple):
+                    if entry.key.val <= (1444, 11, 11):
+                        if entry.key.val not in entries_with_dates:
+                            entries_with_dates[entry.key.val] = []
+                        entries_with_dates[entry.key.val].extend(entry.value.contents)
+                else:
+                    entries_with_dates[(1, 1, 1)].append(entry)
+
             values = {}
             modifiers = []
-            for n, v in self.parser.parse_file(path):
-                if isinstance(n.val, tuple):
-                    if n.val <= (1444, 11, 11):
-                        history[n.val] = {}, []
-                        for n2, v2 in v:
-                            if n2.val == 'add_permanent_province_modifier':
-                                history[n.val][1].append(v2['name'].val)
-                            elif n2.val == 'add_province_triggered_modifier':
-                                history[n.val][1].append(v2.val)
-                            else:
-                                history[n.val][0][n2.val] = v2
-
-                elif n.val == 'add_permanent_province_modifier':
-                    modifiers.append(v['name'].val)
-                elif n.val == 'add_province_triggered_modifier':
-                    modifiers.append(v.val)
-                else:
-                    values[n.val] = v
-
-            for _, (history_values, history_modifiers) in sorted(history.items()):
-                values.update(history_values)
-                modifiers.extend(history_modifiers)
+            cores = set()
+            # process the entries ordered by date, so that later entries can override earlier ones
+            for date, entries in sorted(entries_with_dates.items()):
+                for n, v in entries:
+                    if n.val == 'add_permanent_province_modifier':
+                        modifiers.append(v['name'].val)
+                    elif n.val == 'add_province_triggered_modifier':
+                        modifiers.append(v.val)
+                    elif n.val == 'add_core':
+                        cores.add(v.val)
+                    elif n.val == 'remove_core':
+                        if v.val in cores:
+                            cores.remove(v.val)
+                        else:
+                            print('remove_core with non-existing core in ' + str(number) + ' for ' + v.val)
+                    else:
+                        values[n.val] = v
 
             dev = [values[x].val if x in values else 0 for
                    x in ['base_tax', 'base_production', 'base_manpower']]
@@ -479,6 +486,7 @@ class Eu4MapParser(Eu4Parser):
             province['BT'] = int(dev[0]) if dev[0] else ''
             province['BP'] = int(dev[1]) if dev[1] else ''
             province['BM'] = int(dev[2]) if dev[2] else ''
+            province['cores'] = cores
             if 'center_of_trade' in values:
                 province['center_of_trade'] = values['center_of_trade'].val
             province['Modifiers'] = modifiers
@@ -542,3 +550,68 @@ class Eu4MapParser(Eu4Parser):
                 # Stadacona (994) - Pekuakamiulnuatsh (2579)
 
         return adjacency_map
+
+    @cached_property
+    def existing_tags(self):
+        """returns a set of tags which exist at the start of the game"""
+        return {province['Owner'] for province in self.all_land_provinces.values() if 'Owner' in province}
+
+    @cached_property
+    def releasable_tags(self):
+        """returns a set of tags which can be released from cores in 1444, but which don't exist in 1444"""
+        return {tag
+                for province in self.all_land_provinces.values()
+                for tag in province['cores']
+                if tag not in self.existing_tags}
+
+    def _find_tags_by_effect_and_folder(self, effects: list[str], folder: str) -> set[str]:
+        tags = set()
+        for file, data in self.parser.parse_files(folder + '/**/*.txt'):
+            for effect in effects:
+                for tag in data.find_all_recursively(effect):
+                    if re.fullmatch(r'[A-Z]{3}', tag):
+                        tags.add(tag)
+        return tags
+
+    @cached_property
+    @disk_cache()
+    def releasable_tags_by_decision(self):
+        """tags which get released via decisions"""
+        return self._find_tags_by_effect_and_folder(['create_vassal', 'release'], 'decisions')
+
+    @cached_property
+    @disk_cache()
+    def releasable_tags_by_event(self):
+        """tags which get released in events. This is inaccurate, because it also contains tags which just
+        get new provinces via cede_province"""
+        return self._find_tags_by_effect_and_folder(['create_vassal', 'release', 'cede_province'], 'events')
+
+    @cached_property
+    @disk_cache()
+    def releasable_tags_by_mission(self):
+        """tags which get released from missions"""
+        return self._find_tags_by_effect_and_folder(['create_vassal', 'release'], 'missions')
+
+    @cached_property
+    @disk_cache()
+    def formable_tags_by_decision(self) -> set[str]:
+        """tags which get formed with change_tag in a decision"""
+        return self._find_tags_by_effect_and_folder(['change_tag'], 'decisions')
+
+    @cached_property
+    @disk_cache()
+    def formable_tags_by_event(self) -> set[str]:
+        """tags which get formed with change_tag in an event"""
+        return self._find_tags_by_effect_and_folder(['change_tag'], 'events')
+
+    @cached_property
+    @disk_cache()
+    def formable_tags_by_mission(self) -> set[str]:
+        """tags which get formed with change_tag in a mission"""
+        return self._find_tags_by_effect_and_folder(['change_tag'], 'missions')
+
+    @cached_property
+    @disk_cache()
+    def formable_tags_by_federations(self) -> set[str]:
+        """tags which get formed with change_tag by something in common/federation_advancements"""
+        return self._find_tags_by_effect_and_folder(['change_tag'], 'common/federation_advancements')

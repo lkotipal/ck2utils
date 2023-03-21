@@ -18,7 +18,7 @@ from eu4.wiki import WikiTextConverter, get_SVersion_header
 from eu4.paths import eu4outpath
 from eu4.parser import Eu4Parser
 from eu4.mapparser import Eu4MapParser
-from eu4.eu4lib import GovernmentReform
+from eu4.eu4lib import GovernmentReform, Country
 from eu4.eu4_file_generator import Eu4FileGenerator
 from eu4.eventparser import Eu4EventParser
 from ck2parser import Obj, Pair
@@ -840,12 +840,103 @@ class EventPicturesList(Eu4FileGenerator):
         return self.get_SVersion_header('table') + '\n' + table
 
 
+class CountryList(Eu4FileGenerator):
+    parser: Eu4MapParser
+
+    link_overrides = {
+        'NAT': 'Colonization#Natives',
+        'HAW': 'Oceanian_super-region#Hawai\'i'
+    }
+
+    flag_overrides = {'HAW': 'HAW.png'}
+
+    def __init__(self):
+        super().__init__()
+        self.parser = Eu4MapParser()
+
+    def _get_flag_file(self, country: Country):
+        if country.tag in self.flag_overrides:
+            return self.flag_overrides[country.tag]
+        else:
+            return f'{country.display_name}.png'
+
+    def _get_link(self, country: Country):
+        if country.tag in self.link_overrides:
+            return f'[[{self.link_overrides[country.tag]}|{country.display_name}]]'
+        else:
+            return f'[[{country.display_name}]]'
+
+    def _get_notes(self, tag: str):
+        all_formable_tags = self.parser.formable_tags_by_decision | self.parser.formable_tags_by_event | \
+                            self.parser.formable_tags_by_mission | self.parser.formable_tags_by_federations
+
+        notes = []
+        if tag in all_formable_tags:
+            formable_notes = []
+            if tag in all_formable_tags - self.parser.formable_tags_by_decision:
+                if tag in self.parser.formable_tags_by_decision:
+                    formable_notes.append('by decision')
+                if tag in self.parser.formable_tags_by_event:
+                    formable_notes.append('by event')
+                if tag in self.parser.formable_tags_by_mission:
+                    formable_notes.append('by mission')
+                if tag in self.parser.formable_tags_by_federations:
+                    formable_notes.append('by uniting a federation')
+            if tag in self.parser.existing_tags:
+                formable_notes.append('exists in 1444')
+            if formable_notes:
+                formable_notes = f' ({", ".join(formable_notes)})'
+            else:
+                formable_notes = ''
+            notes.append(f'[[File:Execute decision.png|link=|28px]] Formable{formable_notes}')
+        if tag in self.parser.releasable_tags:
+            notes.append('[[File:Liberty desire in subjects.png|link=|28px]] Releasable')
+        if tag in self.parser.releasable_tags_by_event and tag not in self.parser.existing_tags:
+            notes.append('Appears by event')
+        if tag in self.parser.releasable_tags_by_decision and tag not in self.parser.existing_tags:
+            notes.append('Appears by decision')
+        if tag in self.parser.releasable_tags_by_mission and tag not in self.parser.existing_tags:
+            notes.append('Appears by missions')
+        if tag not in (all_formable_tags | self.parser.releasable_tags | self.parser.existing_tags |
+                       self.parser.releasable_tags_by_event | self.parser.releasable_tags_by_decision |
+                       self.parser.releasable_tags_by_mission):
+            notes.append('[[File:Separatist rebels.png|link=|18px]] Revolter')
+
+        # special tags override all other notes
+        if tag in ['REB', 'PIR', 'NAT']:
+            notes = ['Special game tag']
+        elif tag in ['JMN', 'SYN']:
+            notes = ['Special country (can be spawned only with console)']
+
+        return ' / '.join(notes)
+
+    def _get_capital_location(self, country: Country):
+        if country.get_capital_id():
+            province = self.parser.all_provinces[country.get_capital_id()]
+            return f'{province.superregion} / {province.region} / {province}'
+        else:
+            return '–'
+
+    def generate_country_list(self):
+        countries = [{
+            '': i,
+            'Country': f"[[File:{self._get_flag_file(country)}|50px|border]] '''{self._get_link(country)}'''",
+            'Tag': country.tag,
+            'Capital Subcontinent / Region / Province': self._get_capital_location(country),
+            'Notes': self._get_notes(country.tag)
+        } for i, country in enumerate(self.parser.all_countries.values(), start=1)]
+        table = self.make_wiki_table(countries)
+
+        return self.get_SVersion_header('table') + '\n' + table
+
+
 if __name__ == '__main__':
     # for correct sorting. en_US seems to work even for non english characters, but the default None sorts all non-ascii characters to the end
     setlocale(LC_COLLATE, 'en_US.utf8')
     GovernmentReforms().run()
     MonumentList().run()
     EventPicturesList().run([])
+    CountryList().run([])
 
     list_generator = AreaAndRegionsList()
     list_generator.writeSuperRegionsList()

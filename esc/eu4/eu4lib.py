@@ -231,6 +231,9 @@ class Country(NameableEntity):
             self.color = self.parser.get_country_color(self)
         return self.color
 
+    def get_capital_id(self) -> int:
+        return self.parser.get_country_capital_id(self)
+
 
 class Event:
 

@@ -261,6 +261,21 @@ class Eu4Parser:
     def get_country_color(self, country):
         return self.tag_to_color_mapping[country.tag]
 
+    @cached_property
+    @disk_cache()
+    def tag_to_capital_id_mapping(self) -> dict[str, int | None]:
+        capitals = {}
+        for c in self.all_countries.values():
+            country_history = self.parser.parse_file('history/countries/' + c.tag + '*.txt')
+            if 'capital' in country_history:
+                capitals[c.tag] = country_history['capital'].val
+            else:  # REB, PIR and NAT
+                capitals[c.tag] = None
+        return capitals
+
+    def get_country_capital_id(self, country: Country):
+        return self.tag_to_capital_id_mapping[country.tag]
+
     def _parse_government_attribute_value(self, value):
         if isinstance(value, String):
             if value.val.lower() == 'yes':
