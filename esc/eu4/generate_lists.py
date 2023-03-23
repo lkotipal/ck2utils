@@ -923,6 +923,9 @@ class CountryList(Eu4FileGenerator):
             'Country': f"[[File:{self._get_flag_file(country)}|50px|border]] '''{self._get_link(country)}'''",
             'Tag': country.tag,
             'Capital Subcontinent / Region / Province': self._get_capital_location(country),
+            # 'Capital Province ID': country.get_capital_id(),
+            # 'Primary Culture': country.get_primary_culture(),
+            # 'Default Religion': country.get_religion(),
             'Notes': self._get_notes(country.tag)
         } for i, country in enumerate(self.parser.all_countries.values(), start=1)]
         table = self.make_wiki_table(countries)

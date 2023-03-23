@@ -218,23 +218,6 @@ class Terrain(NameableEntityWithProvincesAndColor):
     pass
 
 
-class Country(NameableEntity):
-    def __init__(self, tag, display_name, color=None, parser=None, country_file=None):
-        super().__init__(tag, display_name)
-        self.tag = tag
-        self.color = color
-        self.parser = parser
-        self.country_file = country_file
-
-    def get_color(self):
-        if not self.color:
-            self.color = self.parser.get_country_color(self)
-        return self.color
-
-    def get_capital_id(self) -> int:
-        return self.parser.get_country_capital_id(self)
-
-
 class Event:
 
     def __init__(self, parser, attributes, source_file=None):
@@ -521,14 +504,50 @@ class GovernmentReform(NameableEntity):
 
 class Culture(NameableEntity):
 
-    def __init__(self, name: str, display_name: str):
+    def __init__(self, name: str, display_name: str, culture_group: 'CultureGroup' = None):
         super().__init__(name, display_name)
+        self.culture_group = culture_group
 
 
 class CultureGroup(NameableEntity):
     def __init__(self, name: str, display_name: str, cultures: list[Culture]):
         super().__init__(name, display_name)
         self.cultures = cultures
+
+
+class Country(NameableEntity):
+    def __init__(self, tag, display_name, color=None, parser=None, country_file=None):
+        super().__init__(tag, display_name)
+        self.tag = tag
+        self.color = color
+        self.parser = parser
+        self.country_file = country_file
+
+    def get_color(self):
+        if not self.color:
+            self.color = self.parser.get_country_color(self)
+        return self.color
+
+    def get_history(self):
+        return self.parser.country_histories[self.tag]
+
+    def get_capital_id(self) -> int | None:
+        if 'capital' in self.get_history():
+            return self.get_history()['capital'].val
+        else:  # REB, PIR and NAT
+            return None
+
+    def get_primary_culture(self) -> Culture | None:
+        if 'primary_culture' in self.get_history():
+            return self.parser.cultures[self.get_history()['primary_culture'].val]
+        else:  # REB, PIR, NAT and SYN
+            return None
+
+    def get_religion(self) -> Religion | None:
+        if 'religion' in self.get_history():
+            return self.parser.all_religions[self.get_history()['religion'].val]
+        else:  # REB, PIR, NAT and SYN
+            return None
 
 
 class DLC(NameableEntity):

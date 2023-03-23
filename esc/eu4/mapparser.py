@@ -489,9 +489,9 @@ class Eu4MapParser(Eu4Parser):
             if 'religion' in values:
                 province['Religion'] = values['religion'].val
             if 'culture' in values:
-                culture = values['culture'].val
+                culture = self.cultures[values['culture'].val]
                 province['Culture'] = culture
-                province['Culture Group'] = self.culture_to_culture_group_mapping[culture]
+                province['Culture Group'] = culture.culture_group
             if 'latent_trade_goods' in values:
                 if len(values['latent_trade_goods']) > 1:
                     raise Exception('Provinces with multiple latent trade goods are not handled')

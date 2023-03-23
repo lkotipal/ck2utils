@@ -232,12 +232,15 @@ class Eu4Parser:
                     if (isinstance(value, Obj) and
                             not re.match(r'((fe)?male|dynasty)_names', n.val)):
                         cultures.append(Culture(n.val, self.localize(n.val)))
-                culture_groups[group_name.val] = CultureGroup(group_name.val, self.localize(group_name.val), cultures)
+                culture_group = CultureGroup(group_name.val, self.localize(group_name.val), cultures)
+                for culture in cultures:
+                    culture.culture_group = culture_group
+                culture_groups[group_name.val] = culture_group
         return culture_groups
 
     @cached_property
-    def culture_to_culture_group_mapping(self):
-        return {culture.name: culture_group
+    def cultures(self):
+        return {culture.name: culture
                 for culture_group in self.culture_groups.values()
                 for culture in culture_group.cultures}
 
@@ -263,18 +266,9 @@ class Eu4Parser:
 
     @cached_property
     @disk_cache()
-    def tag_to_capital_id_mapping(self) -> dict[str, int | None]:
-        capitals = {}
-        for c in self.all_countries.values():
-            country_history = self.parser.parse_file('history/countries/' + c.tag + '*.txt')
-            if 'capital' in country_history:
-                capitals[c.tag] = country_history['capital'].val
-            else:  # REB, PIR and NAT
-                capitals[c.tag] = None
-        return capitals
-
-    def get_country_capital_id(self, country: Country):
-        return self.tag_to_capital_id_mapping[country.tag]
+    def country_histories(self) -> dict[str, dict[str, object]]:
+        return {c.tag: self.parser.parse_file('history/countries/' + c.tag + '*.txt').get_entries_at_date()
+                for c in self.all_countries.values()}
 
     def _parse_government_attribute_value(self, value):
         if isinstance(value, String):
