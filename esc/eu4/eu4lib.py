@@ -243,10 +243,10 @@ class Decision:
         self.source_file = source_file
 
 
-class Religion:
+class Religion(NameableEntity):
 
-    def __init__(self, name, group, color):
-        self.name = name
+    def __init__(self, name: str, display_name: str, group, color):
+        super().__init__(name, display_name)
         self.group = group
         self.color = color
 
