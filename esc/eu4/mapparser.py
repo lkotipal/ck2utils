@@ -447,37 +447,22 @@ class Eu4MapParser(Eu4Parser):
             if number >= self.max_provinces:
                 continue
 
-            # create a list of entries for each date and use 1.1.1 for entries without a date,
-            # so that they can be sorted properly
-            entries_with_dates = {(1, 1, 1): []}
-            for entry in self.parser.parse_file(path):
-                if isinstance(entry.key.val, tuple):
-                    if entry.key.val <= (1444, 11, 11):
-                        if entry.key.val not in entries_with_dates:
-                            entries_with_dates[entry.key.val] = []
-                        entries_with_dates[entry.key.val].extend(entry.value.contents)
-                else:
-                    entries_with_dates[(1, 1, 1)].append(entry)
-
-            values = {}
-            modifiers = []
             cores = set()
-            # process the entries ordered by date, so that later entries can override earlier ones
-            for date, entries in sorted(entries_with_dates.items()):
-                for n, v in entries:
-                    if n.val == 'add_permanent_province_modifier':
-                        modifiers.append(v['name'].val)
-                    elif n.val == 'add_province_triggered_modifier':
-                        modifiers.append(v.val)
-                    elif n.val == 'add_core':
-                        cores.add(v.val)
-                    elif n.val == 'remove_core':
-                        if v.val in cores:
-                            cores.remove(v.val)
-                        else:
-                            print('remove_core with non-existing core in ' + str(number) + ' for ' + v.val)
-                    else:
-                        values[n.val] = v
+            values = self.parser.parse_file(path).get_entries_at_date(
+                duplicated_keys=['add_permanent_province_modifier', 'add_province_triggered_modifier'],
+                special_handlers={'add_core': lambda value, previous_values: cores.add(value),
+                                  'remove_core': lambda value, previous_values:
+                                  cores.remove(value.val) if value.val in cores
+                                  else print('remove_core with non-existing core in ' + str(number) + ' for ' + v.val)
+                                  }
+            )
+            modifiers = []
+            if 'add_permanent_province_modifier' in values:
+                for mod in values['add_permanent_province_modifier']:
+                    modifiers.append(mod['name'].val)
+            if 'add_province_triggered_modifier' in values:
+                for mod in values['add_province_triggered_modifier']:
+                    modifiers.append(mod.val)
 
             dev = [values[x].val if x in values else 0 for
                    x in ['base_tax', 'base_production', 'base_manpower']]

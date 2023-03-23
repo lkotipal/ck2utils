@@ -238,6 +238,54 @@ class ContainerMixin:
                     results.extend(v.find_all_recursively(search_key))
         return results
 
+    def get_sorted_entries_with_date(self, default_date=(1, 1, 1), ignore_entries_after=(1444, 11, 11)):
+        """create a list of entries for each date and use default_date for entries without a date,
+        so that they are sorted first"""
+        entries_with_dates = {default_date: []}
+        for entry in self:
+            if isinstance(entry.key.val, tuple):
+                if entry.key.val <= ignore_entries_after:
+                    if entry.key.val not in entries_with_dates:
+                        entries_with_dates[entry.key.val] = []
+                    entries_with_dates[entry.key.val].extend(entry.value.contents)
+            else:
+                entries_with_dates[default_date].append(entry)
+        return dict(sorted(entries_with_dates.items()))
+
+    def get_entries_at_date(self, date=(1444, 11, 11), duplicated_keys=None, special_handlers=None):
+        """read all entries which have no date or a date up to the 'date' parameter. If keys are duplicated, later
+        entries override earlier entries
+
+        @type special_handlers: dict[str, callable]
+        @type duplicated_keys: list[str]
+        @type date: tuple[int, int, int]
+        @param date: read all entries up to this date
+        @param duplicated_keys: the values of these keys will be turned into a list and don't override each other
+        @param special_handlers: for these keys their function will be called with the new value as the first parameter
+                                 and previous values(or None) as the second parameter
+        """
+        if not special_handlers:
+            special_handlers = {}
+
+        def append(value, previous_values):
+            if not previous_values:
+                previous_values = []
+            previous_values.append(value)
+            return previous_values
+
+        if duplicated_keys:
+            for k in duplicated_keys:
+                if k not in special_handlers:
+                    special_handlers[k] = append
+
+        result = {}
+        for date, entries in self.get_sorted_entries_with_date().items():
+            for k, v in entries:
+                if k.val in special_handlers:
+                    result[k.val] = special_handlers[k.val](v, result.get(k.val))
+                else:
+                    result[k.val] = v
+        return result
 
 class TopLevel(ContainerMixin, Stringifiable):
 
