@@ -838,7 +838,7 @@ class SimpleTokenizer:
         ('Space', (r'\s+',)),
         ('Brace', (r'[{}]',)),
         ('Op', (r'[<=>]=?',)),
-        ('String', (r'(?s)".*?"',)),
+        ('String', (r'(?s)".*?(?<!\\)"',)),
         ('Key', (r'[^\s"#<=>{}]+',))
     ]
     useless = ['Comment', 'Space']
