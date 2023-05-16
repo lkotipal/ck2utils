@@ -212,7 +212,7 @@ class PolicyListGenerator:
                             icon = match.group(1)
                             value = match.group(2)
                             if 'DLC-only' in value:
-                                if match.group(3) == 'Marines force limit':
+                                if match.group(3) in ['Marines force limit', 'Innovativeness gain']:
                                     value = match.group(4) + '%'
                                 else:
                                     raise Exception('unhandled DLC-only ' + value)
@@ -349,9 +349,14 @@ class StaticModifiersGenerator:
         match = re.match(
             r'\* (?P<icon>\{\{icon\|[^}]*\}\}|\[\[[Ff]ile:[^]]*\]\]) (?P<colored_value>(\{\{(red|green)\|)?(?P<value>[^} ]*)(\}\})?) (?P<name>.*)$',
             line)
-        if not match:
-            raise Exception('Unhandled modifier line: ' + line)
-        return match.group('icon'), match.group('colored_value'), match.group('value'), match.group('name')
+        if match:
+            return match.group('icon'), match.group('colored_value'), match.group('value'), match.group('name')
+        else:
+            match = re.fullmatch(r'\* (?P<name>[a-zA-Z ]+)', line)
+            if match:
+                return '', match.group('name'), match.group('name'), ''
+            else:
+                raise Exception('Unhandled modifier line: ' + line)
 
     def run(self):
         wiki_converter = WikiTextConverter()

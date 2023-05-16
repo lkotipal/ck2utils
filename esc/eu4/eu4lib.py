@@ -466,9 +466,10 @@ class AdditiveModifierWithPercentageSign(AdditiveModifier):
 
 
 class Mission(NameableEntity):
-    def __init__(self, name, display_name, mission_group=None):
+    def __init__(self, name, display_name, description: str = '', mission_group=None):
         super().__init__(name, display_name)
         self.mission_group = mission_group
+        self.description = description
 
 
 class MissionGroup:
@@ -571,6 +572,7 @@ class DLC(NameableEntity):
         'Leviathan': 'lev',
         'Origins': 'org',
         'Lions of the North': 'lon',
+        'Domination': 'dom',
     }
 
     def __init__(self, name: str, display_name: str, category: str, archive: Path = None):

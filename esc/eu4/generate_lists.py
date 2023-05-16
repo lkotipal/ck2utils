@@ -8,6 +8,8 @@ from operator import attrgetter
 from pathlib import Path
 from typing import Dict
 
+from common.wiki import WikiTextFormatter
+
 # the MonumentList needs pyradox which needs to be imported in some way
 sys.path.append(os.path.dirname(os.path.realpath(__file__)) + '/../../../../pyradox')
 from pyradox.filetype.table import make_table, WikiDialect
@@ -613,7 +615,8 @@ class GovernmentReforms:
                 needed_dlcs, not_dlcs = self.get_dlcs(condition)
                 if len(needed_dlcs) == 1:
                     if needed_dlcs[0] in one_dlc_conditions_mapping:
-                        raise Exception('two conditionals for the same dlc')
+                        # raise Exception('two conditionals for the same dlc' + str(conditionals))
+                        print('two conditionals for the same dlc' + str(conditionals))
                     one_dlc_conditions_mapping[needed_dlcs[0]] = condition_attributes
                     processed_conditions.append((Obj([Pair('has_dlc', needed_dlcs[0])]), condition_attributes))
                 else:
@@ -622,9 +625,16 @@ class GovernmentReforms:
                 processed_conditions.append((condition, condition_attributes))
 
         for dlcs, condition_attributes in multiple_dlc_conditions:
-            attributes_from_single_dlcs = {k: v for dlc in dlcs for k, v in one_dlc_conditions_mapping[dlc].items()}
+            attributes_from_single_dlcs = {}
+            for dlc in dlcs:
+                if dlc in one_dlc_conditions_mapping:
+                    for k, v in one_dlc_conditions_mapping[dlc].items():
+                        attributes_from_single_dlcs[k] = v
+                else:
+                    print('dlc {} missing from {} multiples: '.format(dlc, one_dlc_conditions_mapping))
             if not self._compare_attributes(attributes_from_single_dlcs, condition_attributes):
-                raise Exception('multiple DLC conditions dont match: {}\n{}'.format(attributes_from_single_dlcs, condition_attributes))
+                # raise Exception('multiple DLC conditions dont match: {}\n{}'.format(attributes_from_single_dlcs, condition_attributes))
+                print('multiple DLC conditions dont match: {}\n{}'.format(attributes_from_single_dlcs, condition_attributes))
 
         return processed_conditions
 
@@ -661,8 +671,8 @@ class GovernmentReforms:
                     lines.append('| {}'.format(gov_tiers[gov_type]))
                 else:
                     lines.append('|')
-            lines.append('|}')
             lines.append('')
+        lines.append('|}')
         return '\n'.join(lines)
 
     def generate(self, government_type, adjective, excluded_reforms=None):

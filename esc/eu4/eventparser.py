@@ -82,6 +82,8 @@ class Eu4EventParser(Eu4Parser):
                     raise Exception(f'Unexpected section {n.val} in {gfx_file}')
                 picture_name = v['name'].val
                 picture_filename = v['texturefile'].val.replace('\\', '/')
+                if picture_filename == 'gfx/event_pictures/event_pictures_domination/eunuch_estate_eventPicture.dds':
+                    picture_filename = 'gfx/event_pictures/event_pictures_domination/eunuch_estate_eventpicture.dds'
                 wiki_filename = self._generate_wiki_filename(picture_filename)
                 picture_data = dlc.get_file_contents(picture_filename)
                 picture_sha = hashlib.sha256(picture_data).hexdigest()

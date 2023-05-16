@@ -245,6 +245,7 @@ all_modifiers = [
     MultiplicativeModifier('special_unit_forcelimit', ['special unit force limit']),
     AdditiveModifier('country_admin_power', ['monthly administrative power']),
     MultiplicativeModifier('jains_loyalty_modifier', ['jains loyalty']),
+    MultiplicativeModifier('reduced_liberty_desire_on_other_continent', ['reduced liberty desire on other continent'], multiply_value_with=-1),
     MultiplicativeModifier('reduced_liberty_desire_on_same_continent', ['liberty desire in same continent subjects'], multiply_value_with=-1),
     AdditiveModifier('prestige_per_development_from_conversion', ['prestige per development from missionary']),
     AdditiveModifier('free_policy', ['free policies']),

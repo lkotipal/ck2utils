@@ -63,7 +63,7 @@ class Eu4Parser:
     @cached_property
     def dlcs(self) -> list[DLC]:
         dlcs = []
-        for file, contents in self.parser.parse_files('dlc/*/*.dlc'):
+        for file, contents in self.parser.parse_files('*dlc/*/*.dlc'):  # also catches builtin_dlc (women in history)
             name = contents['archive'].val.split('/')[1]
             display_name = contents['name'].val
             category = contents['category'].val
@@ -131,15 +131,20 @@ class Eu4Parser:
                     elif idea_name == 'category':
                         category = v2.val
                     else:
+                        modifiers = None
                         if len(v2) == 0:
-                            modifiers = all_ideas[idea_name].modifiers
+                            if idea_name in all_ideas:
+                                modifiers = all_ideas[idea_name].modifiers
+                            else:
+                                print(f'Error: idea {idea_name} is empty and not defined elsewhere')
                         else:
                             modifiers = self._process_idea_modifiers(v2)
-                        idea = Idea(idea_name,
-                                    self.localize(idea_name),
-                                    modifiers)
-                        ideas.append(idea)
-                        all_ideas[idea_name] = idea
+                        if modifiers:
+                            idea = Idea(idea_name,
+                                        self.localize(idea_name),
+                                        modifiers)
+                            ideas.append(idea)
+                            all_ideas[idea_name] = idea
 
                 idea_group = IdeaGroup(idea_group_name,
                                        self.localize(idea_group_name),
@@ -180,7 +185,7 @@ class Eu4Parser:
                 idea_groups = []
                 modifiers = {}
                 for n2, v2 in v:
-                    if n2.val in ['potential', 'ai_will_do']:
+                    if n2.val in ['potential', 'ai_will_do', 'effect', 'removed_effect']:
                         pass
                     elif n2.val == 'monarch_power':
                         category = v2.val
@@ -211,12 +216,20 @@ class Eu4Parser:
                 missions = []
                 for k2, v2 in v:
                     possible_mission_id = k2.val_str()
-                    if possible_mission_id not in ['has_country_shield', 'ai', 'generic', 'potential', 'slot', 'potential_on_load']:
-                        missions.append(Mission(possible_mission_id, self.localize(possible_mission_id)))
+                    if possible_mission_id not in ['has_country_shield', 'ai', 'generic', 'potential', 'slot',
+                                                   'potential_on_load']:
+                        missions.append(Mission(possible_mission_id, self.localize(possible_mission_id + '_title'),
+                                                description=self.localize(possible_mission_id + '_desc')))
                     elif possible_mission_id == 'potential':
                         potential = v2
                 all_mission_groups[mission_group_id] = MissionGroup(mission_group_id, file.name, potential, missions)
         return all_mission_groups
+
+    @cached_property
+    def all_missions(self) -> dict[str, Mission]:
+        return {mission.name: mission
+                for group in self.all_mission_groups.values()
+                for mission in group.missions}
 
     @cached_property
     def culture_groups(self) -> dict[str, CultureGroup]:
@@ -319,13 +332,15 @@ class Eu4Parser:
                 other_attributes = {}
                 for k, v in reform_data:
                     # 'allow_normal_conversion' is ignored, because it doesnt seem to have a gameplay impact
-                    if k in ['allow_normal_conversion', 'ai', 'legacy_equivalent', 'valid_for_nation_designer', 'nation_designer_cost', 'nation_designer_trigger']:
+                    if k in ['allow_normal_conversion', 'ai', 'legacy_equivalent', 'valid_for_nation_designer',
+                             'nation_designer_cost', 'nation_designer_trigger']:
                         continue
                     if k == 'basic_reform' and v == 'yes':
                         basic_attributes['basic_reform'] = True
                     elif k == 'custom_attributes':
                         for attribute_key, attribute_value in v:
-                            other_attributes[str(attribute_key)] = self._parse_government_attribute_value(attribute_value)
+                            other_attributes[str(attribute_key)] = self._parse_government_attribute_value(
+                                attribute_value)
                     elif k == 'conditional':
                         condition = ''
                         condition_attributes = {}
@@ -337,15 +352,20 @@ class Eu4Parser:
                                     condition_attributes[str(attribute_key)] = self._parse_government_attribute_value(
                                         attribute_value)
                             else:
-                                condition_attributes[str(conditional_key)] = self._parse_government_attribute_value(conditional_value)
+                                condition_attributes[str(conditional_key)] = self._parse_government_attribute_value(
+                                    conditional_value)
                         basic_attributes['conditional'].append((condition, condition_attributes))
                     elif k in basic_attributes:
                         basic_attributes[k] = self._parse_government_attribute_value(v)
                     else:
                         other_attributes[str(k)] = self._parse_government_attribute_value(v)
-                gov_type, tier, tier_num = reforms_to_type_and_tier[reform_name]
-                all_reforms[reform_name] = GovernmentReform(reform_name, self.localize(reform_name), gov_type, tier,
-                                                            tier_num, attributes=other_attributes, **basic_attributes)
+                if reform_name in reforms_to_type_and_tier:
+                    gov_type, tier, tier_num = reforms_to_type_and_tier[reform_name]
+                    all_reforms[reform_name] = GovernmentReform(reform_name, self.localize(reform_name), gov_type, tier,
+                                                                tier_num, attributes=other_attributes,
+                                                                **basic_attributes)
+                else:
+                    print("Error: Reform {} has no tier".format(reform_name))
         return all_reforms
 
     @cached_property
