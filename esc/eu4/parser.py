@@ -2,13 +2,14 @@ import sys
 import os
 import re
 from collections import OrderedDict
+
 # add the parent folder to the path so that imports work even if the working directory is the eu4 folder
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 from ck2parser import SimpleParser, Obj, String, Number
 from localpaths import eu4dir
 from eu4.paths import eu4_version, eu4_major_version
 from eu4.eu4lib import Religion, Idea, IdeaGroup, Policy, Eu4Color, Country, Mission, MissionGroup, GovernmentReform, \
-    CultureGroup, Culture, DLC, BaseGame
+    CultureGroup, Culture, DLC, BaseGame, Estate
 from eu4.cache import disk_cache, cached_property
 
 
@@ -382,6 +383,18 @@ class Eu4Parser:
                     else:
                         all_reforms[reform_id] = {gov_type: tier_num}
         return common_reforms
+
+    @cached_property
+    def all_estates(self):
+        """returns a dictionary. keys are names and values are Estate objects"""
+        estates = {}
+        for name, data in self.parser.merge_parse('common/estates/*'):
+            if name == 'estate_special':
+                continue
+            privileges = [p.val for p in data['privileges']]
+            agendas = [p.val for p in data['agendas']]
+            estates[name] = Estate(name, self.localize(name), privileges=privileges, agendas=agendas)
+        return estates
 
 
 if __name__ == '__main__':

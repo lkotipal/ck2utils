@@ -20,12 +20,158 @@ from eu4.wiki import WikiTextConverter, get_SVersion_header
 from eu4.paths import eu4outpath
 from eu4.parser import Eu4Parser
 from eu4.mapparser import Eu4MapParser
-from eu4.eu4lib import GovernmentReform, Country
+from eu4.eu4lib import GovernmentReform, Country, Estate
 from eu4.eu4_file_generator import Eu4FileGenerator
 from eu4.eventparser import Eu4EventParser
 from ck2parser import Obj, Pair
 
 
+class PdxparseToList(Eu4FileGenerator):
+
+    def __init__(self):
+        super().__init__()
+        self.wiki_converter = WikiTextConverter()
+
+    def get_data_from_files(self, glob, province_scope=[], country_scope=[], modifier_scope=[], extra_handlers=None, key_value_pair_list=[],
+                            ignored=[], localisation_with_title=False, localise_desc=False):
+        if not extra_handlers:
+            extra_handlers = {}
+        province_params = {}
+        country_params = {}
+        modifier_params = {}
+        extra_sections = {}
+        key_value_pairs = {}
+        unhandled_sections = {}
+        elements = {}
+        for element_id, data in self.parser.parser.merge_parse(glob):
+            if localisation_with_title:
+                elements[element_id] = self.parser.localize(element_id + '_title')
+            else:
+                elements[element_id] = self.parser.localize(element_id)
+
+            unhandled_sections[element_id] = ''
+            for section_name, section_data in data:
+                if section_name in province_scope:
+                    province_params[f'{element_id}__{section_name}'] = section_data.inline_str(self.parser.parser)[0]
+                elif section_name in country_scope:
+                    country_params[f'{element_id}__{section_name}'] = section_data.inline_str(self.parser.parser)[0]
+                elif section_name in modifier_scope:
+                    modifier_params[f'{element_id}__{section_name}'] = section_data.inline_str(self.parser.parser)[0]
+                elif section_name in extra_handlers:
+                    extra_sections[f'{element_id}__{section_name}'] = extra_handlers[section_name](section_data)
+                elif section_name in key_value_pair_list:
+                    key_value_pairs[f'{element_id}__{section_name}'] = section_data.val
+                elif section_name in ignored:
+                    pass
+                else:
+                    print(f'Warning: unhandled section "{section_name}" in "{element_id}"')
+                    unhandled_sections[element_id] += f'\n{section_name} = {{\n{section_data}\n}}'
+
+        self.wiki_converter.to_wikitext(province_scope=province_params, country_scope=country_params,
+                                   modifiers=modifier_params, strip_icon_sizes=True)
+
+        results = []
+        for element_id, name in elements.items():
+            result = {'id': element_id, 'name': name}
+            if localise_desc:
+                result['desc'] = self.parser.localize(element_id + '_desc')
+            merged_sections = province_params | country_params | modifier_params | extra_sections | key_value_pairs
+            for section_name in province_scope + country_scope + modifier_scope + list(extra_handlers.keys()) + key_value_pair_list:
+                if f'{element_id}__{section_name}' in merged_sections:
+                    result[section_name] = merged_sections[f'{element_id}__{section_name}']
+                    if type(result[section_name]) == str and result[section_name].startswith('*'):
+                        result[section_name] = '\n' + result[section_name]
+                else:
+                    result[section_name] = ''
+            result['unhandled'] = unhandled_sections[element_id]
+            results.append(result)
+
+        return results
+
+
+class EocReforms(PdxparseToList):
+
+    def generate_eoc_reforms_list(self):
+        reforms = [{
+            'Reform': reform['name'],
+            'Trigger': reform['trigger'],
+            'Emperor': reform['emperor'],
+            'Tributaries': reform['member'],
+            'Enacting effect': reform['on_effect'],
+            'Revoking effect': reform['off_effect'],
+            'Description': reform['desc'],
+        } for reform in self.get_data_from_files('common/imperial_reforms/01_china.txt',
+                                                 country_scope=['trigger', 'on_effect', 'off_effect'],
+                                                 modifier_scope=['member', 'emperor'],
+                                                 ignored=['empire'], localisation_with_title=True,
+                                                 localise_desc=True)]
+        table = self.make_wiki_table(reforms, one_line_per_cell=True)
+
+        return self.get_SVersion_header('table') + '\n' + table
+
+class EstatePrivileges(PdxparseToList):
+
+    def __init__(self):
+        super().__init__()
+        self.all_privileges = None
+
+    def passthrough_handler(self, section_data):
+        return self.wiki_converter.remove_surrounding_brackets(section_data.inline_str(self.parser.parser)[0])
+
+    def get_privileges_for_estate(self, estate: Estate):
+        if not self.all_privileges:
+            self.all_privileges = {}
+            for privilege in self.get_data_from_files('common/estate_privileges/*',
+                                country_scope = ['is_valid', 'can_select', 'can_revoke', 'on_granted', 'on_revoked', 'on_invalid', 'on_cooldown_expires'],
+                                province_scope=['on_granted_province', 'on_invalid_province', 'on_revoked_province'],
+                                modifier_scope = ['benefits', 'penalties', 'modifier_by_land_ownership'],
+                                ignored = ['ai_will_do'],
+                                key_value_pair_list=['icon', 'max_absolutism', 'influence', 'loyalty', 'land_share', 'cooldown_years'],
+                                extra_handlers={'conditional_modifier': self.passthrough_handler,
+                                                'loyalty_scaled_conditional_modifier': self.passthrough_handler,
+                                                'influence_scaled_conditional_modifier': self.passthrough_handler,
+                                                'mechanics': self.passthrough_handler,
+                                                },
+                                localise_desc=True):
+                self.all_privileges[privilege['id']] = privilege
+        return [self.all_privileges[name] for name in estate.privileges]
+    def estate_privileges_list(self, estate: Estate):
+        formatter = WikiTextFormatter()
+        privileges = [{
+            'id': privilege['name'],
+            'class="unsortable" | [[File:Privilege_check.png|28px]]': f"[[File:{privilege['icon'].replace('_', ' ')}.png]]",
+            'Privilege': privilege['name'],
+            '[[File:Crownland.png|28px|Crownland share change]]': formatter.add_red_green(privilege["land_share"] * -1) if privilege["land_share"] else '',
+            '{{icon|max absolutism}}': formatter.add_red_green(privilege["max_absolutism"]) if privilege["max_absolutism"] else '',
+            '{{icon|friendly attitude|Estate loyalty equilibrium change}}': formatter.add_red_green(privilege["loyalty"] * 100) if privilege["loyalty"] else '',
+            '{{icon|estate influence|Estate influence change}}': formatter.add_plus_minus(privilege["influence"] * 100, bold=True) if privilege['influence'] else '',
+            'is_valid': privilege['is_valid'],
+            'can_select': privilege['can_select'],
+            'can_revoke': privilege['can_revoke'],
+            'on_granted': privilege['on_granted'],
+            'on_revoked': privilege['on_revoked'],
+            'on_invalid': privilege['on_invalid'],
+            'on_cooldown_expires': privilege['on_cooldown_expires'],
+            'on_granted_province': privilege['on_granted_province'],
+            'on_invalid_province': privilege['on_invalid_province'],
+            'on_revoked_province': privilege['on_revoked_province'],
+            'benefits': privilege['benefits'],
+            'penalties': privilege['penalties'],
+            'conditional_modifier': privilege['conditional_modifier'],
+            'modifier_by_land_ownership': privilege['modifier_by_land_ownership'],
+            'loyalty_scaled_conditional_modifier': privilege['loyalty_scaled_conditional_modifier'],
+            'influence_scaled_conditional_modifier': privilege['influence_scaled_conditional_modifier'],
+            'cooldown_years': privilege['cooldown_years'],
+            'mechanics': privilege['mechanics'],
+            'Description': privilege['desc'],
+        } for privilege in self.get_privileges_for_estate(estate)]
+        table = self.make_wiki_table(privileges, one_line_per_cell=True, row_id_key='id')
+
+        return f'=={estate.display_name}==\n{self.get_SVersion_header("table")}\n{table}\n'
+
+    def run_for_all_estates(self):
+        for estate in self.parser.all_estates.values():
+            self._write_text_file(f'{estate.name}_privileges', self.estate_privileges_list(estate))
 
 class MonumentList:
     """needs the pyradox import and pdxparse must be in the path"""
@@ -946,6 +1092,8 @@ class CountryList(Eu4FileGenerator):
 if __name__ == '__main__':
     # for correct sorting. en_US seems to work even for non english characters, but the default None sorts all non-ascii characters to the end
     setlocale(LC_COLLATE, 'en_US.utf8')
+    EstatePrivileges().run_for_all_estates()
+    EocReforms().run([])
     GovernmentReforms().run()
     MonumentList().run()
     EventPicturesList().run([])

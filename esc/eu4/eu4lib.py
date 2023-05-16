@@ -638,3 +638,8 @@ class EventPicture:
         self.overridden_by = overridden_by
         self.sha_hash = sha_hash
         self.picture_data = picture_data
+
+
+class Estate(NameableEntity):
+    privileges: list[str]
+    agendas: list[str]
