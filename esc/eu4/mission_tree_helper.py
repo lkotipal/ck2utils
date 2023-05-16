@@ -1,12 +1,15 @@
 from pathlib import Path
+
 from PIL import Image, ImageChops
 from argparse import ArgumentParser
 import os
 import sys
+import re
 
 # add the parent folder to the path so that imports work even if the working directory is the eu4 folder
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 import ck2parser
+from eu4.parser import Eu4Parser
 from localpaths import eu4dir
 
 class MissionTreeHelper():
@@ -30,6 +33,8 @@ class MissionTreeHelper():
         parser.add_argument('--out', help='output image', type=Path)
         parser.add_argument('--generate-mission-tree-completion-decisions', help='generate decisions which can be used to complete missions to make nice screenshots for the wiki', action='store_true')
         parser.add_argument('--cut', nargs=4, type=int, metavar=('left', 'upper', 'right', 'lower'), help='get some of the missions from an already processes mission image. The arguments are the position of the top left and bottom right corner of the missions which should be in the new image. The top left mission would be 1 1.')
+        parser.add_argument('--show-conditions', help='group mission tree branches in a file by their conditions', type=str)
+        parser.add_argument('--show-mission-conditions', help='group the mission tree branches by their conditions which contain the listed missions', type=str, nargs='*')
         args = parser.parse_args()
         if args.cut:
             self.cut(args.screenshots[0], args.out, *args.cut)
@@ -37,6 +42,10 @@ class MissionTreeHelper():
             self.process_screenshots(args.screenshots, args.out)
         elif args.generate_mission_tree_completion_decisions:
             self.generate_mission_tree_completion_decisions()
+        elif args.show_conditions:
+            self.show_mission_branch_conditions(file=args.show_conditions)
+        elif args.show_mission_conditions:
+            self.show_mission_branch_conditions(missions=args.show_mission_conditions)
 
     def count_nonblack_pil(self, img):
         """Return the number of pixels in img that are not black.
@@ -188,6 +197,37 @@ class MissionTreeHelper():
             lower_y = lower * mission_height - space_below_mission
             cropped_im = im.crop((left_x, upper_y, right_x, lower_y))
             cropped_im.save(out_file)
+
+    def show_mission_branch_conditions(self, file=None, missions=None):
+        if file:
+            print(file)
+        if missions:
+            missions = set(missions)
+        else:
+            missions = set()
+        parser = Eu4Parser()
+        conditions_to_branches = {}
+        for m in parser.all_mission_groups.values():
+            mission_names_in_branch = {mission.name for mission in m.missions}
+            if (file and m.source_file == file) or len(mission_names_in_branch & missions) > 0:
+                conditions = m.potential.str(parser.parser)
+                filtered_conditions = []
+                for line in conditions.splitlines():
+                    keep_line = True
+                    for line_filter in [r'map_setup = map_setup_random', '^[{}]$']:
+                        if re.search(line_filter, line):
+                            keep_line = False
+                    if keep_line:
+                        filtered_conditions.append(line)
+                conditions = '\n'.join(filtered_conditions)
+                if conditions not in conditions_to_branches:
+                    conditions_to_branches[conditions] = []
+                conditions_to_branches[conditions].append(m.name)
+
+        for cond, branches in conditions_to_branches.items():
+            print(branches)
+            print(cond)
+
 
 if __name__ == '__main__':
     MissionTreeHelper().main()
