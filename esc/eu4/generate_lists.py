@@ -269,9 +269,17 @@ class MonumentList:
                     on_upgraded = values['on_upgraded'].inline_str(self.parser.parser)[0]
                 else:
                     on_upgraded = None
+                if 'conditional_modifier' in values and len(values['conditional_modifier']) > 0:
+                    conditional_modifier = values['conditional_modifier']['modifier'].inline_str(self.parser.parser)[0]
+                    conditional_modifier_trigger = values['conditional_modifier']['trigger'].inline_str(self.parser.parser)[0]
+                else:
+                    conditional_modifier = None
+                    conditional_modifier_trigger = None
                 tier_data.append({'province_modifiers': province_modifiers, 'area_modifier': area_modifier,
                                   'region_modifier': region_modifier,
-                                  'country_modifiers': country_modifiers, 'on_upgraded': on_upgraded})
+                                  'country_modifiers': country_modifiers, 'on_upgraded': on_upgraded,
+                                  'conditional_modifier': conditional_modifier,
+                                  'conditional_modifier_trigger': conditional_modifier_trigger})
             monuments[monumentid] = {'name': name, 'provinceID': provinceID, 'province': prov,
                                      'can_be_moved': can_be_moved, 'level': level, 'trigger': trigger,
                                      'tiers': tier_data, 'build_cost': build_cost, 'type': monument_type,
@@ -370,6 +378,12 @@ class MonumentList:
                             tier_data[mod_type])
                 if tier_data['on_upgraded']:
                     trigger_and_effects[self._get_unique_key(monument, 'on_upgraded', tier)] = tier_data['on_upgraded']
+                if tier_data['conditional_modifier']:
+                    modifiers[self._get_unique_key(monument, 'conditional_modifier',
+                                                   tier)] = wiki_converter.remove_surrounding_brackets(
+                        tier_data['conditional_modifier'])
+                    trigger_and_effects[self._get_unique_key(monument, 'conditional_modifier_trigger', tier)] = \
+                    tier_data['conditional_modifier_trigger']
 
         wiki_converter.to_wikitext(province_scope=trigger_and_effects, modifiers=modifiers, strip_icon_sizes=True)
 
@@ -389,7 +403,10 @@ class MonumentList:
                                                  'area_modifier': 'Area modifiers',
                                                  'region_modifier': 'Region modifiers',
                                                  'country_modifiers': 'Global modifiers',
-                                                 'on_upgraded': 'When upgraded'}.items():
+                                                 'conditional_modifier_trigger': 'When the following conditions are met',
+                                                 'conditional_modifier': 'then the following modifiers are applied',
+                                                 'on_upgraded': 'When upgraded',
+                                                 }.items():
                     if self._get_unique_key(monument, effect_type, tier) in trigger_effects_modifiers:
                         effects_list = trigger_effects_modifiers[self._get_unique_key(monument, effect_type, tier)]
                         # indenting the effects compared to the description looks better, but there is not enough space
