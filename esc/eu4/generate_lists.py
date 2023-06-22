@@ -342,6 +342,10 @@ class MonumentList:
              r"\1\2{{icon|culture|24px}} Culture is \3 ''or'' \4 and is accepted by its owner"),
             (r'^([*]*)( ?)At least one of:\n\1\* '+culture+r'\n\1\* '+culture+r'\n\1\* '+culture+r'\n\1\2'+accept,
              r"\1\2{{icon|culture|24px}} Culture is \3, \4 ''or'' \5 and is accepted by its owner"),
+            (r'^([*]+) If:\n\1\* Limited to:\n\1\*\* ([^\n]*)\n\1\* ',  # ifs with a single clause
+             r'\1 If \2:\n\1* '),
+            (r'([*]+) If {{icon\|[^}]*}} [^\n]* estate exists:\n\1\*',
+             r'\1')
         ]
 
         for pattern, replacement in replacements:
@@ -409,6 +413,7 @@ class MonumentList:
                                                  }.items():
                     if self._get_unique_key(monument, effect_type, tier) in trigger_effects_modifiers:
                         effects_list = trigger_effects_modifiers[self._get_unique_key(monument, effect_type, tier)]
+                        effects_list = self.improve_requirements(effects_list)
                         # indenting the effects compared to the description looks better, but there is not enough space
                         # in the table in the current layout
                         # effects_list = wiki_converter.add_indent(effects_list)
