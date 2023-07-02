@@ -643,3 +643,17 @@ class EventPicture:
 class Estate(NameableEntity):
     privileges: list[str]
     agendas: list[str]
+
+
+class Unit(NameableEntity):
+    tech_group: str
+    category: str
+    techlevel: int
+    pips: int
+    maneuver: int
+    offensive_morale: int
+    defensive_morale: int
+    offensive_fire: int
+    defensive_fire: int
+    offensive_shock: int
+    defensive_shock: int

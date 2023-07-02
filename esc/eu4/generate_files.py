@@ -1,17 +1,23 @@
 #!/usr/bin/env python3
 import os
+import re
 import sys
+
+sys.path.append(os.path.dirname(os.path.realpath(__file__)) + '/../../../../pyradox')
 
 # add the parent folder to the path so that imports work even if the working directory is the eu4 folder
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 from ck2parser import csv_rows
 from eu4.parser import Eu4Parser
 from eu4.paths import eu4outpath
+from eu4.eu4_file_generator import Eu4FileGenerator
+from eu4.eu4lib import Unit
 
 
-class FileGenerator:
+class AnotherFileGenerator(Eu4FileGenerator):
 
     def __init__(self):
+        super().__init__()
         self.eu4parser = Eu4Parser()
         self.parser = self.eu4parser.parser
 
@@ -184,37 +190,82 @@ class FileGenerator:
         self.write_file('mil_tech_effects_table', '\n'.join(lines))
 
     def unit_pip_table(self):
-        """unfinished"""
+        piplist = {'infantry': {}, 'cavalry': {}, 'artillery': {}}
         unitlist = {'infantry': {}, 'cavalry': {}, 'artillery': {}}
         for techlevel, tech in enumerate(self.transform_techs_to_dict('mil')):
             if 'enable' in tech:
                 for unit_name in tech['enable']:
-                    tech_group = 'all'  # for artillery
-                    pips = 0
-                    category = None
+                    unit = Unit(unit_name, self.eu4parser.localize(unit_name))
+                    unit.tech_group = 'all'  # for artillery
+                    unit.pips = 0
+                    unit.category = None
+                    unit.techlevel = techlevel
                     for n, v in self.parser.parse_file('common/units/{}.txt'.format(unit_name)):
                         if n.val == 'unit_type':
-                            tech_group = v.val
+                            unit.tech_group = v.val
                         elif n.val == 'type':
-                            category = v.val
+                            unit.category = v.val
                         elif n.val in (
-                                'maneuver', 'offensive_morale', 'defensive_morale', 'offensive_fire', 'defensive_fire',
+                                # 'maneuver',
+                                'offensive_morale', 'defensive_morale', 'offensive_fire', 'defensive_fire',
                                 'offensive_shock', 'defensive_shock'):
-                            pips += int(v.val)
-                    if category is None:
+                            setattr(unit, n.val, v.val)
+                            unit.pips += int(v.val)
+                    if unit.category is None:
                         raise Exception('No category for {}'.format(unit_name))
 
-                    if techlevel not in unitlist[category]:
-                        unitlist[category][techlevel] = {}
-                    if tech_group not in unitlist[category][techlevel]:
-                        unitlist[category][techlevel][tech_group] = pips
-                    elif unitlist[category][techlevel][tech_group] != pips:
+                    if techlevel not in piplist[unit.category]:
+                        piplist[unit.category][techlevel] = {}
+                    if unit.tech_group not in piplist[unit.category][techlevel]:
+                        piplist[unit.category][techlevel][unit.tech_group] = unit.pips
+                    elif piplist[unit.category][techlevel][unit.tech_group] != unit.pips:
                         raise Exception(
                             'Differing number of pips for {} in category {} on tech {} in group {}'.format(unit_name,
-                                                                                                           category,
+                                                                                                           unit.category,
                                                                                                            techlevel,
-                                                                                                           tech_group))
-        print(unitlist)
+                                                                                                           unit.tech_group))
+                    if unit.tech_group not in unitlist[unit.category]:
+                        unitlist[unit.category][unit.tech_group] = list()
+                    unitlist[unit.category][unit.tech_group].append(unit)
+        print(piplist)
+        result = self.create_unit_pip_table(unitlist['artillery']['all']) + '\n'
+        result += '== Unit groups ==\n'
+        for tech_group in sorted(unitlist['infantry'].keys(), key = lambda tg: self.eu4parser.localize(tg)):
+            display_name = self.eu4parser.localize(tech_group)
+            result += f'=== {{{{icon|{display_name}}}}} {display_name} ===\n'
+            result += self.get_SVersion_header() + '\n'
+            result += '{{box wrapper}}\n<div style="margin-right: 100px;">\n'
+            result += self.create_unit_pip_table(unitlist['infantry'][tech_group]) + '</div>\n'
+            result += '<div style="margin-right: 100px;">\n'
+            result += self.create_unit_pip_table(unitlist['cavalry'][tech_group])
+            result += '</div>\n{{end box wrapper}}\n\n'
+            if display_name in ['Mesoamerican', 'North American', 'South American']:
+                print(self.create_unit_pip_table(unitlist['cavalry'][tech_group]))
+        self.write_file('unit_types', result)
+
+
+    def create_unit_pip_table(self, units: list[Unit]):
+        table_data = [{
+            'tech': unit.techlevel,
+            'name': f'style="text-align:left" | {unit.display_name}',
+            'offensive_fire': f'{{{{pips|{unit.offensive_fire}|off}}}}' if unit.offensive_fire > 0 else '',
+            'defensive_fire': f'{{{{pips|{unit.defensive_fire}|def}}}}' if unit.defensive_fire > 0 else '',
+            'offensive_shock': f'{{{{pips|{unit.offensive_shock}|off}}}}' if unit.offensive_shock > 0 else '',
+            'defensive_shock': f'{{{{pips|{unit.defensive_shock}|def}}}}' if unit.defensive_shock > 0 else '',
+            'offensive_morale': f'{{{{pips|{unit.offensive_morale}|off}}}}' if unit.offensive_morale > 0 else '',
+            'defensive_morale': f'{{{{pips|{unit.defensive_morale}|def}}}}' if unit.defensive_morale > 0 else '',
+            'pips': unit.pips
+
+        } for unit in sorted(units, key=lambda u: (u.techlevel, u.display_name))]
+        table = self.make_wiki_table(table_data)
+
+        header = '''{{| class="wikitable sortable mw-datatable" style="text-align:center"
+! rowspan=2 | {{{{icon|mil tech}}}} !! width="225px" rowspan=2 | {{{{icon|{}|40px}}}} Name
+! colspan=2 style="background-color: #00bfff;" | {{{{icon|fire}}}} Fire !! colspan=2 style="background-color: #ff6a6a;" | {{{{icon|shock}}}} Shock !! colspan=2 style="background-color: #caff70;" | {{{{icon|land morale}}}} Morale !! rowspan=2 | Total<br>pips
+|-
+! Off. !! Def. !! Off. !! Def. !! Off. !! Def.
+|-'''.format(units[0].category)
+        return re.sub(r'^.*?\|-', header, table, re.MULTILINE, re.DOTALL)
 
     #         for techlevel in range(1,32):
 
@@ -235,14 +286,14 @@ class FileGenerator:
             f.write(content)
 
     def generate_all(self):
+        self.unit_pip_table()
         self.mil_table()
         self.mil_techs_effects_table()
         self.straits()
-        # self.unit_pip_table()
 
 
 if __name__ == '__main__':
-    generator = FileGenerator()
+    generator = AnotherFileGenerator()
     if len(sys.argv) > 1:
         for arg in sys.argv[1:]:
             getattr(generator, arg)()
