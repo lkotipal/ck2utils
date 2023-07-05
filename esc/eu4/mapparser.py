@@ -428,6 +428,13 @@ class Eu4MapParser(Eu4Parser):
         return estuaries
 
     @cached_property
+    def all_estuary_provinces(self) -> list[Province]:
+        estuary_provinces = []
+        for provinces in self.estuary_map.values():
+            estuary_provinces.extend(provinces)
+        return estuary_provinces
+
+    @cached_property
     @disk_cache()
     def _province_attributes(self):
         """return a dictionary of province data

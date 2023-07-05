@@ -20,7 +20,7 @@ from eu4.wiki import WikiTextConverter, get_SVersion_header
 from eu4.paths import eu4outpath
 from eu4.parser import Eu4Parser
 from eu4.mapparser import Eu4MapParser
-from eu4.eu4lib import GovernmentReform, Country, Estate
+from eu4.eu4lib import GovernmentReform, Country, Estate, ColonialRegion
 from eu4.eu4_file_generator import Eu4FileGenerator
 from eu4.eventparser import Eu4EventParser
 from ck2parser import Obj, Pair
@@ -459,9 +459,11 @@ class MonumentList:
             f.write(content)
 
 
-class AreaAndRegionsList:
+class AreaAndRegionsList(Eu4FileGenerator):
+    parser: Eu4MapParser
 
     def __init__(self):
+        super().__init__()
         self.parser = Eu4MapParser()
 
     def formatSuperRegions(self):
@@ -475,9 +477,9 @@ class AreaAndRegionsList:
             lines.append('')  # blank lines to separate the superregions
         lines.pop()  # remove last blank line
         lines.append('|4}}')
-        return '\n'.join(lines)
+        return lines
 
-    def formatSeaRegions(self):
+    def generate_searegions(self):
         regionsWithInlandSeas = [region for region in self.parser.all_regions.values() if region.contains_inland_seas]
         regionsWithOnlyHighSeas = [region for region in self.parser.all_regions.values() if
                                    not region.contains_inland_seas and not region.contains_land_provinces]
@@ -492,9 +494,9 @@ class AreaAndRegionsList:
         for region in regionsWithOnlyHighSeas:
             lines.append('* {}'.format(region.display_name))
         lines.append('|4}}')
-        return '\n'.join(lines)
+        return lines
 
-    def formatLandAreas(self):
+    def generate_landareas(self):
         lines = ['{{MultiColumn|']
         regionsWithRegionInLink = [country.display_name for country in self.parser.all_countries.values()]
         regionsWithRegionInLink.append('Britain')
@@ -512,9 +514,9 @@ class AreaAndRegionsList:
             lines.append('')  # blank lines to separate the regions
         lines.pop()  # remove last blank line
         lines.append('|5}}')
-        return '\n'.join(lines)
+        return lines
 
-    def formatSeaAreas(self):
+    def generate_seaareas(self):
         lines = ['{{MultiColumn|']
 
         for region in sorted(self.parser.all_regions.values(), key=lambda r: strxfrm(r.display_name)):
@@ -526,7 +528,7 @@ class AreaAndRegionsList:
             lines.append('')  # blank lines to separate the regions
         lines.pop()  # remove last blank line
         lines.append('|5}}')
-        return '\n'.join(lines)
+        return lines
 
     def formatSuperregionsColorTable(self):
         lines = ['{| class="wikitable" style="float:right; clear:right; width:300px; text-align:center; "',
@@ -548,9 +550,9 @@ class AreaAndRegionsList:
         columns.append('{| style="width:100px;"\n' + '\n|-\n'.join(currentColumn) + '\n|}')
         lines.append('\n|\n'.join(columns))
         lines.append('|}')
-        return '\n'.join(lines)
+        return lines
 
-    def formatEstuaryList(self):
+    def generate_estuaries(self):
         lines = [get_SVersion_header(),
                  '{{desc|Estuary|' + self.parser.localize('desc_river_estuary_modifier') + '}}',
                  'River estuaries give {{icon|local trade power}} {{green|+10}} local trade power.<ref name="emod">See in {{path|common/event_modifiers/00_event_modifiers.txt}}</ref> ',
@@ -571,28 +573,39 @@ class AreaAndRegionsList:
         lines.extend(sorted(estuary_lines))
         lines.append('|4}}')
 
-        return '\n'.join(lines)
+        return lines
 
-    def writeSuperRegionsList(self):
-        self.writeFile('superregions',
-                       self.formatSuperregionsColorTable() + '\n\nAll of the land regions are grouped together to form the following in-game subcontinents:\n' + self.formatSuperRegions())
+    def generate_superregions(self):
+        return self.formatSuperregionsColorTable() + ['', 'All of the land regions are grouped together to form the following in-game subcontinents:', ] + self.formatSuperRegions()
 
-    def writeSeaRegionsList(self):
-        self.writeFile('searegions', self.formatSeaRegions())
+    def _get_key_provinces(self, region: ColonialRegion) -> str:
+        key_provinces = {'cotlvl3': [],
+                         'cotlvl2': [],
+                         'cotlvl1': [],
+                         'estuary': []}
+        for province in region.provinces:
+            if province in self.parser.all_estuary_provinces:
+                key_provinces['estuary'].append(province)
+            if province.center_of_trade > 0:
+                key_provinces[f'cotlvl{province.center_of_trade}'].append(province)
 
-    def writeLandAreaList(self):
-        self.writeFile('landareas', self.formatLandAreas())
+        lines = [f'{{{{icon|{prov_type}}}}} {", ".join(sorted(province.name for province in provinces))}'
+                 for prov_type, provinces in key_provinces.items()
+                 if len(provinces) > 0]
+        return '{{plainlist|\n' + self.create_wiki_list(lines) + '\n}}'
 
-    def writeSeaAreaList(self):
-        self.writeFile('seaareas', self.formatSeaAreas())
-
-    def writeEstuaryList(self):
-        self.writeFile('estuaries', self.formatEstuaryList())
-
-    def writeFile(self, name, content):
-        output_file = eu4outpath / 'eu4{}.txt'.format(name)
-        with output_file.open('w') as f:
-            f.write(content)
+    def generate_colonial_regions(self):
+        return self.get_SVersion_header('table') + '\n' + \
+            self.make_wiki_table([{
+                'Continent': ', '.join(continent.display_name for continent in region.continents),
+                'Colonial region': region,
+                'class="unsortable" width="75px" | Colour': f'style="background:{region.color.get_css_color_string()}"|',
+                '№ of provinces': len(region.provinces),
+                '№ of ports': region.port_count,
+                '% ports': f'{region.port_count / len(region.provinces):.0%}',
+                'class="unsortable" | Key provinces': self._get_key_provinces(region),
+            } for region in self.parser.all_colonial_regions.values()
+            ], one_line_per_cell=True)
 
 
 class GovernmentReforms:
@@ -1120,10 +1133,4 @@ if __name__ == '__main__':
     MonumentList().run()
     EventPicturesList().run([])
     CountryList().run([])
-
-    list_generator = AreaAndRegionsList()
-    list_generator.writeSuperRegionsList()
-    list_generator.writeSeaRegionsList()
-    list_generator.writeLandAreaList()
-    list_generator.writeSeaAreaList()
-    list_generator.writeEstuaryList()
+    AreaAndRegionsList().run([])

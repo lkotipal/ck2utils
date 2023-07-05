@@ -1,5 +1,6 @@
 import re
 import zipfile
+from operator import attrgetter
 from pathlib import Path, PurePath
 from zipfile import ZipFile
 
@@ -87,20 +88,24 @@ class NameableEntityWithProvinces(NameableEntity):
         self.parser = parser
 
     @cached_property
-    def provinces(self):
+    def provinces(self) -> list[Province]:
         if self._provinces is None:
             self._provinces = [self.parser.all_provinces[provinceID] for provinceID in self._provinceIDs]
         return self._provinces
 
     @cached_property
-    def provinceIDs(self):
+    def provinceIDs(self) -> list[int]:
         if self._provinceIDs is None:
             self._provinceIDs = [province.id for province in self._provinces]
         return self._provinceIDs
 
+    @cached_property
+    def port_count(self) -> int:
+        return len([province for province in self.provinces if province.has_port])
+
 
 class NameableEntityWithProvincesAndColor(NameableEntityWithProvinces):
-    def __init__(self, name, display_name, provinces=None, provinceIDs=None, parser=None, color=None):
+    def __init__(self, name, display_name, provinces=None, provinceIDs=None, parser=None, color: 'Eu4Color' = None):
         super().__init__(name, display_name, provinces, provinceIDs, parser)
         self.color = color
 
@@ -211,8 +216,11 @@ class Superregion(NameableEntity):
 
 
 class ColonialRegion(NameableEntityWithProvincesAndColor):
-    pass
 
+    @cached_property
+    def continents(self) -> list[Continent]:
+        continents = set(province.continent for province in self.provinces)
+        return sorted(continents)
 
 class Terrain(NameableEntityWithProvincesAndColor):
     pass
