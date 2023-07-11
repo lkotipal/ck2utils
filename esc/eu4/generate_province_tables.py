@@ -7,7 +7,7 @@ from collections import defaultdict
 from locale import strxfrm, setlocale, LC_COLLATE
 from eu4.mapparser import Eu4MapParser
 from eu4.paths import eu4outpath
-from eu4.wiki import get_version_header
+from eu4.wiki import get_version_header, get_SVersion_header
 
 
 class ProvinceTables:
@@ -30,17 +30,20 @@ class ProvinceTables:
         self.write_file('geographical', self.generate_geographical_list_of_provinces())
         self.write_file('political', self.generate_political_list_of_provinces())
 
-        output = self.format_continent_output(continents,
-            ('Provinces,Base Tax,Base Production,Base Manpower,'
-             'Development').split(','))
-        output_file = eu4outpath / 'eu4continenttable.txt'
-        with output_file.open('w') as f:
-            f.write(output)
+        self.write_file('continenttable', self.generate_continent_table(continents))
 
         for continent in ['India', 'East Indies'] + list(continents.keys()):
             if continent == 'Total':
                 continue
             self.write_file('regiontable_' + continent, self.generate_region_list(continent))
+
+    def generate_continent_table(self, continents=None):
+        if continents is None:
+            continents = self.analyze_continents(self.parser.all_provinces)
+        output = self.format_continent_output(continents,
+                                              ('Provinces,Base Tax,Base Production,Base Manpower,'
+                                               'Development').split(','))
+        return get_SVersion_header('table') + '\n' + output
 
     def generate_economic_list_of_provinces(self):
         return self.format_output(['ID', 'Name', 'Development', 'BT', 'BP', 'BM', 'Trade good', 'Trade node', 'Modifiers'])
@@ -245,7 +248,7 @@ class ProvinceTables:
                                 .format(cont.get(head, '')) for head in headings)
             else:
                 line += ''.join(' || style="text-align:right" | {}'
-                                .format(cont.get(head, '')) for head in headings)
+                                .format(f'<section begin=land_province_count/>{cont.get(head, "")}<section end=land_province_count/>' if 'Provinces' in head else cont.get(head, '')) for head in headings)
             lines.append(line)
         lines.append('|}')
         lines.append('')
