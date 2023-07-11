@@ -20,7 +20,7 @@ from eu4.wiki import WikiTextConverter, get_SVersion_header
 from eu4.paths import eu4outpath
 from eu4.parser import Eu4Parser
 from eu4.mapparser import Eu4MapParser
-from eu4.eu4lib import GovernmentReform, Country, Estate, ColonialRegion
+from eu4.eu4lib import GovernmentReform, Country, Estate, ColonialRegion, Culture
 from eu4.eu4_file_generator import Eu4FileGenerator
 from eu4.eventparser import Eu4EventParser
 from ck2parser import Obj, Pair
@@ -1122,6 +1122,48 @@ class CountryList(Eu4FileGenerator):
         table = self.make_wiki_table(countries)
 
         return self.get_SVersion_header('table') + '\n' + table
+
+
+class CultureList(Eu4FileGenerator):
+    def __init__(self):
+        super().__init__()
+        self.name_to_culture_map = None
+
+    def _get_extra_text(self, culture: Culture) -> str:
+        if self.name_to_culture_map is None:
+            name_to_culture_map = {}
+            for culture in self.parser.cultures.values():
+                if culture.display_name not in name_to_culture_map:
+                    name_to_culture_map[culture.display_name] = []
+                name_to_culture_map[culture.display_name].append(culture)
+            self.name_to_culture_map = name_to_culture_map
+
+        if len(self.name_to_culture_map[culture.display_name]) == 1:
+            return ''
+        if len(self.name_to_culture_map[culture.display_name]) == 2:
+            count = 'two'
+        else:
+            count = 'multiple'
+
+        return f"<ref>There are {count} cultures with the name ''“{culture.display_name}”'': " + \
+            ' and '.join([f"<tt>{culture.name}</tt> in the group ''“{culture.culture_group.display_name}”''" for culture in self.name_to_culture_map[culture.display_name]]) + \
+            '</ref>'
+
+
+    def generate_culture_list(self):
+        lines = [self.get_SVersion_header(), '{{Box wrapper}}']
+        for group in sorted(self.parser.culture_groups.values(), key=lambda c: strxfrm(c.display_name)):
+            lines.append('{{Culture group')
+            lines.append(f'|group={group.display_name}')
+            lines.append('|cultures=')
+            for culture in sorted(group.cultures, key=lambda c: strxfrm(c.display_name)):
+                lines.append(f'{{{{Culture|{culture.display_name}{self._get_extra_text(culture)}{"|" + culture.primary.display_name if culture.primary else ""}}}}}')
+            lines.append('}}')
+            lines.append('')
+
+        lines.append('{{end box wrapper}}')
+
+        return lines
 
 
 if __name__ == '__main__':

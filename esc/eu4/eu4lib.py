@@ -513,9 +513,10 @@ class GovernmentReform(NameableEntity):
 
 class Culture(NameableEntity):
 
-    def __init__(self, name: str, display_name: str, culture_group: 'CultureGroup' = None):
+    def __init__(self, name: str, display_name: str, culture_group: 'CultureGroup' = None, primary: 'Country' = None):
         super().__init__(name, display_name)
         self.culture_group = culture_group
+        self.primary = primary
 
 
 class CultureGroup(NameableEntity):

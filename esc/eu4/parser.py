@@ -244,8 +244,11 @@ class Eu4Parser:
                 cultures = []
                 for n, value in group_data:
                     if (isinstance(value, Obj) and
-                            not re.match(r'((fe)?male|dynasty)_names', n.val)):
-                        cultures.append(Culture(n.val, self.localize(n.val)))
+                            not re.match(r'(((fe)?male|dynasty)_names|country|province)', n.val)):
+                        primary = None
+                        if 'primary' in value:
+                            primary = self.all_countries[value['primary'].val]
+                        cultures.append(Culture(n.val, self.localize(n.val), primary=primary))
                 culture_group = CultureGroup(group_name.val, self.localize(group_name.val), cultures)
                 for culture in cultures:
                     culture.culture_group = culture_group
