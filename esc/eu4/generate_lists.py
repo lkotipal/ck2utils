@@ -33,7 +33,7 @@ class PdxparseToList(Eu4FileGenerator):
         self.wiki_converter = WikiTextConverter()
 
     def get_data_from_files(self, glob, province_scope=[], country_scope=[], modifier_scope=[], extra_handlers=None, key_value_pair_list=[],
-                            ignored=[], localisation_with_title=False, localise_desc=False):
+                            ignored=[], ignored_elements=[], localisation_with_title=False, localise_desc=False):
         if not extra_handlers:
             extra_handlers = {}
         province_params = {}
@@ -44,10 +44,13 @@ class PdxparseToList(Eu4FileGenerator):
         unhandled_sections = {}
         elements = {}
         for element_id, data in self.parser.parser.merge_parse(glob):
+            if element_id in ignored_elements:
+                continue
             if localisation_with_title:
                 elements[element_id] = self.parser.localize(element_id + '_title')
             else:
                 elements[element_id] = self.parser.localize(element_id)
+                # print(elements[element_id].replace('§J', '').replace('§!', ''))
 
             unhandled_sections[element_id] = ''
             for section_name, section_data in data:
@@ -108,6 +111,7 @@ class EocReforms(PdxparseToList):
         table = self.make_wiki_table(reforms, one_line_per_cell=True)
 
         return self.get_SVersion_header('table') + '\n' + table
+
 
 class EstatePrivileges(PdxparseToList):
 
@@ -172,6 +176,102 @@ class EstatePrivileges(PdxparseToList):
     def run_for_all_estates(self):
         for estate in self.parser.all_estates.values():
             self._write_text_file(f'{estate.name}_privileges', self.estate_privileges_list(estate))
+
+
+class MercenaryList(PdxparseToList):
+
+    parser: Eu4MapParser
+
+    def __init__(self):
+        super().__init__()
+        self.parser = Eu4MapParser()
+
+    @staticmethod
+    def get_composition(data):
+        formatted = []
+        if data['cavalry_weight'] != '' or data['artillery_weight'] != '':
+            infantry = 1
+            formatted.append('infantryplaceholder')
+            if data['cavalry_weight']:
+                cavalry_text = f"{data['cavalry_weight']:.0%} {{{{icon|cavalry}}}} cavalry"
+                if data['cavalry_cap']:
+                    cavalry_text += f' (capped at {data["cavalry_cap"]} regiments)'
+                formatted.append(cavalry_text)
+                infantry -= data['cavalry_weight']
+            if data['artillery_weight']:
+                try:
+                    formatted.append(f"{data['artillery_weight']:.0%} {{{{icon|artillery}}}} artillery")
+                    infantry -= data['artillery_weight']
+                except:
+                    print(data['artillery_weight'])
+            formatted[0] = f"{infantry:.0%} {{{{icon|infantry}}}} infantry"
+        if data['min_size'] and data['min_size'] != 4:
+            formatted.append(f"Minimum size: '''{data['min_size']}'''")
+        if data['max_size']:
+            formatted.append(f"Maximum size: '''{data['max_size']}'''")
+        return '<br/>'.join(formatted)
+
+    def get_home_province(self, data):
+        if data['home_province']:
+            return str(self.parser.all_provinces[data['home_province']])
+        else:
+            return ''
+
+    def get_cost_modifier(self, data):
+        if data['cost_modifier']:
+            try:
+
+                if data['cost_modifier'] < 1:
+                    return f'{{{{green|×{data["cost_modifier"]}}}}}'
+                elif data['cost_modifier'] > 1:
+                    return f'{{{{red|×{data["cost_modifier"]}}}}}'
+            except:
+                print('cost mod: ', data['cost_modifier'])
+        return ''
+
+    def get_modifiers(self, data):
+        modifiers = data['modifier']
+        if data['manpower_pool']:
+            modifiers += f"\n* {{{{icon|mercenary manpower}}}} {{{{green|{data['manpower_pool'] * 1000}}}}} Manpower pool independent of the size"
+        if data['mercenary_desc_key']:
+            desc = data['mercenary_desc_key']
+            if desc == 'FREE_OF_ARMY_PROFESSIONALISM_COST':
+                modifiers += "\n* {{green|''Does not reduce Army professionalism when recruited''}}"
+            else:
+                modifiers += "\n* " + self.parser.localize(desc)
+        if modifiers != '':
+            modifiers = '{{plainlist|' + modifiers + '\n}}'
+        return modifiers
+
+    def filter_conditions(self, conditions: str):
+        # remove the default condition with either a preceding or a following linebreak, but don't remove both
+        # in case the condition is in the middle
+        for filter_condition in ['\n* <pre>is_allowed_to_recruit_mercenaries = yes</pre>',
+                                 '* <pre>is_allowed_to_recruit_mercenaries = yes</pre>\n',
+                                 '* <pre>is_allowed_to_recruit_mercenaries = yes</pre>']:
+            if filter_condition in conditions:
+                conditions = conditions.replace(filter_condition, '')
+        return conditions
+
+    def generate_mercenary_list(self):
+        data = [{
+            'Name': item['name'],
+            'Regiments per development': item['regiments_per_development'],
+            'Army composition': self.get_composition(item),
+            'Home province': self.get_home_province(item),
+            'Cost modifier': self.get_cost_modifier(item),
+            'Conditions': self.filter_conditions(item['trigger']),
+            'Modifiers': self.get_modifiers(item),
+        } for item in self.get_data_from_files('common/mercenary_companies/*',
+                                               country_scope=['trigger'],
+                                               modifier_scope=['modifier'],
+                                               key_value_pair_list=['regiments_per_development', 'cavalry_weight', 'cavalry_cap', 'artillery_weight', 'min_size', 'max_size', 'home_province',
+                                                                    'cost_modifier', 'manpower_pool', 'mercenary_desc_key'],
+                                               ignored_elements=['rnw_modifier_weights'],
+                                               ignored=['sprites'])]
+        table = self.make_wiki_table(data, one_line_per_cell=True)
+        return self.get_SVersion_header('table') + '\n' + table
+
 
 class MonumentList:
     """needs the pyradox import and pdxparse must be in the path"""
@@ -1172,6 +1272,7 @@ if __name__ == '__main__':
     EstatePrivileges().run_for_all_estates()
     EocReforms().run([])
     GovernmentReforms().run()
+    MercenaryList().run([])
     MonumentList().run()
     EventPicturesList().run([])
     CountryList().run([])
