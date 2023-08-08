@@ -2,6 +2,8 @@ from tempfile import TemporaryDirectory, mkstemp
 import os
 import subprocess
 import re
+
+from common.wiki import WikiTextFormatter
 from eu4.paths import eu4_major_version
 
 
@@ -158,3 +160,14 @@ class WikiTextConverter:
         if dictionary:
             for key in dictionary:
                 dictionary[key] = strip_re.sub('', dictionary[key])
+
+
+class Eu4WikiTextFormatter(WikiTextFormatter):
+
+    @staticmethod
+    def iconify(item: str, value: str = None) -> str:
+        """add an icon in front of the item. This assumes that the item is also the icon key"""
+        if value is None:
+            return '{{icon|' + item.lower() + '}} ' + item
+        else:
+            return '{{icon|' + item.lower() + '}} ' + value + ' ' + item
