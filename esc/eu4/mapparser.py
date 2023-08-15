@@ -5,8 +5,7 @@ from PIL import Image
 from ck2parser import csv_rows, Pair
 from localpaths import cachedir
 from eu4.provincelists import terrain_to_provinces
-from eu4.eu4lib import Province, Continent, Area, Region, Superregion, \
-    TradeCompany, Terrain, ColonialRegion, TradeNode, Eu4Color
+from eu4.eu4lib import *
 from eu4.parser import Eu4Parser
 from eu4.cache import disk_cache, cached_property, NumpySerializer
 
@@ -246,9 +245,9 @@ class Eu4MapParser(Eu4Parser):
             return Continent('', '', [])
 
     @cached_property
-    def all_areas(self):
+    def all_areas(self) -> dict[str, Area]:
         """return a dict between the script name of an area and an Area object"""
-        areas = OrderedDict()
+        areas = {}
         for n, v in self.parser.parse_file(self.map_path('area')):
             if len(v) > 0:
                 provinceIDs = []
@@ -542,6 +541,17 @@ class Eu4MapParser(Eu4Parser):
                 # Stadacona (994) - Pekuakamiulnuatsh (2579)
 
         return adjacency_map
+
+    @cached_property
+    def straits(self) -> list[Strait]:
+        """all straits except canals"""
+        straits = []
+        for row in csv_rows(self.parser.file('map/' + self.default_tree['adjacencies'].val)):
+            if row[0] not in ['From', '-1'] and row[2] != 'canal':
+                straits.append(Strait(provinces=(self.all_provinces[int(row[0])], self.all_provinces[int(row[1])]),
+                                      strait_type=row[2],
+                                      water_province=self.all_provinces[int(row[3])]))
+        return straits
 
     @cached_property
     def existing_tags(self):

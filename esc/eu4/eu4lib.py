@@ -222,8 +222,20 @@ class ColonialRegion(NameableEntityWithProvincesAndColor):
         continents = set(province.continent for province in self.provinces)
         return sorted(continents)
 
+
 class Terrain(NameableEntityWithProvincesAndColor):
     pass
+
+
+class Strait:
+    def __init__(self, provinces: tuple[Province, Province], strait_type: str, water_province: Province):
+        self.provinces = provinces
+        self.strait_type = strait_type
+        self.water_province = water_province
+
+    def __str__(self):
+        # "–" is an en-dash
+        return f'{self.provinces[0].name} – {self.provinces[1].name}'
 
 
 class Event:

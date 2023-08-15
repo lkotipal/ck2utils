@@ -8,7 +8,7 @@ sys.path.append(os.path.dirname(os.path.realpath(__file__)) + '/../../../../pyra
 # add the parent folder to the path so that imports work even if the working directory is the eu4 folder
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 from ck2parser import csv_rows
-from eu4.parser import Eu4Parser
+from eu4.mapparser import Eu4MapParser
 from eu4.paths import eu4outpath
 from eu4.eu4_file_generator import Eu4FileGenerator
 from eu4.eu4lib import Unit
@@ -18,7 +18,7 @@ class AnotherFileGenerator(Eu4FileGenerator):
 
     def __init__(self):
         super().__init__()
-        self.eu4parser = Eu4Parser()
+        self.eu4parser = Eu4MapParser()
         self.parser = self.eu4parser.parser
 
     def format_effect(self, effect, value):
@@ -270,15 +270,18 @@ class AnotherFileGenerator(Eu4FileGenerator):
     #         for techlevel in range(1,32):
 
     def straits(self):
-        lines = ['{{MultiColumn|']
-        default_tree = self.parser.parse_file('map/default.map')
-        for row in csv_rows(self.parser.file('map/' + default_tree['adjacencies'].val)):
-            if row[0] not in ['From', '-1'] and row[2] != 'canal':
-                # "–" is an en-dash
-                lines.append('* {} – {}'.format(self.eu4parser.localize('PROV' + row[0]),
-                                                self.eu4parser.localize('PROV' + row[1])))
+        self.write_file('straits', '\n'.join(self.generate_straits_list()))
+
+    def generate_straits_list(self):
+        lines = [self.get_SVersion_header(scope='table'), '{{MultiColumn|']
+        for strait in self.eu4parser.straits:
+            line = f'* {strait}'
+            if strait.strait_type == 'lake':
+                line += ' (invisible lake crossing)'
+            lines.append(line)
+
         lines.append('|4}}')
-        self.write_file('straits', '\n'.join(lines))
+        return lines
 
     def write_file(self, name, content):
         output_file = eu4outpath / 'eu4{}.txt'.format(name)
