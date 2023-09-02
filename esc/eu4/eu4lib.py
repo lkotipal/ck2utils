@@ -265,10 +265,11 @@ class Decision:
 
 class Religion(NameableEntity):
 
-    def __init__(self, name: str, display_name: str, group, color):
+    def __init__(self, name: str, display_name: str, group, color, data):
         super().__init__(name, display_name)
         self.group = group
         self.color = color
+        self.data = data
 
 
 class TradeCompany(NameableEntityWithProvincesAndColor):

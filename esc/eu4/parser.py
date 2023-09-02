@@ -92,7 +92,7 @@ class Eu4Parser:
                                         'religious_schools']:
                         continue
                     color = Eu4Color.new_from_parser_obj(data['color'])
-                    all_religions[religion.val] = Religion(religion.val, self.localize(religion.val), group.val, color)
+                    all_religions[religion.val] = Religion(religion.val, self.localize(religion.val), group.val, color, data)
         return all_religions
 
     def _process_idea_modifiers(self, data):
