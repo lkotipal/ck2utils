@@ -456,10 +456,10 @@ class Eu4MapParser(Eu4Parser):
             cores = set()
             values = self.parser.parse_file(path).get_entries_at_date(
                 duplicated_keys=['add_permanent_province_modifier', 'add_province_triggered_modifier'],
-                special_handlers={'add_core': lambda value, previous_values: cores.add(value),
+                special_handlers={'add_core': lambda value, previous_values: cores.add(value.val),
                                   'remove_core': lambda value, previous_values:
                                   cores.remove(value.val) if value.val in cores
-                                  else print('remove_core with non-existing core in ' + str(number) + ' for ' + v.val)
+                                  else print('remove_core with non-existing core in ' + str(number) + ' for ' + value.val)
                                   }
             )
             modifiers = []
