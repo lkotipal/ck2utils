@@ -247,7 +247,7 @@ class Eu4Parser:
                             not re.match(r'(((fe)?male|dynasty)_names|country|province)', n.val)):
                         primary = None
                         if 'primary' in value:
-                            primary = self.all_countries[value['primary'].val]
+                            primary = value['primary'].val
                         cultures.append(Culture(n.val, self.localize(n.val), primary=primary))
                 culture_group = CultureGroup(group_name.val, self.localize(group_name.val), cultures)
                 for culture in cultures:
@@ -312,7 +312,7 @@ class Eu4Parser:
         return result
 
     @cached_property
-    def all_government_reforms(self):
+    def all_government_reforms(self) -> dict[str, GovernmentReform]:
         reforms_to_type_and_tier = {}
         for gov_type, tiers in self.government_type_with_reform_tiers.items():
             tier_num = 0
@@ -373,7 +373,7 @@ class Eu4Parser:
         return all_reforms
 
     @cached_property
-    def common_government_reforms(self):
+    def common_government_reforms(self) -> dict[str, dict[str, int]]:
         common_reforms = {}
         all_reforms = {}
         for gov_type, tiers in self.government_type_with_reform_tiers.items():
