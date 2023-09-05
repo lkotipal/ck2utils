@@ -92,6 +92,42 @@ class PdxparseToList(Eu4FileGenerator):
         return results
 
 
+class Achievements(PdxparseToList):
+
+    def remove_common_starting_conditions(self, conditions):
+        regexes = [r'\* None of:\n\*\* <pre>num_of_custom_nations = 1</pre>',
+                   r'\* Playing with normal or historical nations',
+                   r'\* <pre>normal_province_values = yes</pre>',
+                   r'\* <pre>ironman = yes</pre>',
+                   r'\* <pre>start_date = 1444.11.11</pre>']
+
+        for regex in regexes:
+            # to avoid empty lines, we remove a newline at the end if there is one(the last condition doesnt have a newline)
+            conditions = re.sub(regex + r'\n?', '', conditions, flags=re.MULTILINE)
+
+        return conditions
+
+    def generate_achievement_list(self):
+        currentVersion = self.parser.eu4_major_version.removeprefix('1.')
+        achievements = [{
+            'style="width:20%;" | Achievement': ' {{Achievement|' + self.parser.localize(achievement['localization'] + '_NAME') + '|' + self.parser.localize(achievement['localization'] + '_DESC') + '|extension=png}}',
+            'class="mildtable sortable plainlist" style="width:18% | Starting conditions': self.remove_common_starting_conditions(achievement['possible']),
+            'class="mildtable sortable plainlist" style="width:22%;" | Completion requirements': achievement['happened'],
+            'class="mildtable sortable plainlist" style="width:37%;" | Notes': '',
+            '{{icon|eu4|21px}}': '',
+            'Ver': 'data-sort-value="{0}" | [[1.{0}]]'.format(currentVersion),
+            'DI': '{{DI|UC}}',
+
+        } for achievement in self.get_data_from_files('common/achievements.txt',
+                                                 country_scope=['possible', 'happened'],
+                                                 extra_handlers={'localization': lambda x: x},  # pass through localisation key for later
+                                                 ignored=['visible', 'id', 'provinces_to_highlight']
+                                                 )]
+        table = self.make_wiki_table(achievements, one_line_per_cell=True, table_classes=['mildtable', 'plainlist'])
+
+        return self.get_SVersion_header('table') + '\n' + table
+
+
 class EocReforms(PdxparseToList):
 
     def generate_eoc_reforms_list(self):
@@ -1269,6 +1305,7 @@ class CultureList(Eu4FileGenerator):
 if __name__ == '__main__':
     # for correct sorting. en_US seems to work even for non english characters, but the default None sorts all non-ascii characters to the end
     setlocale(LC_COLLATE, 'en_US.utf8')
+    Achievements().run([])
     EstatePrivileges().run_for_all_estates()
     EocReforms().run([])
     GovernmentReforms().run()
