@@ -83,6 +83,17 @@ class MapGenerator:
             'brightred': ['khorasan_region', 'persia_region', 295, 280],
             }, 'Formmongols', crop_to_color=True)
 
+        self.color_map_generator.create_shaded_image({
+                # 20 owned and cored required
+                'yellow': ['manchu'], # technically also manchu_new, but there are no manchu_new provinces at the start and putting it here breaks the script
+                # gains cores
+                'green': ['manchuria_region']
+            },
+            # always required
+            {
+                'orange': [730, 2108],
+            }, 'Formmanchu', crop_to_color=True)
+
 # currently not used by the wiki
 #         self.color_map_generator.generate_mapimage_with_several_colors({
 #             'yellow': ['upper_doab_area', 'lower_doab_area', 'oudh_area', 'katehar_area', 'sirhind_area', 'lahore_area', 'sind_sagar_area'], # claims
