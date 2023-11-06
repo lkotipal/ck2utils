@@ -1247,6 +1247,8 @@ class CountryList(Eu4FileGenerator):
     def generate_country_list(self):
         countries = [{
             '': i,
+            # optional version with colors as discussed on the talk page
+            # '': f'style="width: 2px; background-color: {country.get_color().css_color_string}"|{i}',
             'Country': f"[[File:{self._get_flag_file(country)}|50px|border]] '''{self._get_link(country)}'''",
             'Tag': country.tag,
             'Capital Subcontinent / Region / Province': self._get_capital_location(country),
