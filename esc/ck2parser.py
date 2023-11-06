@@ -231,11 +231,15 @@ class ContainerMixin:
         """Like find_all, but searches the whole Tree recursively"""
         results = []
         if self.has_pairs:
-            for k, v in self.contents:
-                if k.val == search_key:
-                    results.append(v.val if hasattr(v, 'val') else v)
-                elif isinstance(v, ContainerMixin):
-                    results.extend(v.find_all_recursively(search_key))
+            for element in self.contents:
+                if isinstance(element, Pair):
+                    k,v = element
+                    if k.val == search_key:
+                        results.append(v.val if hasattr(v, 'val') else v)
+                    elif isinstance(v, ContainerMixin):
+                        results.extend(v.find_all_recursively(search_key))
+                else:  # not every element might be a pair
+                    continue
         return results
 
     def get_sorted_entries_with_date(self, default_date=(1, 1, 1), ignore_entries_after=(1444, 11, 11)):
