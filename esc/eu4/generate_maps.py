@@ -26,7 +26,7 @@ class MapGenerator:
 
     def decision_maps(self):
         # change the version number after verifying that the provinces/areas are still correct
-        verified_for_version('1.35.3')
+        verified_for_version('1.36.0')
 
         self.color_map_generator.create_shaded_image({
             'yellow': [prov.id for prov in self.mapparser.all_land_provinces.values() if
@@ -61,10 +61,20 @@ class MapGenerator:
             'purple': [622, 2687, 628, 638, 2390], # needed for non-muslim countries
             }, 'Formmalaya', crop_to_color=True)
 
-        self.color_map_generator.generate_mapimage_with_important_provinces([
-            'italy_region', 'france_region', 'iberia_region', 'balkan_region',
-            'anatolia_region', 'mashriq_region', 343, 341, 361, 236, 245, 96, 134],
-            'EU4 Roman Empire')
+        self.color_map_generator.generate_mapimage_with_several_colors({
+            'yellow': ['anatolia_region', 'egypt_region', 'italy_region', 'france_region', 'iberia_region', 'mashriq_region',
+            'balkan_region', 'east_midlands_area', 'west_midlands_area', 'yorkshire_area', 'wessex_area',
+            'home_counties_area', 'east_anglia_area', 'wales_area', 'scottish_marches_area', 'romandie_area',
+            'upper_rhineland_area', 'romandie_area', 'alsace_area', 'palatinate_area', 'lower_rhineland_area',
+            'carinthia_area', 85, 'north_brabant_area', 'brabant_area', 'flanders_area', 'wallonia_area',
+            '96 #zeeland', 'inner_austria_area', 'austria_proper_area', 'tirol_area', 'east_bavaria_area',
+            'lower_bavaria_area', 'upper_bavaria_area', 'upper_swabia_area', 'lower_swabia_area', 'switzerland_area',
+            'barbary_coast_area', 'kabylia_area', 'tunisia_area', 'djerba_area', 'tripolitania_area',
+            'northern_morocco_area', 'algiers_area', 343, 'transdanubia_area'],
+            'land': ['lower_nubia_area', 'iraq_arabi_area', 'basra_area']},  # not needed
+            'EU4 Roman Empire',
+            crop_to_color=True
+        )
         self.color_map_generator.generate_mapimage_with_several_colors({
             'yellow': ['low_countries_region'], # claims
             'orange': [95, 97, 98, 99, 4383], # needed core provinces
@@ -419,7 +429,7 @@ class MapGenerator:
     def achievement_maps(self):
         # change the version number after verifying that the provinces/areas are still correct
         # for the first two achievements, the decision file has to be checked
-        verified_for_version('1.35.3', 'Files to validate are:\n* ' + '\n* '.join(['common/achievements.txt', 'decisions/Religion.txt', 'decisions/Muslim.txt']))
+        verified_for_version('1.36.0', 'Files to validate are:\n* ' + '\n* '.join(['common/achievements.txt', 'decisions/Religion.txt', 'decisions/Muslim.txt']))
 
         # from the decision zoroastrian_royal_fires in decisions/Religion.txt
         self.achievement_map('Royal Fires', '2221 2207 2235 2236 2218 441 2223')
