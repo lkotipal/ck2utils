@@ -1295,7 +1295,7 @@ class CultureList(Eu4FileGenerator):
             lines.append(f'|group={group.display_name}')
             lines.append('|cultures=')
             for culture in sorted(group.cultures, key=lambda c: strxfrm(c.display_name)):
-                lines.append(f'{{{{Culture|{culture.display_name}{self._get_extra_text(culture)}{"|" + culture.primary.display_name if culture.primary else ""}}}}}')
+                lines.append(f'{{{{Culture|{culture.display_name}{self._get_extra_text(culture)}{"|" + self.parser.all_countries[culture.primary].display_name if culture.primary else ""}}}}}')
             lines.append('}}')
             lines.append('')
 
@@ -1316,3 +1316,4 @@ if __name__ == '__main__':
     EventPicturesList().run([])
     CountryList().run([])
     AreaAndRegionsList().run([])
+    CultureList().run([])
