@@ -67,7 +67,7 @@ class MapGenerator:
             'home_counties_area', 'east_anglia_area', 'wales_area', 'scottish_marches_area', 'romandie_area',
             'upper_rhineland_area', 'romandie_area', 'alsace_area', 'palatinate_area', 'lower_rhineland_area',
             'carinthia_area', 85, 'north_brabant_area', 'brabant_area', 'flanders_area', 'wallonia_area',
-            '96 #zeeland', 'inner_austria_area', 'austria_proper_area', 'tirol_area', 'east_bavaria_area',
+            96, 'inner_austria_area', 'austria_proper_area', 'tirol_area', 'east_bavaria_area',
             'lower_bavaria_area', 'upper_bavaria_area', 'upper_swabia_area', 'lower_swabia_area', 'switzerland_area',
             'barbary_coast_area', 'kabylia_area', 'tunisia_area', 'djerba_area', 'tripolitania_area',
             'northern_morocco_area', 'algiers_area', 343, 'transdanubia_area'],
