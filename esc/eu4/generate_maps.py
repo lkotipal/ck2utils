@@ -62,7 +62,7 @@ class MapGenerator:
             }, 'Formmalaya', crop_to_color=True)
 
         self.color_map_generator.generate_mapimage_with_several_colors({
-            'yellow': ['anatolia_region', 'egypt_region', 'italy_region', 'france_region', 'iberia_region', 'mashriq_region',
+            'orange': ['anatolia_region', 'egypt_region', 'italy_region', 'france_region', 'iberia_region', 'mashriq_region',
             'balkan_region', 'east_midlands_area', 'west_midlands_area', 'yorkshire_area', 'wessex_area',
             'home_counties_area', 'east_anglia_area', 'wales_area', 'scottish_marches_area', 'romandie_area',
             'upper_rhineland_area', 'romandie_area', 'alsace_area', 'palatinate_area', 'lower_rhineland_area',
