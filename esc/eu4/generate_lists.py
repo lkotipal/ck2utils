@@ -269,6 +269,10 @@ class MercenaryList(PdxparseToList):
         modifiers = data['modifier']
         if data['manpower_pool']:
             modifiers += f"\n* {{{{icon|mercenary manpower}}}} {{{{green|{data['manpower_pool'] * 1000}}}}} Manpower pool independent of the size"
+        if data['no_additional_manpower_from_max_size'] == 'yes':
+            modifiers += "\n* ''Manpower pool does not increase after the company has reached its maximum size''"
+        if data['counts_towards_force_limit'] == 'no':
+            modifiers += "\n* {{green|''Costs no force limit to maintain.''}}"
         if data['mercenary_desc_key']:
             desc = data['mercenary_desc_key']
             if desc == 'FREE_OF_ARMY_PROFESSIONALISM_COST':
@@ -302,7 +306,7 @@ class MercenaryList(PdxparseToList):
                                                country_scope=['trigger'],
                                                modifier_scope=['modifier'],
                                                key_value_pair_list=['regiments_per_development', 'cavalry_weight', 'cavalry_cap', 'artillery_weight', 'min_size', 'max_size', 'home_province',
-                                                                    'cost_modifier', 'manpower_pool', 'mercenary_desc_key'],
+                                                                    'cost_modifier', 'manpower_pool', 'mercenary_desc_key', 'counts_towards_force_limit', 'no_additional_manpower_from_max_size'],
                                                ignored_elements=['rnw_modifier_weights'],
                                                ignored=['sprites'])]
         table = self.make_wiki_table(data, one_line_per_cell=True)
@@ -952,6 +956,7 @@ class GovernmentReforms:
             if not self._compare_attributes(attributes_from_single_dlcs, condition_attributes):
                 # raise Exception('multiple DLC conditions dont match: {}\n{}'.format(attributes_from_single_dlcs, condition_attributes))
                 print('multiple DLC conditions dont match: {}\n{}'.format(attributes_from_single_dlcs, condition_attributes))
+                return conditionals
 
         return processed_conditions
 
