@@ -26,7 +26,7 @@ class MapGenerator:
 
     def decision_maps(self):
         # change the version number after verifying that the provinces/areas are still correct
-        verified_for_version('1.36.0')
+        verified_for_version('1.36.1')
 
         self.color_map_generator.create_shaded_image({
             'yellow': [prov.id for prov in self.mapparser.all_land_provinces.values() if
@@ -429,7 +429,7 @@ class MapGenerator:
     def achievement_maps(self):
         # change the version number after verifying that the provinces/areas are still correct
         # for the first two achievements, the decision file has to be checked
-        verified_for_version('1.36.0', 'Files to validate are:\n* ' + '\n* '.join(['common/achievements.txt', 'decisions/Religion.txt', 'decisions/Muslim.txt']))
+        verified_for_version('1.36.1', 'Files to validate are:\n* ' + '\n* '.join(['common/achievements.txt', 'decisions/Religion.txt', 'decisions/Muslim.txt']))
 
         # from the decision zoroastrian_royal_fires in decisions/Religion.txt
         self.achievement_map('Royal Fires', '2221 2207 2235 2236 2218 441 2223')
