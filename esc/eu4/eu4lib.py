@@ -595,6 +595,7 @@ class DLC(NameableEntity):
         'Origins': 'org',
         'Lions of the North': 'lon',
         'Domination': 'dom',
+        'King of Kings': 'kok',
     }
 
     def __init__(self, name: str, display_name: str, category: str, archive: Path = None):
