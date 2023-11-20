@@ -294,10 +294,8 @@ class PolicyListGenerator:
             '}}'
         ]
 
-    def handle_category(self, category, category_display_name):
-        lines = ['==[[File:{} power.png|link={} power]]{} policies=='.format(
-            category_display_name, category_display_name, category_display_name),
-            get_SVersion_header()]
+    def get_policy_section(self, category):
+        lines = [get_SVersion_header()]
         lines.extend(self.build_toc(category))
         lines.append('')
         lines.append('{{box wrapper|')
@@ -305,6 +303,13 @@ class PolicyListGenerator:
             lines.extend(self.format_policy(policy))
 
         lines.append('}}')
+        return '\n'.join(lines)
+
+    def handle_category(self, category, category_display_name):
+        lines = ['==[[File:{} power.png|link={} power]]{} policies=='.format(
+            category_display_name, category_display_name, category_display_name)]
+        lines.append(self.get_policy_section(category))
+
         self.writeFile('eu4policies_' + category, lines)
 
     # experiment to use File:, but it has no links
