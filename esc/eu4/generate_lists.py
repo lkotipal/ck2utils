@@ -32,6 +32,15 @@ class PdxparseToList(Eu4FileGenerator):
         super().__init__()
         self.wiki_converter = WikiTextConverter()
 
+    @staticmethod
+    def _add_element_to_dict_and_create_list_for_duplicates(key, value, dictionary):
+        if key in dictionary:
+            if not isinstance(dictionary[key], list):
+                dictionary[key] = [dictionary[key]]
+            dictionary[key].append(value)
+        else:
+            dictionary[key] = value
+
     def get_data_from_files(self, glob, province_scope=[], country_scope=[], modifier_scope=[], extra_handlers=None, key_value_pair_list=[],
                             ignored=[], ignored_elements=[], localisation_with_title=False, localise_desc=False):
         if not extra_handlers:
@@ -55,15 +64,15 @@ class PdxparseToList(Eu4FileGenerator):
             unhandled_sections[element_id] = ''
             for section_name, section_data in data:
                 if section_name in province_scope:
-                    province_params[f'{element_id}__{section_name}'] = section_data.inline_str(self.parser.parser)[0]
+                    self._add_element_to_dict_and_create_list_for_duplicates(f'{element_id}__{section_name}', section_data.inline_str(self.parser.parser)[0], province_params)
                 elif section_name in country_scope:
-                    country_params[f'{element_id}__{section_name}'] = section_data.inline_str(self.parser.parser)[0]
+                    self._add_element_to_dict_and_create_list_for_duplicates(f'{element_id}__{section_name}', section_data.inline_str(self.parser.parser)[0], country_params)
                 elif section_name in modifier_scope:
-                    modifier_params[f'{element_id}__{section_name}'] = section_data.inline_str(self.parser.parser)[0]
+                    self._add_element_to_dict_and_create_list_for_duplicates(f'{element_id}__{section_name}', section_data.inline_str(self.parser.parser)[0], modifier_params)
                 elif section_name in extra_handlers:
-                    extra_sections[f'{element_id}__{section_name}'] = extra_handlers[section_name](section_data)
+                    self._add_element_to_dict_and_create_list_for_duplicates(f'{element_id}__{section_name}', extra_handlers[section_name](section_data), extra_sections)
                 elif section_name in key_value_pair_list:
-                    key_value_pairs[f'{element_id}__{section_name}'] = section_data.val
+                    self._add_element_to_dict_and_create_list_for_duplicates(f'{element_id}__{section_name}', section_data.val, key_value_pairs)
                 elif section_name in ignored:
                     pass
                 else:
@@ -175,6 +184,22 @@ class EstatePrivileges(PdxparseToList):
                                 localise_desc=True):
                 self.all_privileges[privilege['id']] = privilege
         return [self.all_privileges[name] for name in estate.privileges]
+
+    @staticmethod
+    def _format_conditional_modifiers(modifier_code):
+        strip_re = re.compile(r'^\t', flags=re.MULTILINE)
+        if not isinstance(modifier_code, list):
+            modifier_code = [modifier_code]
+        stripped_code = [
+            strip_re.sub('', code)
+            for code in modifier_code
+            if code and not code.isspace()
+        ]
+        if len(stripped_code) > 0:
+            return '<pre>' + ('</pre>\n----\n<pre>'.join(stripped_code)) + '</pre>'
+        else:
+            return ''
+
     def estate_privileges_list(self, estate: Estate):
         formatter = WikiTextFormatter()
         privileges = [{
@@ -197,10 +222,10 @@ class EstatePrivileges(PdxparseToList):
             'on_revoked_province': privilege['on_revoked_province'],
             'benefits': privilege['benefits'],
             'penalties': privilege['penalties'],
-            'conditional_modifier': privilege['conditional_modifier'],
+            'conditional_modifier': self._format_conditional_modifiers(privilege['conditional_modifier']),
             'modifier_by_land_ownership': privilege['modifier_by_land_ownership'],
-            'loyalty_scaled_conditional_modifier': privilege['loyalty_scaled_conditional_modifier'],
-            'influence_scaled_conditional_modifier': privilege['influence_scaled_conditional_modifier'],
+            'loyalty_scaled_conditional_modifier': self._format_conditional_modifiers(privilege['loyalty_scaled_conditional_modifier']),
+            'influence_scaled_conditional_modifier': self._format_conditional_modifiers(privilege['influence_scaled_conditional_modifier']),
             'cooldown_years': privilege['cooldown_years'],
             'mechanics': privilege['mechanics'],
             'Description': privilege['desc'],
