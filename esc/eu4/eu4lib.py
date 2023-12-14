@@ -303,6 +303,7 @@ class IdeaGroup(NameableEntity):
         'horde_gov_ideas': 'Horde government Ideas',
         'latin_ideas': 'Italian (minor) ideas',
         'nubian_ideas': 'Nubian (minor) ideas',
+        'ruthenian_ideas': 'Ruthenian (minor) ideas',
         'ATJ_ideas': 'Acehnese/Pasai ideas',  # because they are also for Pasai which is not obvious
     }
 
@@ -355,6 +356,8 @@ class Idea(NameableEntity):
         'nubian_ideas_bonus': 'Nubian (minor) ambition',
         'nw_native_ideas_start': 'North Western Native traditions',
         'plains_native_ideas_start': 'Plains Native traditions',
+        'ruthenian_ideas_start': 'Ruthenian (minor) traditions',
+        'ruthenian_ideas_bonus': 'Ruthenian (minor) ambition',
         'samoan_ideas_start': 'Samoan traditions',
         'tongan_ideas_start': 'Tongan traditions',
     }
