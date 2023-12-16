@@ -855,7 +855,7 @@ class SimpleTokenizer:
                 if x.type == 'Key':
                     if re.fullmatch(r'-?\d*\.\d*\.\d*', x.value):
                         x.type = 'Date'
-                    elif re.fullmatch(r'-?\d+(\.\d+)?', x.value):
+                    elif re.fullmatch(r'[-+]?\d+(\.\d+)?', x.value):
                         x.type = 'Number'
                     else:
                         x.type = 'Name'
@@ -878,7 +878,7 @@ class FullTokenizer(SimpleTokenizer):
         ('brace', (r'[{}]',)),
         ('op', (r'[<=>]=?',)),
         ('date', (r'-?\d*\.\d*\.\d*',)),
-        ('number', (r'-?\d+(\.\d+)?(?!\w)',)),
+        ('number', (r'[-+]?\d+(\.\d+)?(?!\w)',)),
         ('quoted_string', (r'(?s)".*?"',)),
         ('unquoted_string', (r'[^\s"#<=>{}]+',))
     ]
