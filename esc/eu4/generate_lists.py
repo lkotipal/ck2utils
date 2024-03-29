@@ -1321,7 +1321,7 @@ class CultureList(Eu4FileGenerator):
         else:
             count = 'multiple'
 
-        return f"<ref>There are {count} cultures with the name ''“{culture.display_name}”'': " + \
+        return f"<ref name={culture.display_name}>There are {count} cultures with the name ''“{culture.display_name}”'': " + \
             ' and '.join([f"<tt>{culture.name}</tt> in the group ''“{culture.culture_group.display_name}”''" for culture in self.name_to_culture_map[culture.display_name]]) + \
             '</ref>'
 
