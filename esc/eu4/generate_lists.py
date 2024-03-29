@@ -103,17 +103,24 @@ class PdxparseToList(Eu4FileGenerator):
 
 class Achievements(PdxparseToList):
 
+    def __init__(self, min_id=0):
+        super().__init__()
+        self.min_id = min_id
+
     def remove_common_starting_conditions(self, conditions):
+
         regexes = [r'\* None of:\n\*\* <pre>num_of_custom_nations = 1</pre>',
                    r'\* Playing with normal or historical nations',
                    r'\* <pre>normal_province_values = yes</pre>',
                    r'\* <pre>ironman = yes</pre>',
+                   r'\* The game is {{icon\|ironman}} ironman',
                    r'\* <pre>start_date = 1444.11.11</pre>']
 
         for regex in regexes:
             # to avoid empty lines, we remove a newline at the end if there is one(the last condition doesnt have a newline)
             conditions = re.sub(regex + r'\n?', '', conditions, flags=re.MULTILINE)
-
+        if conditions.startswith('*'):
+            conditions = '\n' + conditions
         return conditions
 
     def generate_achievement_list(self):
@@ -128,10 +135,11 @@ class Achievements(PdxparseToList):
             'DI': '{{DI|UC}}',
 
         } for achievement in self.get_data_from_files('common/achievements.txt',
-                                                 country_scope=['possible', 'happened'],
-                                                 extra_handlers={'localization': lambda x: x},  # pass through localisation key for later
-                                                 ignored=['visible', 'id', 'provinces_to_highlight']
-                                                 )]
+                                                      country_scope=['possible', 'happened'],
+                                                      extra_handlers={'localization': lambda x: x,  # pass through localisation key for later
+                                                                      'id': lambda x: x},
+                                                      ignored=['visible', 'provinces_to_highlight']
+                                                      ) if achievement['id'] >= self.min_id]
         table = self.make_wiki_table(achievements, one_line_per_cell=True, table_classes=['mildtable', 'plainlist'])
 
         return self.get_SVersion_header('table') + '\n' + table
