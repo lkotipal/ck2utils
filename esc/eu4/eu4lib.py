@@ -507,10 +507,68 @@ class MissionGroup:
 
 
 class GovernmentReform(NameableEntity):
+    icon_map = {'admiral_king_reform': 'Reform admiral king', 'admiralty_reform': 'Reform admiralty',
+                'all_under_tengri_reform': 'Reform all under tengri',
+                'austrian_archduchy_reform': 'Reform austrian archduchy',
+                'austrian_dual_monarchy_reform': 'Reform austrian dual monarchy',
+                'become_rev_empire_reform': 'Reform become rev empire',
+                'become_rev_republic_reform': 'Reform become rev republic', 'black_army_reform': 'Black army reform',
+                'church_and_state_reform': 'Reform church and state', 'commander_king_reform': 'Reform commander king',
+                'conciliarism_reform': 'Reform conciliarism',
+                'consolidate_power_in_cities_reform': 'Reform consolidate power in cities',
+                'consolidate_power_in_doge_reform': 'Reform consolidate power in doge',
+                'crown_highlighted': 'Crown highlighted', 'divine_guidance_reform': 'Reform divine guidance',
+                'egalite_reform': 'Reform egalite',
+                'emperor_of_the_revolution_reform': 'Reform emperor of the revolution',
+                'enlightened_monarchy_reform': 'Reform enlightened monarchy',
+                'equal_electorate_reform': 'Reform equal electorate', 'feuillant_reform': 'Reform feuillant',
+                'fraternite_reform': 'Reform fraternite',
+                'government_for_people_reform': 'Reform government for people',
+                'holy_state_reform': 'Reform holy state', 'horde_riding_highlighted': 'Horde riding highlighted',
+                'imperial_nobility_reform': 'Reform imperial nobility',
+                'integrated_sejmiks_reform': 'Integrated sejmiks reform', 'king_2_highlighted': 'King 2 highlighted',
+                'king_highlighted': 'King highlighted', 'kingdom_of_god': 'Reform kingdom of god',
+                'legion_of_honor_reform': 'Reform legion of honor',
+                'legislative_assembly_reform': 'Reform legislative assembly',
+                'legislative_sejm_reform': 'Legislative sejm reform', 'liberte_reform': 'Reform liberte',
+                'military_dictatorship_reform': 'Reform military dictatorship',
+                'mission_to_civilize_reform': 'Reform mission to civilize',
+                'mission_to_kill_pirates_reform': 'Reform mission to kill pirates',
+                'monastic_breweries_reform': 'Reform monastic breweries',
+                'monastic_elections_reform': 'Reform monastic elections', 'muslim_highlighted': 'Muslim highlighted',
+                'national_constituent_reform': 'Reform national constituent',
+                'native_clan_council_reform': 'Native clan council reform',
+                'native_codified_power_reform': 'Native codified power reform',
+                'native_land_tradition_reform': 'Native land tradition reform',
+                'native_martial_tradition_reform': 'Native martial tradition reform',
+                'native_oral_tradition_reform': 'Native oral tradition reform',
+                'native_seasonal_travel_reform': 'Native seasonal travel reform',
+                'native_settle_down_reform': 'Native settle down reform',
+                'native_trading_with_foreigners_reform': 'Native trading with foreigners reform',
+                'native_war_band_reform': 'Native war band reform',
+                'organising_our_religion_reform': 'Reform organising our religion',
+                'parliament_highlighted': 'Parliament highlighted',
+                'partial_secularisation_reform': 'Reform partial secularisation',
+                'pope_highlighted': 'Pope highlighted',
+                'protectorate_parliament_reform': 'Reform protectorate parliament',
+                'regionally_elected_commanders': 'Reform regionally elected commanders',
+                'religious_harmony_reform': 'Reform religious harmony',
+                'religious_leader_highlighted': 'Religious leader highlighted',
+                'religious_permanent_revolution_reform': 'Reform religious permanent revolution',
+                'revolutionary_council_reform': 'Reform revolutionary council',
+                'sakdina_system_reform': 'Sakdina system reform', 'signoria_reform': 'Reform signoria',
+                'three_classes_reform': 'Reform three classes', 'united_cantons_reform': 'Reform united cantons',
+                'uparaja_reform': 'Uparaja reform', 'warrior_monks_reform': 'Reform warrior monks'}
+
+    name_map = {
+        'prussian_monarchy_base': 'Prussian Monarchy (base)',
+    }
 
     def __init__(self, name, display_name, government_type, tier_name, tier_number, basic_reform, attributes, icon,
                  modifiers, potential, trigger, effect, removed_effect, post_removed_effect, conditional
                  ):
+        if name in self.name_map:
+            display_name = self.name_map[name]
         super().__init__(name, display_name)
         self.government_type = government_type
         self.tier_name = tier_name
@@ -525,6 +583,18 @@ class GovernmentReform(NameableEntity):
         self.removed_effect = removed_effect
         self.post_removed_effect = post_removed_effect
         self.conditional = conditional
+
+    @staticmethod
+    def pretty_icon_name(icon):
+        return icon.capitalize().replace('_', ' ')
+
+    def get_icon(self):
+        if not self.icon:
+            return ''
+        if self.icon in self.icon_map:
+            return self.icon_map[self.icon]
+        else:
+            return self.pretty_icon_name('Gov ' + self.icon)
 
 
 class Culture(NameableEntity):

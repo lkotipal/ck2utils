@@ -782,58 +782,7 @@ class AreaAndRegionsList(Eu4FileGenerator):
 
 
 class GovernmentReforms:
-    icon_map = {'admiral_king_reform': 'Reform admiral king', 'admiralty_reform': 'Reform admiralty',
-                'all_under_tengri_reform': 'Reform all under tengri',
-                'austrian_archduchy_reform': 'Reform austrian archduchy',
-                'austrian_dual_monarchy_reform': 'Reform austrian dual monarchy',
-                'become_rev_empire_reform': 'Reform become rev empire',
-                'become_rev_republic_reform': 'Reform become rev republic', 'black_army_reform': 'Black army reform',
-                'church_and_state_reform': 'Reform church and state', 'commander_king_reform': 'Reform commander king',
-                'conciliarism_reform': 'Reform conciliarism',
-                'consolidate_power_in_cities_reform': 'Reform consolidate power in cities',
-                'consolidate_power_in_doge_reform': 'Reform consolidate power in doge',
-                'crown_highlighted': 'Crown highlighted', 'divine_guidance_reform': 'Reform divine guidance',
-                'egalite_reform': 'Reform egalite',
-                'emperor_of_the_revolution_reform': 'Reform emperor of the revolution',
-                'enlightened_monarchy_reform': 'Reform enlightened monarchy',
-                'equal_electorate_reform': 'Reform equal electorate', 'feuillant_reform': 'Reform feuillant',
-                'fraternite_reform': 'Reform fraternite',
-                'government_for_people_reform': 'Reform government for people',
-                'holy_state_reform': 'Reform holy state', 'horde_riding_highlighted': 'Horde riding highlighted',
-                'imperial_nobility_reform': 'Reform imperial nobility',
-                'integrated_sejmiks_reform': 'Integrated sejmiks reform', 'king_2_highlighted': 'King 2 highlighted',
-                'king_highlighted': 'King highlighted', 'kingdom_of_god': 'Reform kingdom of god',
-                'legion_of_honor_reform': 'Reform legion of honor',
-                'legislative_assembly_reform': 'Reform legislative assembly',
-                'legislative_sejm_reform': 'Legislative sejm reform', 'liberte_reform': 'Reform liberte',
-                'military_dictatorship_reform': 'Reform military dictatorship',
-                'mission_to_civilize_reform': 'Reform mission to civilize',
-                'mission_to_kill_pirates_reform': 'Reform mission to kill pirates',
-                'monastic_breweries_reform': 'Reform monastic breweries',
-                'monastic_elections_reform': 'Reform monastic elections', 'muslim_highlighted': 'Muslim highlighted',
-                'national_constituent_reform': 'Reform national constituent',
-                'native_clan_council_reform': 'Native clan council reform',
-                'native_codified_power_reform': 'Native codified power reform',
-                'native_land_tradition_reform': 'Native land tradition reform',
-                'native_martial_tradition_reform': 'Native martial tradition reform',
-                'native_oral_tradition_reform': 'Native oral tradition reform',
-                'native_seasonal_travel_reform': 'Native seasonal travel reform',
-                'native_settle_down_reform': 'Native settle down reform',
-                'native_trading_with_foreigners_reform': 'Native trading with foreigners reform',
-                'native_war_band_reform': 'Native war band reform',
-                'organising_our_religion_reform': 'Reform organising our religion',
-                'parliament_highlighted': 'Parliament highlighted',
-                'partial_secularisation_reform': 'Reform partial secularisation',
-                'pope_highlighted': 'Pope highlighted',
-                'protectorate_parliament_reform': 'Reform protectorate parliament',
-                'regionally_elected_commanders': 'Reform regionally elected commanders',
-                'religious_harmony_reform': 'Reform religious harmony',
-                'religious_leader_highlighted': 'Religious leader highlighted',
-                'religious_permanent_revolution_reform': 'Reform religious permanent revolution',
-                'revolutionary_council_reform': 'Reform revolutionary council',
-                'sakdina_system_reform': 'Sakdina system reform', 'signoria_reform': 'Reform signoria',
-                'three_classes_reform': 'Reform three classes', 'united_cantons_reform': 'Reform united cantons',
-                'uparaja_reform': 'Uparaja reform', 'warrior_monks_reform': 'Reform warrior monks'}
+
     table_header = '''{| class="mildtable sortable" style="width:100%"
 ! style="width:150px" | Type
 ! style="width:300px" class="unsortable" | Effects
@@ -846,20 +795,11 @@ class GovernmentReforms:
         self.parser = Eu4Parser()
         self._reforms_have_been_converted_to_wikitext = False
 
-    def get_icon(self, reform):
-        if reform.icon in self.icon_map:
-            return self.icon_map[reform.icon]
-        else:
-            return self.pretty_icon_name('Gov ' + reform.icon)
-
-    def pretty_icon_name(self, icon):
-        return icon.capitalize().replace('_', ' ')
-
     def create_icon_mapping(self):
         name_icon_mapping = {}
         with open(Path('~/Daten/eu4/temp/2022-09-14_reform_icons.txt').expanduser()) as file:
             for icon, name in re.findall(r'\{\{Navicon\|([^|]*)\|([^}]*)}}', file.read()):
-                name_icon_mapping[name] = self.pretty_icon_name(icon)
+                name_icon_mapping[name] = GovernmentReform.pretty_icon_name(icon)
         reform_icon_mapper = {}
         gov_counter = 0
         reform_counter = 0
@@ -870,11 +810,11 @@ class GovernmentReforms:
                 continue
             if reform.display_name in name_icon_mapping:
                 total += 1
-                icon = self.pretty_icon_name(reform.icon)
+                icon = GovernmentReform.pretty_icon_name(reform.icon)
                 if icon != name_icon_mapping[reform.display_name]:
-                    gov_icon = self.pretty_icon_name('Gov ' + icon)
+                    gov_icon = GovernmentReform.pretty_icon_name('Gov ' + icon)
                     if gov_icon != name_icon_mapping[reform.display_name]:
-                        reform_icon = self.pretty_icon_name('Reform ' + icon.replace(' reform', ''))
+                        reform_icon = GovernmentReform.pretty_icon_name('Reform ' + icon.replace(' reform', ''))
                         if reform_icon != name_icon_mapping[reform.display_name]:
                             print('different icons "{}" / "{}" for {}'.format(name_icon_mapping[reform.display_name],
                                                                               icon, reform.name))
@@ -1062,7 +1002,7 @@ class GovernmentReforms:
             lines.append(reform.modifiers)
         lines.append(
             '| {{{{desc|{}|{}|image={}}}}}'.format(reform.display_name, self.parser.localize(reform.name + '_desc'),
-                                                   self.get_icon(reform)))
+                                                   reform.get_icon()))
         if reform.potential:
             lines.append('Conditions to see the reform:')
             lines.append(reform.potential)
@@ -1109,7 +1049,7 @@ class GovernmentReforms:
             lines.append('| {{box wrapper}}')
             for reform_id in reforms_ids:
                 reform = self.parser.all_government_reforms[reform_id]
-                lines.append('{{{{Navicon|{}|{}}}}}'.format(self.get_icon(reform), reform.display_name))
+                lines.append('{{{{Navicon|{}|{}}}}}'.format(reform.get_icon(), reform.display_name))
             lines.append('{{end box wrapper}}')
             tier_num += 1
         lines.append('|}')
