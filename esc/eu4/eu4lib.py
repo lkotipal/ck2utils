@@ -428,9 +428,11 @@ class Eu4Color(PdxColor):
 
 
 class ModifierType:
-    def __init__(self, name, icons, multiply_value_with=None):
+    def __init__(self, name: str, icons: list[str], positive_is_good: bool | str = True,
+                 multiply_value_with: int | float = None):
         self.name = name
         self.icons = icons
+        self.positive_is_good = positive_is_good
         self.multiply_value_with = multiply_value_with
 
     def format_value(self, value, other_values):
@@ -447,6 +449,13 @@ class ModifierType:
                 return ('+{' + formatstring + '}').format(value)
             else:
                 return ('−{' + formatstring + '}').format(value * -1)
+
+    def format_value_with_color(self, value, other_values):
+        if self.positive_is_good and self.modify_value(value) >= 0 or (not self.positive_is_good and self.modify_value(value) <= 0):
+            color = 'green'
+        else:
+            color = 'red'
+        return '{{' + color + '|' + self.format_value(value, other_values) + '}}'
 
     def max_decimal_places(self, value_list):
         return max([self.count_decimal_places(value) for value in value_list])
@@ -469,8 +478,8 @@ class ModifierType:
 
 class MultiplicativeModifier(ModifierType):
 
-    def __init__(self, name, icons, multiply_value_with=100):
-        super().__init__(name, icons, multiply_value_with)
+    def __init__(self, name: str, icons: list[str], positive_is_good: bool | str = True, multiply_value_with=100):
+        super().__init__(name, icons, positive_is_good, multiply_value_with=multiply_value_with)
 
     def format_value(self, value, other_values):
         return super().format_value(value, other_values) + '%'
