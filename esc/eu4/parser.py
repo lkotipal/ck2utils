@@ -96,7 +96,7 @@ class Eu4Parser:
         return all_religions
 
     def _process_idea_modifiers(self, data):
-        return {modifier.val: value.val for modifier, value in data if modifier.val != 'effect'}
+        return {modifier.val: value.val for modifier, value in data if modifier.val not in ['effect', 'removed_effect']}
 
     @cached_property
     def all_idea_groups(self, filter_groups=['SYN_ideas', 'JMN_ideas']):

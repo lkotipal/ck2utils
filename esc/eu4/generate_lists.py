@@ -1285,7 +1285,7 @@ class CultureList(Eu4FileGenerator):
 if __name__ == '__main__':
     # for correct sorting. en_US seems to work even for non english characters, but the default None sorts all non-ascii characters to the end
     setlocale(LC_COLLATE, 'en_US.utf8')
-    Achievements().run([])
+    Achievements(365).run([])
     EstatePrivileges().run_for_all_estates()
     EocReforms().run([])
     GovernmentReforms().run()

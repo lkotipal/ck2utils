@@ -678,6 +678,7 @@ class DLC(NameableEntity):
         'Lions of the North': 'lon',
         'Domination': 'dom',
         'King of Kings': 'kok',
+        'Winds of Change': 'woc',
     }
 
     def __init__(self, name: str, display_name: str, category: str, archive: Path = None):

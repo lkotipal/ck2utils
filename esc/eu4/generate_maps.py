@@ -26,7 +26,7 @@ class MapGenerator:
 
     def decision_maps(self):
         # change the version number after verifying that the provinces/areas are still correct
-        verified_for_version('1.36.1')
+        verified_for_version('1.37.0')
 
         self.color_map_generator.create_shaded_image({
             'yellow': [prov.id for prov in self.mapparser.all_land_provinces.values() if
@@ -51,7 +51,8 @@ class MapGenerator:
             'orange': [1876, 67],
             'turquoise': [1762, 85],
             'purple': [44, 45],
-            'brown': [61, 63]
+            'brown': [61, 63],
+            'land': ['erzgebirge_area', 'bohemia_area', 'moravia_area'],  # not needed
             }, 'Formgermany', crop_to_color=True)
 
         self.color_map_generator.generate_mapimage_with_several_colors({
@@ -87,10 +88,13 @@ class MapGenerator:
             }, 'Province is on an island or maghreb map')
 
         self.color_map_generator.generate_mapimage_with_several_colors({
-            # owned directly
-            'orange': ['mongolia_region', 'central_asia_region', 'crimea_region', 1816, 1821, 667],
+            # owned directly - since 1.37.0, all provinces can be owned by subjects
+            # 'orange': ['mongolia_region', 'central_asia_region', 'crimea_region', 1816, 1821, 667],
             # owned directly or by a non-tributary subject
-            'brightred': ['khorasan_region', 'persia_region', 295, 280],
+            'brightred': [
+                'mongolia_region', 'central_asia_region', 'crimea_region', 1816, 1821, 667,
+                'khorasan_region', 'persia_region', 295, 280
+            ],
             }, 'Formmongols', crop_to_color=True)
 
         self.color_map_generator.create_shaded_image({
@@ -429,7 +433,7 @@ class MapGenerator:
     def achievement_maps(self):
         # change the version number after verifying that the provinces/areas are still correct
         # for the first two achievements, the decision file has to be checked
-        verified_for_version('1.36.1', 'Files to validate are:\n* ' + '\n* '.join(['common/achievements.txt', 'decisions/Religion.txt', 'decisions/Muslim.txt']))
+        verified_for_version('1.37.0', 'Files to validate are:\n* ' + '\n* '.join(['common/achievements.txt', 'decisions/Religion.txt', 'decisions/Muslim.txt']))
 
         # from the decision zoroastrian_royal_fires in decisions/Religion.txt
         self.achievement_map('Royal Fires', '2221 2207 2235 2236 2218 441 2223')

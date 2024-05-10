@@ -75,19 +75,31 @@ class Eu4EventParser(Eu4Parser):
                     pictures_by_name[picture.name] = [picture]
 
     def _get_pictures_from_gfx_file(self, dlc, gfx_path: Path) -> list[EventPicture]:
+        dlc_overrides = {
+            'CONSTANTINOPLE_eventPicture': 'King of Kings',
+            'GHULAMS_ESTATE_DEMANDS_eventPicture': 'King of Kings',
+            'GHULAMS_ESTATE_eventPicture': 'King of Kings',
+            'QIZILBASH_ESTATE_DEMANDS_eventPicture': 'King of Kings',
+            'QIZILBASH_ESTATE_eventPicture': 'King of Kings',
+            'JURAJ_JANOSIK_eventPicture': 'Winds of Change'
+        }
         with gfx_path.open('rb') as gfx_file:
             pictures_by_name = {}
             for n, v in self.parser.parse(gfx_file.read().decode('cp1252'))['spriteTypes']:
                 if n.val != 'spriteType':
                     raise Exception(f'Unexpected section {n.val} in {gfx_file}')
                 picture_name = v['name'].val
+                if picture_name in dlc_overrides:
+                    actual_dlc = self.dlcs_by_name[dlc_overrides[picture_name]]
+                else:
+                    actual_dlc = dlc
                 picture_filename = v['texturefile'].val.replace('\\', '/')
                 if picture_filename == 'gfx/event_pictures/event_pictures_domination/eunuch_estate_eventPicture.dds':
                     picture_filename = 'gfx/event_pictures/event_pictures_domination/eunuch_estate_eventpicture.dds'
                 wiki_filename = self._generate_wiki_filename(picture_filename)
-                picture_data = dlc.get_file_contents(picture_filename)
+                picture_data = actual_dlc.get_file_contents(picture_filename)
                 picture_sha = hashlib.sha256(picture_data).hexdigest()
-                picture = EventPicture(picture_name, picture_filename, wiki_filename, dlc, [], picture_sha,
+                picture = EventPicture(picture_name, picture_filename, wiki_filename, actual_dlc, [], picture_sha,
                                        picture_data)
                 # if there is already an entry with the same name in this gfx file, it will be overwritten,
                 # because I assume that the game would do the same(as of version 1.34,
