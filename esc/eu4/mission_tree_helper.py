@@ -172,7 +172,7 @@ class MissionTreeHelper():
         }}
     }}"""
         print("country_decisions = {")
-        print(decision_template.format('complete_all_missions', 'major = yes', '',  "\n".join(["\t\tcomplete_mission = {}".format(mission) for mission in allmissions])))
+        print(decision_template.format('complete_all_missions', 'major = yes', '', 'custom_tooltip="complete_all_missions"\nhidden_effect = {\n' + "\n".join(["\t\tcomplete_mission = {}".format(mission) for mission in allmissions]) + '}'))
         #clear_effect = "\n".join(["clr_country_flag = {}".format(flag_to_clear) for flag_to_clear in mission_flags])
         for flag in mission_flags:
             name = "{}_activate".format(flag)
