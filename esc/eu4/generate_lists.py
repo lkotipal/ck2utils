@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+from functools import cached_property
+
 import math
 import os
 import re
@@ -841,7 +843,8 @@ class GovernmentReforms:
             self.writeFile('government_reform_' + gov_type + '_icons', self.generate_icon_table(gov_type, adjective))
         self.writeFile('government_reform_common', self.generate_common_reforms())
 
-    def format_reform_attribute(self, attribute_name, value):
+    @cached_property
+    def mapping_if_true_mechanics(self):
         mapping_if_true = {
             'lock_level_when_selected': '* {{Locked reform}}',
             'locked_government_type': '* Prohibits switching [[government type]].',
@@ -860,16 +863,37 @@ class GovernmentReforms:
             'disables_nobility': '* Disables the {{icon|nobility}} nobility estate.',
             'blocked_call_diet': '* Disables “[[Call diet]]”'
         }
+        self._add_mechanics_from_localisation(mapping_if_true, '_yes')
+
+        return mapping_if_true
+
+    def _add_mechanics_from_localisation(self, mechanic_to_localisation_mapping, suffix):
+        color_re = re.compile(r'§.')
+        for key, localisation in self.parser._localisation_dict.items():
+            if key.startswith('mechanic_') and key.endswith(suffix):
+                mechanic = key.removeprefix('mechanic_').removesuffix(suffix)
+                localisation = color_re.sub('', localisation)
+                if localisation.strip() == '':
+                    continue
+                if mechanic not in mechanic_to_localisation_mapping:
+                    mechanic_to_localisation_mapping[mechanic] = f"* ''{localisation}''"
+
+    @cached_property
+    def mapping_if_false_mechanics(self):
         mapping_if_false = {
             'has_term_election': '* Ruler reigns for life. No elections.',
             'enables_plutocratic_idea_group': '* Disables the [[Plutocratic]] idea group.',
             'enables_aristocratic_idea_group': '* Disables the [[Aristocratic ideas|Aristocratic]] idea group.',
             'enables_divine_idea_group': '* Disables the [[Idea_groups#Divine|Divine]] idea group.',
         }
-        if attribute_name in mapping_if_true and value is True:
-            return mapping_if_true[attribute_name]
-        elif attribute_name in mapping_if_false and value is False:
-            return mapping_if_false[attribute_name]
+        self._add_mechanics_from_localisation(mapping_if_false, '_no')
+        return mapping_if_false
+
+    def format_reform_attribute(self, attribute_name, value):
+        if attribute_name in self.mapping_if_true_mechanics and value is True:
+            return self.mapping_if_true_mechanics[attribute_name]
+        elif attribute_name in self.mapping_if_false_mechanics and value is False:
+            return self.mapping_if_false_mechanics[attribute_name]
         elif attribute_name == 'fixed_rank':
             if value == 0:
                 return '* Unlocks the ability to change [[Government rank]]'
