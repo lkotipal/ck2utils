@@ -305,6 +305,14 @@ class IdeaGroup(NameableEntity):
         'nubian_ideas': 'Nubian (minor) ideas',
         'ruthenian_ideas': 'Ruthenian (minor) ideas',
         'ATJ_ideas': 'Acehnese/Pasai ideas',  # because they are also for Pasai which is not obvious
+        'BOH2_ideas': 'Bohemian (upgraded) ideas',
+        'HSN_ideas': 'Hisn Kayfan ideas',  # default localisation is "Ayyubid Ideas"
+        'AYB_ideas': 'Hisn Kayfan (Ayyubid) ideas',
+        'MAM2_ideas': 'Mamluk (upgraded) ideas',
+        'LIT2_ideas': 'Lithuanian (upgraded) ideas',
+        'VEN_ideas_2': 'Venetian (upgraded) ideas',
+        'HSA_ideas': 'Lübeckian ideas',  # default localisation is "Hanseatic Ideas"
+        'FU2_ideas': 'Lübeckian (Hansa) ideas',
     }
 
     def __init__(self, name, display_name, ideas, bonus, traditions=None, category=None):
@@ -333,7 +341,7 @@ class IdeaGroup(NameableEntity):
         return all_ideas
 
     def short_name(self):
-        return self.display_name.replace(' Ideas', '')
+        return self.display_name.replace(' Ideas', '').replace(' ideas', '')
 
 
 class Idea(NameableEntity):
@@ -360,6 +368,22 @@ class Idea(NameableEntity):
         'ruthenian_ideas_bonus': 'Ruthenian (minor) ambition',
         'samoan_ideas_start': 'Samoan traditions',
         'tongan_ideas_start': 'Tongan traditions',
+        'BOH2_ideas_start': 'Bohemian (upgraded) traditions',
+        'BOH2_ideas_bonus': 'Bohemian (upgraded) ambition',
+        'HSN_ideas_start': 'Hisn Kayfan traditions',  # default localisation is "Ayyubid traditions"
+        'AYB_ideas_start': 'Hisn Kayfan (Ayyubid) traditions',
+        'HSN_ideas_bonus': 'Hisn Kayfan ambition',  # default localisation is "Ayyubid ambition"
+        'AYB_ideas_bonus': 'Hisn Kayfan (Ayyubid) ambition',
+        'MAM2_ideas_start': 'Mamluk (upgraded) traditions',
+        'MAM2_ideas_bonus': 'Mamluk (upgraded) ambition',
+        'LIT2_ideas_start': 'Lithuanian (upgraded) traditions',
+        'LIT2_ideas_bonus': 'Lithuanian (upgraded) ambition',
+        'VEN_ideas_2_start': 'Venetian (upgraded) traditions',
+        'VEN_ideas_2_bonus': 'Venetian (upgraded) ambition',
+        'HSA_ideas_start': 'Lübeckian traditions',
+        'HSA_ideas_bonus': 'Lübeckian ambition',
+        'FU2_ideas_start': 'Lübeckian (Hansa) traditions',
+        'FU2_ideas_bonus': 'Lübeckian (Hansa) ambition',
     }
 
     def __init__(self, name, display_name, modifiers):
