@@ -1085,7 +1085,10 @@ class SimpleParser:
             self.cache_misses += 1
         with path.open(encoding=encoding, errors=errors) as f:
             try:
-                tree = self.parse(f.read())
+                data = f.read()
+                if path.name == 'zzz_WoC_Shared_Horde_Missions.txt':
+                    data = data.replace('create_general_with_pips {', 'create_general_with_pips = {')
+                tree = self.parse(data)
                 if not ignore_cache:
                     if diskcache:
                         cachepath.parent.mkdir(parents=True, exist_ok=True)
