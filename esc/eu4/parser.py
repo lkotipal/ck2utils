@@ -211,16 +211,28 @@ class Eu4Parser:
             for k, v in tree:
                 mission_group_id = k.val_str()
                 potential = ''
+                slot = 0
                 missions = []
+                last_mission_position = 0
                 for k2, v2 in v:
                     possible_mission_id = k2.val_str()
                     if possible_mission_id not in ['has_country_shield', 'ai', 'generic', 'potential', 'slot',
                                                    'potential_on_load']:
-                        missions.append(Mission(possible_mission_id, self.localize(possible_mission_id + '_title'),
-                                                description=self.localize(possible_mission_id + '_desc')))
+                        display_name = self.localize(possible_mission_id + '_title')
+                        if 'position' in v2:
+                            position = v2['position']
+                        else:
+                            position = last_mission_position + 1
+                        last_mission_position = position
+
+                        missions.append(Mission(possible_mission_id, display_name,
+                                                description=self.localize(possible_mission_id + '_desc'),
+                                                position=position))
                     elif possible_mission_id == 'potential':
                         potential = v2
-                all_mission_groups[mission_group_id] = MissionGroup(mission_group_id, file.name, potential, missions)
+                    elif possible_mission_id == 'slot':
+                        slot = v2.val
+                all_mission_groups[mission_group_id] = MissionGroup(mission_group_id, file.name, potential, missions, slot=slot)
         return all_mission_groups
 
     @cached_property

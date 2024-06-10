@@ -523,20 +523,33 @@ class AdditiveModifierWithPercentageSign(AdditiveModifier):
 
 
 class Mission(NameableEntity):
-    def __init__(self, name, display_name, description: str = '', mission_group=None):
+    def __init__(self, name, display_name, description: str = '', mission_group=None, position: int = 0):
         super().__init__(name, display_name)
         self.mission_group = mission_group
         self.description = description
+        self.position = position
+
+    @cached_property
+    def stripped_display_name(self):
+        return re.sub(r'\[Root.GetPreviewColor[^]]*]', '', self.display_name, flags=re.IGNORECASE)
+
+    def get_mpos(self, x_offset: int = 0, y_offset: int = 0):
+        """mpos template for mission tree images on the wiki.
+
+        The offset is for partial mission tree images.
+        It is the x-y coordinate which the top left mission would have in the full tree"""
+        return f'{{{{mpos|x={self.mission_group.slot - x_offset}|y={self.position - y_offset}|name={self.stripped_display_name}}}}}'
 
 
 class MissionGroup:
-    def __init__(self, name, source_file, potential, missions):
+    def __init__(self, name, source_file, potential, missions, slot: int = 0):
         self.name = name
         self.source_file = source_file
         self.potential = potential
         self.missions = missions
         for mission in missions:
             mission.mission_group = self
+        self.slot = slot
 
 
 class GovernmentReform(NameableEntity):

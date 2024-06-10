@@ -35,6 +35,7 @@ class MissionTreeHelper():
         parser.add_argument('--cut', nargs=4, type=int, metavar=('left', 'upper', 'right', 'lower'), help='get some of the missions from an already processes mission image. The arguments are the position of the top left and bottom right corner of the missions which should be in the new image. The top left mission would be 1 1.')
         parser.add_argument('--show-conditions', help='group mission tree branches in a file by their conditions', type=str)
         parser.add_argument('--show-mission-conditions', help='group the mission tree branches by their conditions which contain the listed missions', type=str, nargs='*')
+        parser.add_argument('--mpos', type=int, help='output relative {{mpos}} templates for all missions in a branch', default=None)
         args = parser.parse_args()
         if args.cut:
             self.cut(args.screenshots[0], args.out, *args.cut)
@@ -43,9 +44,12 @@ class MissionTreeHelper():
         elif args.generate_mission_tree_completion_decisions:
             self.generate_mission_tree_completion_decisions()
         elif args.show_conditions:
-            self.show_mission_branch_conditions(file=args.show_conditions)
+            self.show_mission_branch_conditions(file=args.show_conditions, show_relative_mpos=args.mpos)
         elif args.show_mission_conditions:
-            self.show_mission_branch_conditions(missions=args.show_mission_conditions)
+            self.show_mission_branch_conditions(missions=args.show_mission_conditions, show_relative_mpos=args.mpos)
+        else:
+            self.show_mission_branch_conditions(file='WoC_Austrian_Missions.txt')
+
 
     def count_nonblack_pil(self, img):
         """Return the number of pixels in img that are not black.
@@ -198,7 +202,7 @@ class MissionTreeHelper():
             cropped_im = im.crop((left_x, upper_y, right_x, lower_y))
             cropped_im.save(out_file)
 
-    def show_mission_branch_conditions(self, file=None, missions=None):
+    def show_mission_branch_conditions(self, file=None, missions=None, show_relative_mpos: int = None):
         if file:
             print(file)
         if missions:
@@ -226,6 +230,22 @@ class MissionTreeHelper():
 
         for cond, branches in conditions_to_branches.items():
             print(branches)
+            if show_relative_mpos is not None:
+                first_slot = 9999
+                first_position = 9999
+                missions = []
+                for branch_name in branches:
+                    branch = parser.all_mission_groups[branch_name]
+                    if branch.slot < first_slot:
+                        first_slot = branch.slot
+                    for mission in branch.missions:
+                        missions.append(mission)
+                        if mission.position < first_position:
+                            first_position = mission.position
+
+                for mission in missions:
+                    print(mission.get_mpos(x_offset=first_slot - 1,
+                                           y_offset=first_position - 1 - show_relative_mpos))
             print(cond)
 
 

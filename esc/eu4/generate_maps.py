@@ -537,7 +537,7 @@ class MapGenerator:
                                         ]
 
     def print_provincelist_help_message(self):
-        print('Please specify a uncompressed save game as a second paramter on which the following run.txt was executed:')
+        print('Please specify a uncompressed save game as a second parameter on which the following run.txt was executed:')
         print('-'*40)
         tags = []
         add_core_code = []
