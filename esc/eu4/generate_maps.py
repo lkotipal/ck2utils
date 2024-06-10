@@ -7,7 +7,7 @@ import numpy as np
 from PIL import Image
 from pathlib import Path
 from colormath.color_conversions import convert_color
-from colormath.color_objects import LabColor, sRGBColor
+from colormath.color_objects import LabColor, sRGBColor, HSLColor
 
 # add the parent folder to the path so that imports work even if the working directory is the eu4 folder
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
@@ -424,6 +424,101 @@ class MapGenerator:
         color_to_provinces[Eu4Color(150, 150, 150)] = empty_provinces
         self.color_map_generator.generate_mapimage_with_several_colors(color_to_provinces, 'Missions1444map')
 
+    def mission_map_from_save(self, savefile):
+        save_data = open(savefile, encoding='cp1252').read()
+        all_missions_regex = re.compile(r'^\t([A-Z]{3})=.*?(country_missions=\{\n(.*?)^\t\t})', re.MULTILINE | re.DOTALL)
+        tags_to_mission_groups = {}
+        for match in all_missions_regex.finditer(save_data):
+            if match[3]:
+                tag = match[1]
+                # print(f'{tag}: ')
+                tags_to_mission_groups[tag] = []
+                for mission in match[3].split():
+                    if mission not in ['mission_slot={', '}']:
+                        # print(mission)
+                        tags_to_mission_groups[tag].append(mission)
+        tag_count = {}
+        min_count = 9999
+        max_count = 0
+        for tag, mission_groups in tags_to_mission_groups.items():
+            count = 0
+            country = self.mapparser.all_countries[tag]
+            for group in mission_groups:
+                count += len(self.mapparser.all_mission_groups[group].missions)
+            tag_count[tag] = count
+            if count < min_count:
+                min_count = count
+            if count > max_count:
+                max_count = count
+            # print(f'{country.display_name}({tag}): {count}')
+
+        empty_provinces = set(self.mapparser.all_land_provinces.keys())
+        color_to_provinces = {}
+
+        for tag, count in sorted(tag_count.items(), key=lambda tag_count_tuple: tag_count_tuple[1]):
+            country = self.mapparser.all_countries[tag]
+            print(f'{country.display_name}({tag}): {count}')
+            provinces = [prov.id for prov in self.mapparser.all_provinces.values() if prov.get('Owner') == country.tag]
+            if len(provinces) > 0:
+                empty_provinces -= set(provinces)
+                # color = self.heatmap_color_for(count, min_count, max_count)
+                color = self.fixed_colors(count)
+                # color = self.greeny_suggested_color(count)
+                color_to_provinces[color] = provinces
+        color_to_provinces[Eu4Color(150, 150, 150)] = empty_provinces
+        self.color_map_generator.generate_mapimage_with_several_colors(color_to_provinces, 'Missions1444heatmap')
+
+    def greeny_suggested_color(self, value):
+        if value < 16:
+            return Eu4Color(189, 189, 189)
+        if value < 21:
+            return Eu4Color(68, 182, 196)
+        if value < 24:
+            return Eu4Color(116, 196, 118)
+        if value < 26:
+            return Eu4Color(8, 81, 156)
+        if value < 30:
+            return Eu4Color(221, 52, 151)
+        if value < 35:
+            return Eu4Color(254, 196, 79)
+        if value < 40:
+            return Eu4Color(204, 76, 2)
+        if value < 50:
+            return Eu4Color(227, 26, 28)
+        else:
+            return Eu4Color(174, 1, 124)
+
+    def fixed_colors(self, value):
+        '''colors from https://colorbrewer2.org'''
+        if value < 16:
+            return Eu4Color(255, 255, 204)
+        if value < 21:
+            return Eu4Color(255, 237, 160)
+        if value < 24:
+            return Eu4Color(254, 217, 118)
+        if value < 26:
+            return Eu4Color(254, 178, 76)
+        if value < 30:
+            return Eu4Color(253, 141, 60)
+        if value < 35:
+            return Eu4Color(252, 78, 42)
+        if value < 40:
+            return Eu4Color(227, 26, 28)
+        if value < 50:
+            return Eu4Color(189, 0, 38)
+        else:
+            return Eu4Color(128, 0, 38)
+
+    def heatmap_color_for(self, value, min_value, max_value):
+        value = value - min_value
+        value = value / (max_value - min_value)
+        h = (1 - value)
+        s = 1
+        l = value / 2
+
+        color = HSLColor(h, s, l)
+        return convert_color(color, sRGBColor)
+
     def map(self, where, name='', crop=True, margin = 10):
         self.color_map_generator.generate_mapimage_with_important_provinces(where, name, crop, margin)
 
@@ -629,6 +724,11 @@ if __name__ == '__main__':
                 generator.print_provincelist_help_message()
             else:
                 generator.generate_provincelists(sys.argv[2])
+        elif sys.argv[1] == '--generate-mission-map':
+            if len(sys.argv) == 2:
+                print('Please specify a uncompressed 1444-11-11 save game with all DLCs as a second parameter')
+            else:
+                generator.mission_map_from_save(sys.argv[2])
         else:
             for arg in sys.argv[1:]:
                 getattr(generator, arg)()
