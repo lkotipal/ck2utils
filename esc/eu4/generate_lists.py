@@ -10,7 +10,6 @@ from operator import attrgetter
 from pathlib import Path
 from typing import Dict
 
-from common.wiki import WikiTextFormatter
 
 # the MonumentList needs pyradox which needs to be imported in some way
 sys.path.append(os.path.dirname(os.path.realpath(__file__)) + '/../../../../pyradox')
@@ -18,6 +17,7 @@ from pyradox.filetype.table import make_table, WikiDialect
 
 # add the parent folder to the path so that imports work even if the working directory is the eu4 folder
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
+from common.wiki import WikiTextFormatter
 from eu4.wiki import WikiTextConverter, get_SVersion_header
 from eu4.paths import eu4outpath
 from eu4.parser import Eu4Parser
@@ -181,17 +181,25 @@ class EstatePrivileges(PdxparseToList):
         if not self.all_privileges:
             self.all_privileges = {}
             for privilege in self.get_data_from_files('common/estate_privileges/*',
-                                country_scope = ['is_valid', 'can_select', 'can_revoke', 'on_granted', 'on_revoked', 'on_invalid', 'on_cooldown_expires'],
-                                province_scope=['on_granted_province', 'on_invalid_province', 'on_revoked_province'],
-                                modifier_scope = ['benefits', 'penalties', 'modifier_by_land_ownership'],
-                                ignored = ['ai_will_do'],
-                                key_value_pair_list=['icon', 'max_absolutism', 'influence', 'loyalty', 'land_share', 'cooldown_years'],
-                                extra_handlers={'conditional_modifier': self.passthrough_handler,
-                                                'loyalty_scaled_conditional_modifier': self.passthrough_handler,
-                                                'influence_scaled_conditional_modifier': self.passthrough_handler,
-                                                'mechanics': self.passthrough_handler,
-                                                },
-                                localise_desc=True):
+                                                      country_scope=['is_valid', 'can_select', 'can_revoke', 'on_granted', 'on_revoked', 'on_invalid',
+                                                                     'on_cooldown_expires'],
+                                                      province_scope=['on_granted_province', 'on_invalid_province', 'on_revoked_province'],
+                                                      modifier_scope=['benefits', 'penalties', 'modifier_by_land_ownership'],
+                                                      ignored=['ai_will_do',
+                                                               # I think check_valid_when_tag_switching this is just to avoid losing the privilege
+                                                               #  immediately when tag switching. It will be lost later if the conditions are not met,
+                                                               #  so we don't need to mention this explicitly
+                                                               'check_valid_when_tag_switching',
+
+                                                               'additional_description',  # is used to show the modifiers of special units
+                                                               ],
+                                                      key_value_pair_list=['icon', 'max_absolutism', 'influence', 'loyalty', 'land_share', 'cooldown_years'],
+                                                      extra_handlers={'conditional_modifier': self.passthrough_handler,
+                                                                      'loyalty_scaled_conditional_modifier': self.passthrough_handler,
+                                                                      'influence_scaled_conditional_modifier': self.passthrough_handler,
+                                                                      'mechanics': self.passthrough_handler,
+                                                                      },
+                                                      localise_desc=True):
                 self.all_privileges[privilege['id']] = privilege
         return [self.all_privileges[name] for name in estate.privileges]
 
