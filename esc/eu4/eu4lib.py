@@ -415,7 +415,7 @@ class Policy(NameableEntity):
         'horde_gov_ideas': 'Horde',  # override the overide from the IdeaGroup class
     }
 
-    def __init__(self, name, display_name, description, category, modifiers, idea_groups):
+    def __init__(self, name, display_name, description, category, modifiers, idea_groups: list[IdeaGroup]):
         super().__init__(name, display_name)
         self.description = description
         self.category = category

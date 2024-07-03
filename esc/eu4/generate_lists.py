@@ -257,6 +257,99 @@ class EstatePrivileges(PdxparseToList):
             self._write_text_file(f'{estate.name}_privileges', self.estate_privileges_list(estate))
 
 
+class EstateAgendas(PdxparseToList):
+
+    def __init__(self):
+        super().__init__()
+        self.all_agendas = None
+
+    def passthrough_handler(self, section_data):
+        return self.wiki_converter.remove_surrounding_brackets(section_data.inline_str(self.parser.parser)[0])
+
+    @staticmethod
+    def _add_element_to_dict_and_create_list_for_duplicates(key, value, dictionary):
+
+        autocomplete_re = re.compile(r'''^\{
+\s*if = \{\s*\n*\s*limit = \{ has_estate_agenda_auto_completion = \{ estate = estate_[a-z_]* } }
+\s*has_estate_agenda_auto_completion = \{ estate = estate_[a-z_]* }
+\s*}
+\s*else = \{\s*\n*((?s:.)*)\s*\n*}
+}$''')
+        value = autocomplete_re.sub(f'{{\n\\1\n}}', value)
+        value = autocomplete_re.sub(f'{{\n\\1\n}}', value)  # twice, because some agendas have the condition twice
+
+        super(EstateAgendas, EstateAgendas())._add_element_to_dict_and_create_list_for_duplicates(key, value, dictionary)
+
+    def get_agendas_for_estate(self, estate: Estate):
+        if not self.all_agendas:
+            self.all_agendas = {}
+            for agenda in self.get_data_from_files('common/estate_agendas/*',
+                                                   country_scope=[
+                                                       'can_select',
+                                                       'fail_if',
+                                                       'failing_effect',
+                                                       'immediate_effect',
+                                                       'invalid_trigger',
+                                                       'on_invalid',
+                                                       'pre_effect',
+                                                       'task_completed_effect',
+                                                       'task_requirements',
+                                                       'selection_weight'
+                                                   ],
+                                                   # extra_handlers={'selection_weight': self.passthrough_handler,
+                                                   #                 },
+                                                   ignored=['provinces_to_highlight'],
+                                                   localise_desc=True):
+                self.all_agendas[agenda['id']] = agenda
+        return [self.all_agendas[name] for name in estate.agendas]
+
+    @staticmethod
+    def _format_weights(selection_weights_pdxparse_output: str):
+        formatted_output = re.sub(r'^\n*\* <pre>factor = ([0-9.-]*)</pre>', r"'''Base: \1'''\n\nModifiers:", selection_weights_pdxparse_output)
+        formatted_output = re.sub(r'\n\* <pre>modifier</pre>\n\*\* <pre>factor = ([0-9.-]*)</pre>', r"\n* '''×\1''' if:", formatted_output)
+        formatted_output = re.sub(r'\n?Modifiers:\n*$', '', formatted_output)  # remove modifiers text if there are none
+        return formatted_output
+        strip_re = re.compile(r'^\t', flags=re.MULTILINE)
+        if not isinstance(modifier_code, list):
+            modifier_code = [modifier_code]
+        stripped_code = [
+            strip_re.sub('', code)
+            for code in modifier_code
+            if code and not code.isspace()
+        ]
+        if len(stripped_code) > 0:
+            return '<pre>' + ('</pre>\n----\n<pre>'.join(stripped_code)) + '</pre>'
+        else:
+            return ''
+
+    def estate_agendas_list(self, estate: Estate):
+        formatter = WikiTextFormatter()
+        agendas = [{
+            'id': agenda['name'],
+            'Agenda': agenda['name'],
+            'can_select': agenda['can_select'],
+            # 'selection_weight': f'<pre>{agenda["selection_weight"]}</pre>',
+            'selection_weight': self._format_weights(agenda["selection_weight"]),
+            'pre_effect': agenda['pre_effect'],
+            'immediate_effect': agenda['immediate_effect'],
+            'task_requirements': agenda['task_requirements'],
+            'task_completed_effect': agenda['task_completed_effect'],
+            'fail_if': agenda['fail_if'],
+            'failing_effect': agenda['failing_effect'],
+            # 'invalid_trigger': agenda['invalid_trigger'],
+            # 'on_invalid': agenda['on_invalid'],
+
+            'Description': agenda['desc'],
+        } for agenda in self.get_agendas_for_estate(estate)]
+        table = self.make_wiki_table(agendas, one_line_per_cell=True, row_id_key='id')
+
+        return f'=={estate.display_name}==\n{self.get_SVersion_header("table")}\n{table}\n'
+
+    def run_for_all_estates(self):
+        for estate in self.parser.all_estates.values():
+            self._write_text_file(f'{estate.name}_agendas', self.estate_agendas_list(estate))
+
+
 class MercenaryList(PdxparseToList):
 
     parser: Eu4MapParser
@@ -1317,6 +1410,7 @@ class CultureList(Eu4FileGenerator):
 if __name__ == '__main__':
     # for correct sorting. en_US seems to work even for non english characters, but the default None sorts all non-ascii characters to the end
     setlocale(LC_COLLATE, 'en_US.utf8')
+    EstateAgendas().run_for_all_estates()
     Achievements(365).run([])
     EstatePrivileges().run_for_all_estates()
     EocReforms().run([])
