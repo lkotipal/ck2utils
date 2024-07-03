@@ -692,6 +692,13 @@ all_modifiers = [
     MultiplicativeModifier('harmonization_speed', ['religious harmonization speed']),
     AdditiveModifier('yearly_authority', ['yearly authority']),
     AdditiveModifier('yearly_doom_reduction', ['yearly doom reduction']),
+    AdditiveModifier('max_admiral_shock', ['max admiral shock']),
+    AdditiveModifier('max_admiral_siege', ['max admiral siege']),
+    AdditiveModifier('max_general_maneuver', ['max general maneuver']),
+    AdditiveModifier('max_general_shock', ['max general shock']),
+    AdditiveModifier('max_general_siege', ['max general siege']),
+    AdditiveModifier('relation_with_same_culture', ['opinion of same culture']),
+    AdditiveModifier('relation_with_same_culture_group', ['opinion of same culture group']),
 ]
 
 all_modifiers_by_name = {modifier.name: modifier for modifier in all_modifiers}
