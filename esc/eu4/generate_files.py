@@ -40,18 +40,22 @@ class AnotherFileGenerator(Eu4FileGenerator):
 
     def add_unit_to_list(self, unitlist, unit):
         tech_group = ''
-        for n, v in self.parser.parse_file('common/units/{}.txt'.format(unit)):
-            if n.val == 'unit_type':
-                if v.val in ['sub_saharan']:
-                    tech_group = 'Sub-Saharan'
-                elif v.val == 'nomad_group':
-                    tech_group = 'Nomad'
+        # Vanilla unit issues
+        try:
+            for n, v in self.parser.parse_file('common/units/{}.txt'.format(unit)):
+                if n.val == 'unit_type':
+                    if v.val in ['sub_saharan']:
+                        tech_group = 'Sub-Saharan'
+                    elif v.val == 'nomad_group':
+                        tech_group = 'Nomad'
+                    else:
+                        tech_group = self.eu4parser.localize(v.val)
+                elif n.val == 'type':
+                    unit_type = v.val
                 else:
-                    tech_group = self.eu4parser.localize(v.val)
-            elif n.val == 'type':
-                unit_type = v.val
-            else:
-                continue
+                    continue
+        except:
+            return
         if unit_type not in unitlist:
             unitlist[unit_type] = []
         unitlist[unit_type].append((tech_group, self.eu4parser.localize(unit)))
@@ -137,10 +141,12 @@ class AnotherFileGenerator(Eu4FileGenerator):
                         lines.append('{{unit list')
                         lines.append('| type = {}'.format(unit_type.title()))
                         lines.append('| body =')
-                        tech_group_order = ['Western', 'Eastern', 'Anatolian', 'Muslim', 'Indian', 'Chinese', 'Nomad',
-                                            'Sub-Saharan', 'North American', 'Mesoamerican', 'South American',
-                                            'High American', 'Aboriginal', 'Polynesian', '']
-                        units.sort(key=lambda x: '{:3}'.format(tech_group_order.index(x[0])) + x[1])
+                        # Not made for Anbennar yet
+                        #tech_group_order = ['Western', 'Eastern', 'Anatolian', 'Muslim', 'Indian', 'Chinese', 'Nomad',
+                        #                    'Sub-Saharan', 'North American', 'Mesoamerican', 'South American',
+                        #                    'High American', 'Aboriginal', 'Polynesian', '']
+                        #units.sort(key=lambda x: '{:3}'.format(tech_group_order.index(x[0])) + x[1])
+                        units.sort()
                         for tech_group, name in units:
                             if tech_group:
                                 lines.append('* {{{{{}|{}|{}}}}}'.format(unit_type_short, tech_group, name))
@@ -200,17 +206,22 @@ class AnotherFileGenerator(Eu4FileGenerator):
                     unit.pips = 0
                     unit.category = None
                     unit.techlevel = techlevel
-                    for n, v in self.parser.parse_file('common/units/{}.txt'.format(unit_name)):
-                        if n.val == 'unit_type':
-                            unit.tech_group = v.val
-                        elif n.val == 'type':
-                            unit.category = v.val
-                        elif n.val in (
-                                # 'maneuver',
-                                'offensive_morale', 'defensive_morale', 'offensive_fire', 'defensive_fire',
-                                'offensive_shock', 'defensive_shock'):
-                            setattr(unit, n.val, v.val)
-                            unit.pips += int(v.val)
+                    # Parser fails for Vanilla units, just ignore them
+                    try:
+                        for n, v in self.parser.parse_file('common/units/{}.txt'.format(unit_name)):
+                            if n.val == 'unit_type':
+                                unit.tech_group = v.val
+                            elif n.val == 'type':
+                                unit.category = v.val
+                            elif n.val in (
+                                    # 'maneuver',
+                                    'offensive_morale', 'defensive_morale', 'offensive_fire', 'defensive_fire',
+                                    'offensive_shock', 'defensive_shock'):
+                                setattr(unit, n.val, v.val)
+                                unit.pips += int(v.val)
+                    except:
+                        continue
+
                     if unit.category is None:
                         raise Exception('No category for {}'.format(unit_name))
 
@@ -219,7 +230,9 @@ class AnotherFileGenerator(Eu4FileGenerator):
                     if unit.tech_group not in piplist[unit.category][techlevel]:
                         piplist[unit.category][techlevel][unit.tech_group] = unit.pips
                     elif piplist[unit.category][techlevel][unit.tech_group] != unit.pips:
-                        raise Exception(
+                        # Anbennar has unbalanced pips
+                        #raise Exception(
+                        print(
                             'Differing number of pips for {} in category {} on tech {} in group {}'.format(unit_name,
                                                                                                            unit.category,
                                                                                                            techlevel,
@@ -228,17 +241,34 @@ class AnotherFileGenerator(Eu4FileGenerator):
                         unitlist[unit.category][unit.tech_group] = list()
                     unitlist[unit.category][unit.tech_group].append(unit)
         print(piplist)
-        result = self.create_unit_pip_table(unitlist['artillery']['all']) + '\n'
+        # Arty in vanilla files
+        #result = self.create_unit_pip_table(unitlist['artillery']['all']) + '\n'
+        result = ""
         result += '== Unit groups ==\n'
-        for tech_group in sorted(unitlist['infantry'].keys(), key = lambda tg: self.eu4parser.localize(tg)):
+
+        # Tech groups can have either only inf or cav as well
+        tech_groups = set.union(set(unitlist['infantry'].keys()), set(unitlist['cavalry'].keys()))
+
+        for tech_group in sorted(tech_groups, key = lambda tg: self.eu4parser.localize(tg)):
             display_name = self.eu4parser.localize(tech_group)
             result += f'=== {{{{icon|{display_name}}}}} {display_name} ===\n'
             result += self.get_SVersion_header() + '\n'
-            result += '{{box wrapper}}\n<div style="margin-right: 100px;">\n'
-            result += self.create_unit_pip_table(unitlist['infantry'][tech_group]) + '</div>\n'
-            result += '<div style="margin-right: 100px;">\n'
-            result += self.create_unit_pip_table(unitlist['cavalry'][tech_group])
-            result += '</div>\n{{end box wrapper}}\n\n'
+            result += '{{box wrapper}}'
+            # Print all unit lists for tech group, including arty
+            if (tech_group in unitlist['infantry']):
+                result += '\n<div style="margin-right: 100px;">\n'
+                result += self.create_unit_pip_table(unitlist['infantry'][tech_group])
+                result += '</div>\n'
+            if (tech_group in unitlist['cavalry']):
+                result += '<div style="margin-right: 100px;">\n'
+                result += self.create_unit_pip_table(unitlist['cavalry'][tech_group]) 
+                result += '</div>\n'
+            if (tech_group in unitlist['artillery']):
+                print(f"Unique arty for {tech_group}!")
+                result += '<div style="margin-right: 100px;">\n'
+                result += self.create_unit_pip_table(unitlist['artillery'][tech_group])
+                result += '</div>\n'
+            result += '{{end box wrapper}}\n\n'
             if display_name in ['Mesoamerican', 'North American', 'South American']:
                 print(self.create_unit_pip_table(unitlist['cavalry'][tech_group]))
         self.write_file('unit_types', result)
@@ -285,14 +315,15 @@ class AnotherFileGenerator(Eu4FileGenerator):
 
     def write_file(self, name, content):
         output_file = eu4outpath / 'eu4{}.txt'.format(name)
-        with output_file.open('w') as f:
+        # utf-8 encoding for compatibility
+        with output_file.open('w', encoding='utf-8') as f:
             f.write(content)
 
     def generate_all(self):
-        self.unit_pip_table()
+        #self.unit_pip_table()
         self.mil_table()
-        self.mil_techs_effects_table()
-        self.straits()
+        #self.mil_techs_effects_table()
+        #self.straits()
 
 
 if __name__ == '__main__':
