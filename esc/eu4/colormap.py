@@ -63,6 +63,7 @@ class ColorMapGenerator:
                 return self.mapparser.color_list[color].get_upscaled_value_tuple()
             else:
                 print('Color id {} is too big'.format(color))
+                return self.mapparser.color_list[color % len(self.mapparser.color_list)].get_upscaled_value_tuple()
                 return self.colors['white']
 
         return color
