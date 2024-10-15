@@ -141,9 +141,9 @@ class ColorMapGenerator:
 
         return min_x, max_x, min_y, max_y
 
-    def generate_mapimage_with_several_colors(self, color_to_provinces, name='', crop_to_color=None, margin=10):
+    def generate_mapimage_with_several_colors(self, color_to_provinces, name='', crop_to_color=None, margin=10, all_provs = True):
         out_path = self.outpath / '{}.png'.format(name)
-        self.generate_mapimage_object_with_several_colors(color_to_provinces, crop_to_color, margin).save(str(out_path))
+        self.generate_mapimage_object_with_several_colors(color_to_provinces, crop_to_color, margin, all_provs).save(str(out_path))
 
     def add_province_borders(self, out):
         if not self._borderlayer:
@@ -151,7 +151,7 @@ class ColorMapGenerator:
             self._borderlayer = Image.open(str(borders_path))
         out.paste(self._borderlayer, mask=self._borderlayer)
 
-    def generate_mapimage_object_with_several_colors(self, color_to_provinces, crop_to_color=None, margin=10):
+    def generate_mapimage_object_with_several_colors(self, color_to_provinces, crop_to_color=None, margin=10, all_provs = True):
         prov_color_lut = np.copy(self.prov_color_lut_base)
 
         provinces_used_for_cropping = []
@@ -163,7 +163,8 @@ class ColorMapGenerator:
             if crop_to_color == category or crop_to_color == True:  # true means to include all colored provinces
                 provinces_used_for_cropping.extend(provs)
             for prov in provs:
-                prov_color_lut[prov] = self.convert_color_to_np_type(category)
+                if (all_provs or self.mapparser.get_province_type(prov) == 'Land'):
+                    prov_color_lut[prov] = self.convert_color_to_np_type(category)
 
         out_a = prov_color_lut[self.mapparser.positions_to_provinceID_array]
         out = Image.fromarray(out_a)

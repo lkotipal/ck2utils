@@ -210,6 +210,30 @@ class MapGenerator:
 #
 #         self.color_map_generator.generate_mapimage_with_several_colors(color_to_provinces, 'Areas map', crop_to_color=False)
 
+    def areas_maps(self):
+        maps_to_generate = {
+            'Insyaan areas': [prov.id for prov in self.mapparser.all_land_provinces.values() if prov.continent.name == 'oceania'],
+            'Halessi areas': [prov.id for prov in self.mapparser.all_land_provinces.values() if prov.continent.name == 'asia' and prov.superregion.name not in ['india_superregion', 'east_indies_superregion']],
+            'Cannorian areas': [prov.id for prov in self.mapparser.all_land_provinces.values() if prov.continent.name == 'europe'],
+            'South Aelantiri areas': [prov.id for prov in self.mapparser.all_land_provinces.values() if prov.continent.name == 'south_america'],
+            'North Aelantiri areas': [prov.id for prov in self.mapparser.all_land_provinces.values() if prov.continent.name == 'north_america'],
+            'Sarhaly areas': [prov.id for prov in self.mapparser.all_land_provinces.values() if prov.continent.name == 'africa'],
+            'Serpentspine areas': [prov.id for prov in self.mapparser.all_land_provinces.values() if prov.continent.name == 'serpentspine'],
+            'Areas map':  [prov.id for prov in self.mapparser.all_land_provinces.values()],
+            }
+        for name, provinces in maps_to_generate.items():
+            provinces = set(provinces)
+            color_to_provinces = {}
+            for i, area in enumerate(self.mapparser.all_areas.values()):
+                provinces_in_area = set(area.provinceIDs) & provinces
+                if len(provinces_in_area) > 0:
+                    color_to_provinces[i+1] = list(provinces_in_area)
+            if name in ['Oceanian regions', 'Region map']:
+                crop_to_color = False
+            else:
+                crop_to_color = True
+            self.color_map_generator.generate_mapimage_with_several_colors(color_to_provinces, name, crop_to_color=crop_to_color)
+
     def get_similar_colors(self, base_color: LabColor, number_of_colors: int, brightness_step: float = 0.1,
                            color_step: float = 0.1, layers_of_brightness: float = 5) -> list[LabColor]:
         """Generate at least number_of_colors colors which are close to base_color,
@@ -300,13 +324,13 @@ class MapGenerator:
         color_to_provinces = {}
         for tc in self.mapparser.all_trade_companies.values():
             color_to_provinces[tc.color] = tc.provinceIDs
-        self.color_map_generator.generate_mapimage_with_several_colors(color_to_provinces, 'Trade companies')
+        self.color_map_generator.generate_mapimage_with_several_colors(color_to_provinces, 'Trade companies', crop_to_color=True)
 
     def colonial_region_map(self):
         color_to_provinces = {}
         for colonial_region in self.mapparser.all_colonial_regions.values():
             color_to_provinces[colonial_region.color] = colonial_region.provinceIDs
-        self.color_map_generator.generate_mapimage_with_several_colors(color_to_provinces, 'Colonial regions')
+        self.color_map_generator.generate_mapimage_with_several_colors(color_to_provinces, 'Colonial regions', crop_to_color=True)
 
     def island_maps(self):
         self.color_map_generator.generate_mapimage_with_important_provinces(is_island, 'is_island_map', crop=False)
@@ -361,8 +385,9 @@ class MapGenerator:
             Eu4Color.new_from_rgb_hex('#7f7fff'): 'africa',
             Eu4Color.new_from_rgb_hex('#ff7f7f'): 'north_america',
             Eu4Color.new_from_rgb_hex('#7fff7f'): 'south_america',
-            Eu4Color.new_from_rgb_hex('#ff7fff'): 'oceania'
-        }, 'Continent map')
+            Eu4Color.new_from_rgb_hex('#ff7fff'): 'oceania',
+            Eu4Color.new_from_rgb_hex('#ffffff'): 'serpentspine',
+        }, 'Continent map', all_provs=False)
 
     def techgroup_map(self):
         tech_group_color = {
@@ -716,6 +741,7 @@ every_province = {
     def generate_all(self):
         self.superregion_map()
         self.region_maps()
+        self.areas_maps()
         self.island_maps()
         ##self.decision_maps() hardcoded
         self.coal_map()
