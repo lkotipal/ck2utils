@@ -459,12 +459,37 @@ class MonumentList:
     def get_monument_icon(self, monumentid):
         if self.monument_icons is None:
             self.monument_icons = {}
-            for n, v in self.parser.parser.parse_file('interface/great_project.gfx'):
+            paths = ('interface/great_project.gfx', 'interface/anb_great_project.gfx')
+            for path in paths:
+                for n, v in self.parser.parser.parse_file(path):
+                    for n2, v2 in v:
+                        name = v2['name'].val.replace('GFX_great_project_', '')
+                        image = v2['texturefile'].val.replace('gfx//interface//great_projects//', '').replace('.dds', '')
+                        self.monument_icons[name] = image
+            for n, v in self.parser.parser.parse_file('interface/anb_dwarovar_expedition.gfx'):
                 for n2, v2 in v:
-                    name = v2['name'].val.replace('GFX_great_project_', '')
-                    image = v2['texturefile'].val.replace('gfx//interface//great_projects//', '').replace('.dds', '')
-                    self.monument_icons[name] = image
+                    if (v2['name'].val.startswith('GFX_great_project_')):
+                        name = v2['name'].val.replace('GFX_great_project_', '')
+                        image = v2['texturefile'].val.replace('gfx//interface//great_projects//', '').replace('.dds', '')
+                        self.monument_icons[name] = image
         return self.monument_icons[monumentid]
+
+    @staticmethod
+    # Hardcoded provinces for hidden monuments
+    def _get_provinceid(monumentid):
+        locations = {
+            "beikdugang_arsenal": 4908,
+            "beikdugang_lights": 4907,
+            "anzarzax_palace": 590,
+            "elikhander_pyramid": 769,
+            "elikhander_orbs": 759,
+            "elikhander_sphinx": 756,
+            "scp_bureau_hq": 1019,
+            "icgm": 2931,
+            "ravioli_bastion": 898,
+            "feiten_aerodrome": 4879,
+        }
+        return locations.get(monumentid, 0)
 
     def parse_monuments(self):
         monuments = {}
@@ -480,8 +505,15 @@ class MonumentList:
             else:
                 build_cost = None
                 prestige_gain = None
-            provinceID = v['start']
-            prov = self.parser.all_provinces[provinceID]
+
+            try:
+                provinceID = v['start']
+                prov = self.parser.all_provinces[provinceID]
+            except:
+                provinceID = self._get_provinceid(monumentid)
+                prov = self.parser.all_provinces[provinceID] if provinceID else None
+                provinceID = 0 # Hidden
+
             can_be_moved = v['can_be_moved'].val == 'yes'
             level = v['starting_tier'].val
             if len(v['can_use_modifiers_trigger']) > 0:
@@ -706,10 +738,10 @@ class MonumentList:
             ('', 'id="%(name)s" | %(number)d'),
             ('Name',
              'style="text-align:center; font-weight: bold; font-size:larger" | %(name)s\n\n[[File:%(icon)s.png|%(name)s]]'),
-            ('Location', lambda k, v: '{{plainlist|\n*%s\n*%s\n}}\n%s' % (
+            ('Location', lambda k, v: ('{{plainlist|\n*%s\n*%s\n}}\n%s' % (
                 v['province'].superregion,
                 v['province'].region,
-                v['province'])),
+                v['province']) + ("" if v['provinceid'] else ", via mission")) if v['province'] else "Not present in 1444"), # Likely expedition
             ('Level', '%(level)d'),
             # yes/no style might work better for mobile devices for which the column seems to be broken
             # ('[[File:Great project level icon move.png|24px|Can be relocated]]', lambda k,v: 'yes' if v['can_be_moved'] else 'no')
