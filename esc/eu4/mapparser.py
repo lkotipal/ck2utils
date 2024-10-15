@@ -454,6 +454,7 @@ class Eu4MapParser(Eu4Parser):
                 continue
         
             if not number in self.all_provinceIDs:
+                print(f'{number} is a bad province!')
                 continue
 
             cores = set()
