@@ -90,7 +90,12 @@ class NameableEntityWithProvinces(NameableEntity):
     @cached_property
     def provinces(self) -> list[Province]:
         if self._provinces is None:
-            self._provinces = [self.parser.all_provinces[provinceID] for provinceID in self._provinceIDs]
+            self._provinces = []
+            for provinceID in self._provinceIDs:
+                try:
+                    self._provinces.append(self.parser.all_provinces[provinceID])
+                except:
+                    continue
         return self._provinces
 
     @cached_property
@@ -272,10 +277,6 @@ class Religion(NameableEntity):
         self.data = data
 
 
-class TradeCompany(NameableEntityWithProvincesAndColor):
-    pass
-
-
 class TradeNode(NameableEntityWithProvincesAndColor):
 
     def __init__(self, name, display_name, location, outgoing_node_names=None, inland=False, endnode=False,
@@ -296,6 +297,18 @@ class TradeNode(NameableEntityWithProvincesAndColor):
     @cached_property
     def incoming_nodes(self):
         return [node for node in self.parser.all_trade_nodes.values() if self.name in node.outgoing_node_names]
+
+
+class TradeCompany(NameableEntityWithProvincesAndColor):
+    @cached_property
+    def continents(self) -> list[Continent]:
+        continents = set(province.continent for province in self.provinces)
+        return sorted(continents)
+
+    @cached_property
+    def trade_nodes(self) -> list[TradeNode]:
+        trade_nodes = set(province.tradenode for province in self.provinces)
+        return sorted(trade_nodes)
 
 
 class IdeaGroup(NameableEntity):

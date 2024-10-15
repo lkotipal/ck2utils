@@ -883,6 +883,17 @@ class AreaAndRegionsList(Eu4FileGenerator):
             } for region in self.parser.all_colonial_regions.values()
             ], one_line_per_cell=True)
 
+    def generate_trade_company_regions(self):
+        return self.get_SVersion_header('table') + '\n' + \
+            self.make_wiki_table([{
+                'Continent': ', '.join(continent.display_name for continent in region.continents),
+                'Trade Company region': region,
+                'class="unsortable" width="75px" | Colour': f'style="background:{region.color.get_css_color_string()}"|',
+                'Trade Node': ', '.join(trade_node.display_name for trade_node in region.trade_nodes),
+                'class="unsortable" | Key provinces': self._get_key_provinces(region),
+            } for region in self.parser.all_trade_companies.values()
+            ], one_line_per_cell=True)
+
 
 class GovernmentReforms:
 
@@ -1410,14 +1421,14 @@ class CultureList(Eu4FileGenerator):
 if __name__ == '__main__':
     # for correct sorting. en_US seems to work even for non english characters, but the default None sorts all non-ascii characters to the end
     setlocale(LC_COLLATE, 'en_US.utf8')
-    EstateAgendas().run_for_all_estates()
-    Achievements(365).run([])
-    EstatePrivileges().run_for_all_estates()
+    # EstateAgendas().run_for_all_estates() Doesn't work
+    # Achievements(365).run([])
+    # EstatePrivileges().run_for_all_estates() No output yet
     EocReforms().run([])
     GovernmentReforms().run()
     MercenaryList().run([])
     MonumentList().run()
-    EventPicturesList().run([])
+    # EventPicturesList().run([]) Doesn't work
     CountryList().run([])
     AreaAndRegionsList().run([])
     CultureList().run([])
