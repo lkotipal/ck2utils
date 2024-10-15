@@ -579,7 +579,7 @@ class Eu4MapParser(Eu4Parser):
         """returns a set of tags which can be released from cores in 1444, but which don't exist in 1444"""
         return {tag
                 for province in self.all_land_provinces.values()
-                for tag in province['cores']
+                for tag in province.get('cores', set())
                 if tag not in self.existing_tags}
 
     def _find_tags_by_effect_and_folder(self, effects: list[str], folder: str) -> set[str]:
