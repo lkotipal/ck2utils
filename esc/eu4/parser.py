@@ -274,7 +274,7 @@ class Eu4Parser:
     def all_countries(self):
         """returns a dictionary. keys are tags and values are Country objects. It is ordered by the tag order"""
         countries = OrderedDict()
-        for tag, country_file in self.parser.parse_file('common/country_tags/00_countries.txt'):
+        for tag, country_file in self.parser.parse_file('common/country_tags/anb_countries.txt'):
             countries[tag.val] = Country(tag.val, self.localize(tag.val), parser=self, country_file=country_file.val)
         return countries
 

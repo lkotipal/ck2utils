@@ -11,9 +11,11 @@ _eu4_full_version = None
 def eu4_version():
     global _eu4_version, _eu4_full_version
     if _eu4_version is None:
-        json_object = json.load(open(eu4dir / 'launcher-settings.json'))
-        _eu4_version = json_object['rawVersion'].removeprefix('v')
-        _eu4_full_version = json_object['version']
+        _eu4_version = "Forbidden Valley"
+        _eu4_full_version = "vForbidden Valley"
+        #json_object = json.load(open(eu4dir / 'launcher-settings.json'))
+        #_eu4_version = json_object['rawVersion'].removeprefix('v')
+        #_eu4_full_version = json_object['version']
     return _eu4_version
 
 

@@ -452,6 +452,9 @@ class Eu4MapParser(Eu4Parser):
             number = int(match.group())
             if number >= self.max_provinces:
                 continue
+        
+            if not number in self.all_provinceIDs:
+                continue
 
             cores = set()
             values = self.parser.parse_file(path).get_entries_at_date(
@@ -547,7 +550,7 @@ class Eu4MapParser(Eu4Parser):
         """all straits except canals"""
         straits = []
         for row in csv_rows(self.parser.file('map/' + self.default_tree['adjacencies'].val)):
-            if row[0] not in ['From', '-1'] and row[2] != 'canal':
+            if row[0] not in ['From', '-1'] and row[2] != 'canal' and row[3] != '-1':
                 straits.append(Strait(provinces=(self.all_provinces[int(row[0])], self.all_provinces[int(row[1])]),
                                       strait_type=row[2],
                                       water_province=self.all_provinces[int(row[3])]))

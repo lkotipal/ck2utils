@@ -126,24 +126,26 @@ class MapGenerator:
 
     def region_maps(self):
         maps_to_generate = {
-            'Superregion india': [prov.id for prov in self.mapparser.all_land_provinces.values() if prov.superregion.name == 'india_superregion'],
-            'Superregion east indies': [prov.id for prov in self.mapparser.all_land_provinces.values() if prov.superregion.name == 'east_indies_superregion'],
-            'Oceanian regions': [prov.id for prov in self.mapparser.all_land_provinces.values() if prov.continent.name == 'oceania'],
-            'Asian regions': [prov.id for prov in self.mapparser.all_land_provinces.values() if prov.continent.name == 'asia' and prov.superregion.name not in ['india_superregion', 'east_indies_superregion']],
-            'European regions': [prov.id for prov in self.mapparser.all_land_provinces.values() if prov.continent.name == 'europe'],
-            'Superregion africa': [prov.id for prov in self.mapparser.all_land_provinces.values() if prov.continent.name == 'africa'],
-            'Superregion south america': [prov.id for prov in self.mapparser.all_land_provinces.values() if prov.continent.name == 'south_america'],
-            'North American regions': [prov.id for prov in self.mapparser.all_land_provinces.values() if prov.continent.name == 'north_america'],
-            'Africa northern regions': [prov.id for prov in self.mapparser.all_land_provinces.values() if prov.superregion.name == 'africa_superregion' or prov.region.name == 'egypt_region'],
-            'Africa southern regions': [prov.id for prov in self.mapparser.all_land_provinces.values() if prov.superregion.name == 'southern_africa_superregion'],
-            'Europe central regions': [prov.id for prov in self.mapparser.all_land_provinces.values() if prov.region.name in ['scandinavia_region', 'north_german_region', 'south_german_region', 'italy_region']],
-            'Europe western regions': [prov.id for prov in self.mapparser.all_land_provinces.values() if prov.region.name in ['france_region', 'iberia_region', 'british_isles_region', 'low_countries_region']],
-            'Middle East regions': [prov.id for prov in self.mapparser.all_land_provinces.values() if prov.superregion.name in ['persia_superregion', 'near_east_superregion'] and prov.region.name != 'egypt_region'],
-            'Superregion Central and South America': [prov.id for prov in self.mapparser.all_land_provinces.values() if prov.superregion.name in ['south_america_superregion', 'andes_superregion', 'central_america_superregion'] and prov.region.name not in ['rio_grande_region', 'california_region']],
-            'Superregion china far east': [prov.id for prov in self.mapparser.all_land_provinces.values() if prov.superregion.name in ['china_superregion', 'far_east_superregion'] and prov.region.name not in ['manchuria_region']],
-            'Superregion east europe': [prov.id for prov in self.mapparser.all_land_provinces.values() if prov.superregion.name in ['eastern_europe_superregion'] and prov.region.name not in ['manchuria_region']],
-            'Superregion north america': [prov.id for prov in self.mapparser.all_land_provinces.values() if prov.superregion.name == 'north_america_superregion' or prov.region.name in['rio_grande_region', 'california_region']],
-            'Superregion tartary': [prov.id for prov in self.mapparser.all_land_provinces.values() if prov.superregion.name == 'tartary_superregion' or prov.region.name in['manchuria_region']],
+            #'Superregion india': [prov.id for prov in self.mapparser.all_land_provinces.values() if prov.superregion.name == 'india_superregion'],
+            #'Superregion east indies': [prov.id for prov in self.mapparser.all_land_provinces.values() if prov.superregion.name == 'east_indies_superregion'],
+            'Insyaan regions': [prov.id for prov in self.mapparser.all_land_provinces.values() if prov.continent.name == 'oceania'],
+            'Halessi regions': [prov.id for prov in self.mapparser.all_land_provinces.values() if prov.continent.name == 'asia' and prov.superregion.name not in ['india_superregion', 'east_indies_superregion']],
+            'Cannorian regions': [prov.id for prov in self.mapparser.all_land_provinces.values() if prov.continent.name == 'europe'],
+            #'Superregion africa': [prov.id for prov in self.mapparser.all_land_provinces.values() if prov.continent.name == 'africa'],
+            'South Aelantiri regions': [prov.id for prov in self.mapparser.all_land_provinces.values() if prov.continent.name == 'south_america'],
+            'North Aelantiri regions': [prov.id for prov in self.mapparser.all_land_provinces.values() if prov.continent.name == 'north_america'],
+            'Sarhaly regions': [prov.id for prov in self.mapparser.all_land_provinces.values() if prov.continent.name == 'africa'],
+            'Serpentspine regions': [prov.id for prov in self.mapparser.all_land_provinces.values() if prov.continent.name == 'serpentspine'],
+            #'Africa northern regions': [prov.id for prov in self.mapparser.all_land_provinces.values() if prov.superregion.name == 'africa_superregion' or prov.region.name == 'egypt_region'],
+            #'Africa southern regions': [prov.id for prov in self.mapparser.all_land_provinces.values() if prov.superregion.name == 'southern_africa_superregion'],
+            #'Europe central regions': [prov.id for prov in self.mapparser.all_land_provinces.values() if prov.region.name in ['scandinavia_region', 'north_german_region', 'south_german_region', 'italy_region']],
+            #'Europe western regions': [prov.id for prov in self.mapparser.all_land_provinces.values() if prov.region.name in ['france_region', 'iberia_region', 'british_isles_region', 'low_countries_region']],
+            #'Middle East regions': [prov.id for prov in self.mapparser.all_land_provinces.values() if prov.superregion.name in ['persia_superregion', 'near_east_superregion'] and prov.region.name != 'egypt_region'],
+            #'Superregion Central and South America': [prov.id for prov in self.mapparser.all_land_provinces.values() if prov.superregion.name in ['south_america_superregion', 'andes_superregion', 'central_america_superregion'] and prov.region.name not in ['rio_grande_region', 'california_region']],
+            #'Superregion china far east': [prov.id for prov in self.mapparser.all_land_provinces.values() if prov.superregion.name in ['china_superregion', 'far_east_superregion'] and prov.region.name not in ['manchuria_region']],
+            #'Superregion east europe': [prov.id for prov in self.mapparser.all_land_provinces.values() if prov.superregion.name in ['eastern_europe_superregion'] and prov.region.name not in ['manchuria_region']],
+            #'Superregion north america': [prov.id for prov in self.mapparser.all_land_provinces.values() if prov.superregion.name == 'north_america_superregion' or prov.region.name in['rio_grande_region', 'california_region']],
+            #'Superregion tartary': [prov.id for prov in self.mapparser.all_land_provinces.values() if prov.superregion.name == 'tartary_superregion' or prov.region.name in['manchuria_region']],
             'Region map':  [prov.id for prov in self.mapparser.all_land_provinces.values()],
             }
         for name, provinces in maps_to_generate.items():
@@ -158,6 +160,9 @@ class MapGenerator:
             else:
                 crop_to_color = True
             self.color_map_generator.generate_mapimage_with_several_colors(color_to_provinces, name, crop_to_color=crop_to_color)
+        
+        # Insyaa doesn't need Oceania handling
+        return
 
         # reorganize the oceania image so that the parts west of the
         # date line are on the left side of the image and the parts
@@ -335,7 +340,7 @@ class MapGenerator:
         self.color_map_generator.generate_mapimage_with_several_colors(color_to_provinces, 'Terrain map', crop_to_color=False)
         map_image = Image.open(eu4outpath / 'Terrain map.png')
         legend_image = Image.open(Path(__file__).parent / 'terrain_legend.png')
-        map_image.paste(legend_image, (430, 820))
+        map_image.paste(legend_image, (130, 1220))
         map_image.save(eu4outpath / 'Terrain map.png')
 
     def country_map(self):
@@ -426,16 +431,16 @@ class MapGenerator:
 
     def mission_map_from_save(self, savefile):
         save_data = open(savefile, encoding='cp1252').read()
-        all_missions_regex = re.compile(r'^\t([A-Z]{3})=.*?(country_missions=\{\n(.*?)^\t\t})', re.MULTILINE | re.DOTALL)
+        all_missions_regex = re.compile(r'^\t([ABG-JL-NP-RU-Z][0-9]{2})=.*?(country_missions=\{\n(.*?)^\t\t})', re.MULTILINE | re.DOTALL)
         tags_to_mission_groups = {}
         for match in all_missions_regex.finditer(save_data):
             if match[3]:
                 tag = match[1]
-                # print(f'{tag}: ')
+                #print(f'{tag}: ')
                 tags_to_mission_groups[tag] = []
                 for mission in match[3].split():
                     if mission not in ['mission_slot={', '}']:
-                        # print(mission)
+                        #print(mission)
                         tags_to_mission_groups[tag].append(mission)
         tag_count = {}
         min_count = 9999
@@ -608,27 +613,40 @@ class MapGenerator:
         self.color_map_generator.generate_mapimage_with_several_colors({'important': tropical_wood_provinces, Eu4Color(218, 220, 57): possible_provs}, 'Tropical Wood map')
 
     # the tags are chosen kind of arbitrary
-    provincelist_definitions = [{'variable_name': 'coastal_provinces', 'condition': 'has_port = yes', 'tag': 'POR'},
-                                {'variable_name': 'is_island', 'condition': 'is_island = yes', 'tag': 'ICE'},
+    provincelist_definitions = [{'variable_name': 'coastal_provinces', 'condition': 'has_port = yes', 'tag': 'A01'},
+                                {'variable_name': 'is_island', 'condition': 'is_island = yes', 'tag': 'A02'},
                                 {'variable_name': 'province_is_on_an_island',
-                                 'condition': 'province_is_on_an_island = yes', 'tag': 'IDR'},
-                                {'variable_name': 'island', 'condition': 'island = yes', 'tag': 'IKE'}, ]
-    provincelist_terrain_definitions = [{'terrain': 'glacier', 'tag': 'GLE'},
-                                        {'terrain': 'farmlands', 'tag': 'FAD'},
-                                        {'terrain': 'forest', 'tag': 'FOX'},
-                                        {'terrain': 'hills', 'tag': 'HMI'},
-                                        {'terrain': 'woods', 'tag': 'WOL'},
-                                        {'terrain': 'mountain', 'tag': 'MON'},
-                                        {'terrain': 'grasslands', 'tag': 'GRA'},
-                                        {'terrain': 'jungle', 'tag': 'JOL'},
-                                        {'terrain': 'marsh', 'tag': 'MAR'},
-                                        {'terrain': 'desert', 'tag': 'DEC'},
-                                        {'terrain': 'coastal_desert', 'tag': 'COB'},
-                                        {'terrain': 'coastline', 'tag': 'COL'},
-                                        {'terrain': 'drylands', 'tag': 'DNZ'},
-                                        {'terrain': 'highlands', 'tag': 'HIN'},
-                                        {'terrain': 'savannah', 'tag': 'SAV'},
-                                        {'terrain': 'steppe', 'tag': 'STE'},
+                                 'condition': 'province_is_on_an_island = yes', 'tag': 'A03'},
+                                {'variable_name': 'island', 'condition': 'island = yes', 'tag': 'A04'}, ]
+    provincelist_terrain_definitions = [{'terrain': 'glacier', 'tag': 'A05'},
+                                        {'terrain': 'farmlands', 'tag': 'A06'},
+                                        {'terrain': 'forest', 'tag': 'A07'},
+                                        {'terrain': 'hills', 'tag': 'A08'},
+                                        {'terrain': 'woods', 'tag': 'A09'},
+                                        {'terrain': 'mountain', 'tag': 'A10'},
+                                        {'terrain': 'grasslands', 'tag': 'A11'},
+                                        {'terrain': 'jungle', 'tag': 'A12'},
+                                        {'terrain': 'marsh', 'tag': 'A13'},
+                                        {'terrain': 'desert', 'tag': 'A14'},
+                                        {'terrain': 'coastal_desert', 'tag': 'A15'},
+                                        {'terrain': 'coastline', 'tag': 'A16'},
+                                        {'terrain': 'drylands', 'tag': 'A17'},
+                                        {'terrain': 'highlands', 'tag': 'A18'},
+                                        {'terrain': 'savannah', 'tag': 'A19'},
+                                        {'terrain': 'steppe', 'tag': 'A20'},
+                                            
+                                        {'terrain': 'dwarven_hold', 'tag': 'B01'},
+                                        {'terrain': 'dwarven_hold_surface', 'tag': 'B02'},
+                                        {'terrain': 'dwarven_road', 'tag': 'B03'},
+                                        {'terrain': 'cavern', 'tag': 'B04'},
+                                        {'terrain': 'mushroom_forest_terrain', 'tag': 'B05'},
+                                        {'terrain': 'city_terrain', 'tag': 'B06'},
+                                        {'terrain': 'shadow_swamp_terrain', 'tag': 'B07'},
+
+                                        {'terrain': 'bloodgroves', 'tag': 'G01'},
+                                        {'terrain': 'gladeway', 'tag': 'G02'},
+                                        {'terrain': 'fey_gladeway', 'tag': 'G03'},
+                                        {'terrain': 'ancient_forest', 'tag': 'G04'},
                                         ]
 
     def print_provincelist_help_message(self):
@@ -699,10 +717,11 @@ every_province = {
         self.superregion_map()
         self.region_maps()
         self.island_maps()
-        self.decision_maps()
+        ##self.decision_maps() hardcoded
         self.coal_map()
         self.gold_map()
-        self.achievement_maps()
+        # TODO Damestear, mithril, more?
+        ##self.achievement_maps()
         self.culture_group_map()
         self.religion_map()
         self.trade_node_map()
@@ -711,7 +730,7 @@ every_province = {
         self.colonial_region_map()
         self.country_map()
         self.continent_map()
-        self.techgroup_map()
+        #self.techgroup_map() hardcoded
         # self.mission_map()
 
 
