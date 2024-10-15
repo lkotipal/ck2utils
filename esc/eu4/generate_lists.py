@@ -459,20 +459,19 @@ class MonumentList:
     def get_monument_icon(self, monumentid):
         if self.monument_icons is None:
             self.monument_icons = {}
-            paths = ('interface/great_project.gfx', 'interface/anb_great_project.gfx')
-            for path in paths:
-                for n, v in self.parser.parser.parse_file(path):
+            files = ('interface/anb_great_project.gfx', 'interface/anb_dwarovar_expedition.gfx', 'interface/anb_feiten.gfx', 'interface/great_project.gfx')
+            for file in files:
+                for n, v in self.parser.parser.parse_file(file):
                     for n2, v2 in v:
-                        name = v2['name'].val.replace('GFX_great_project_', '')
-                        image = v2['texturefile'].val.replace('gfx//interface//great_projects//', '').replace('.dds', '')
-                        self.monument_icons[name] = image
-            for n, v in self.parser.parser.parse_file('interface/anb_dwarovar_expedition.gfx'):
-                for n2, v2 in v:
-                    if (v2['name'].val.startswith('GFX_great_project_')):
-                        name = v2['name'].val.replace('GFX_great_project_', '')
-                        image = v2['texturefile'].val.replace('gfx//interface//great_projects//', '').replace('.dds', '')
-                        self.monument_icons[name] = image
-        return self.monument_icons[monumentid]
+                        if (v2['name'].val.startswith('GFX_great_project_')):
+                            name = v2['name'].val.replace('GFX_great_project_', '')
+                            image = v2['texturefile'].val.replace('gfx//interface//great_projects//', '').replace('.dds', '')
+                            self.monument_icons[name] = image
+        try:
+            return self.monument_icons[monumentid]
+        except:
+            print(f"No icon for {monumentid}!")
+            return "404"
 
     @staticmethod
     # Hardcoded provinces for hidden monuments
@@ -524,9 +523,12 @@ class MonumentList:
                 can_upgrade_trigger = v['can_upgrade_trigger'].str(self.parser.parser)
             else:
                 can_upgrade_trigger = None
-            if len(v['build_trigger']) > 0:
-                build_trigger = v['build_trigger'].str(self.parser.parser)
-            else:
+            try:
+                if len(v['build_trigger']) > 0:
+                    build_trigger = v['build_trigger'].str(self.parser.parser)
+                else:
+                    build_trigger = None
+            except:
                 build_trigger = None
             if trigger != can_upgrade_trigger:
                 print('Warning: can_use_modifiers_trigger is {} but can_upgrade_trigger is {}'.format(trigger,
@@ -728,11 +730,14 @@ class MonumentList:
                         effects += '\n' + description + ':\n{{plainlist|\n' + effects_list + '\n}}'
                 data['tier_' + str(tier)] = effects
 
+        canals = {k: v for (k, v) in monuments.items() if v['type'] == 'canal'}
         monuments = {k: v for (k, v) in monuments.items() if v['type'] == 'monument'}
 
         monuments = dict(sorted(monuments.items(), key=lambda x: x[1]['name']))
         for i, monument in enumerate(monuments.items(), start=1):
             monument[1]['number'] = i
+
+        canals = dict(sorted(canals.items(), key=lambda x: x[1]['name']))
 
         column_specs = [
             ('', 'id="%(name)s" | %(number)d'),
@@ -758,7 +763,25 @@ class MonumentList:
         dialect.row_cell_delimiter = '\n| '
 
         table = make_table(monuments, 'wiki', column_specs, table_style='', table_classes=['mildtable'], sortable=True)
-        return get_SVersion_header(scope='table') + '\n' + table
+
+        column_specs = [
+            ('Name',
+             'style="text-align:center; font-weight: bold; font-size:larger" | %(name)s\n\n[[File:%(icon)s.png|%(name)s]]'),
+            ('Location', lambda k, v: ('{{plainlist|\n*%s\n*%s\n}}\n%s' % (
+                v['province'].superregion,
+                v['province'].region,
+                v['province']) + ("" if v['provinceid'] else ", via mission")) if v['province'] else "Not present in 1444"), # Likely expedition
+            ('Build requirements', '%(Requirements)s'),
+            ('Build cost', '%(build_cost)s'),
+            ('[[File:Great project level icon tier 1.png|24px]] Insignificant level', '%(tier_0)s'),
+            ('[[File:Great project level icon tier 1.png|24px]] Noteworthy level', '%(tier_1)s'),
+            ('[[File:Great project level icon tier 2.png|24px]] Significant level', '%(tier_2)s'),
+            ('[[File:Great project level icon tier 3.png|24px]] Magnificent level', '%(tier_3)s'),
+        ]
+
+        table2 = make_table(canals, 'wiki', column_specs, table_style='', table_classes=['mildtable'], sortable=True)
+
+        return get_SVersion_header(scope='table') + '\n' + table + '\n' + get_SVersion_header(scope='table') + '\n' + table2
 
     @staticmethod
     def _writeFile(name, content):
@@ -1195,8 +1218,10 @@ class GovernmentReforms:
         for condition, condition_attributes in self.simplify_dlc_conditionals(reform.conditional):
             if len(condition) == 1 and condition.contents[0].key == 'has_dlc':
                 lines.append('{{{{expansion|{}}}}}'.format(self.parser.dlcs_by_name[condition.contents[0].value].short_name))
-            else:
+            elif len(condition):
                 lines.append(condition.str(self.parser.parser))
+            else:
+                print(f"Malformed condition in {reform.display_name}!")
             for attribute_name, value in condition_attributes.items():
                 lines.append(self.format_reform_attribute(attribute_name, value))
         return lines
@@ -1376,7 +1401,7 @@ class CountryList(Eu4FileGenerator):
             notes.append('[[File:Separatist rebels.png|link=|18px]] Revolter')
 
         # special tags override all other notes
-        if tag in ['REB', 'PIR', 'NAT']:
+        if tag in ['REB', 'PIR', 'NAT', 'PAP', 'NPC']:
             notes = ['Special game tag']
         elif tag in ['JMN', 'SYN']:
             notes = ['Special country (can be spawned only with console)']

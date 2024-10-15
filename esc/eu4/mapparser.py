@@ -565,6 +565,11 @@ class Eu4MapParser(Eu4Parser):
     @cached_property
     def releasable_tags(self):
         """returns a set of tags which can be released from cores in 1444, but which don't exist in 1444"""
+        for province in self.all_land_provinces.values():
+            try:
+                province['cores']
+            except:
+                province['cores'] = set()
         return {tag
                 for province in self.all_land_provinces.values()
                 for tag in province['cores']
