@@ -46,7 +46,7 @@ class WikiTextConverter:
         with TemporaryDirectory() as tmpfolder:
             inputfolder = tmpfolder + '/in'
             os.mkdir(inputfolder)
-            outputfolder = tmpfolder + '/output/Europa Universalis IV'
+            outputfolder = tmpfolder + '/output/Anbennar'
             self._replace_values_by_filenames(inputfolder, country_scope)
             self._replace_values_by_filenames(inputfolder, province_scope)
             self._replace_values_by_filenames(inputfolder, modifiers)
