@@ -575,7 +575,7 @@ class Eu4MapParser(Eu4Parser):
         for file, data in self.parser.parse_files(folder + '/**/*.txt'):
             for effect in effects:
                 for tag in data.find_all_recursively(effect):
-                    if re.fullmatch(r'[A-Z]{3}', tag):
+                    if re.fullmatch(r'[A-Z][A-Z0-9]{2}', tag):
                         tags.add(tag)
         return tags
 
