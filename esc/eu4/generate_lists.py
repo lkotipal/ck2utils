@@ -505,10 +505,10 @@ class MonumentList:
                 build_cost = None
                 prestige_gain = None
 
-            try:
+            if ('start' in v):
                 provinceID = v['start']
                 prov = self.parser.all_provinces[provinceID]
-            except:
+            else:
                 provinceID = self._get_provinceid(monumentid)
                 prov = self.parser.all_provinces[provinceID] if provinceID else None
                 provinceID = 0 # Hidden
@@ -523,12 +523,9 @@ class MonumentList:
                 can_upgrade_trigger = v['can_upgrade_trigger'].str(self.parser.parser)
             else:
                 can_upgrade_trigger = None
-            try:
-                if len(v['build_trigger']) > 0:
-                    build_trigger = v['build_trigger'].str(self.parser.parser)
-                else:
-                    build_trigger = None
-            except:
+            if len(v.get('build_trigger', [])) > 0:
+                build_trigger = v['build_trigger'].str(self.parser.parser)
+            else:
                 build_trigger = None
             if trigger != can_upgrade_trigger:
                 print('Warning: can_use_modifiers_trigger is {} but can_upgrade_trigger is {}'.format(trigger,
