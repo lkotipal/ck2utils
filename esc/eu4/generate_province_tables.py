@@ -32,10 +32,6 @@ class ProvinceTables:
 
         self.write_file('continenttable', self.generate_continent_table(continents))
 
-        for continent in ['India', 'East Indies'] + list(continents.keys()):
-            if continent == 'Total':
-                continue
-            self.write_file('regiontable_' + continent, self.generate_region_list(continent))
 
     def generate_continent_table(self, continents=None):
         if continents is None:
@@ -55,12 +51,11 @@ class ProvinceTables:
         return self.format_output(['ID', 'Name', 'Owner (1444)', 'Religion', 'Culture', 'Culture Group'])
 
     def generate_region_list(self, continent_or_superregion):
-        """India and East Indies are the only supported superregions and they are not included when requesting Asia"""
-        map_filenames = {'Africa': 'superregion_africa.png', 'Asia': 'Asian regions.png',
-                         'East Indies': 'Superregion east indies.png', 'Europe': 'European regions.png',
-                         'India': 'Superregion india.png', 'Oceania': 'Oceanian regions.png',
-                         'North America': 'North American regions.png',
-                         'South America': 'Superregion_south_america.png'}
+        map_filenames = {'Sarhal': 'Sarhaly regions.png', 'Haless': 'Halessi regions.png',
+                         'Cannor': 'Cannorian regions.png',
+                         'Insyaa': 'Insyaa regions.png',
+                         'North Aelantir': 'North Aelantiri regions.png',
+                         'South Aelantir': 'South Aelantiri regions.png'}
         notes, provinces_to_include_in_continent = self.find_oddities(self.parser.all_provinces)
         if continent_or_superregion == 'Asia':
             continent = 'Asia'
