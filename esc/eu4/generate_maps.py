@@ -28,6 +28,13 @@ class MapGenerator:
         # change the version number after verifying that the provinces/areas are still correct
         verified_for_version('1.37.0')
 
+        for religion in self.mapparser.all_religions.values():
+            holy_sites = religion.data.get("holy_sites", [])
+            if holy_sites:
+                self.color_map_generator.generate_mapimage_with_several_colors({
+                    religion.color: holy_sites
+                    }, f'{religion} Holy Sites', crop_to_color=True)
+
         self.color_map_generator.create_shaded_image({
             'yellow': [prov.id for prov in self.mapparser.all_land_provinces.values() if
                        prov.get('Culture') == 'greek' and prov.region.name in ['balkan_region', 'anatolia_region']],
