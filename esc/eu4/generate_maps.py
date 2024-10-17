@@ -463,7 +463,7 @@ class MapGenerator:
 
     def mission_map_from_save(self, savefile):
         save_data = open(savefile, encoding='cp1252').read()
-        all_missions_regex = re.compile(r'^\t([ABG-JL-NP-RU-Z][0-9]{2})=.*?(country_missions=\{\n(.*?)^\t\t})', re.MULTILINE | re.DOTALL)
+        all_missions_regex = re.compile(r'^\t([ABG-JL-NP-RU-Z][a-zA-Z0-9]{2}|([a-zA-Z]{3}))=.*?(country_missions=\{\n(.*?)^\t\t})', re.MULTILINE | re.DOTALL)
         tags_to_mission_groups = {}
         for match in all_missions_regex.finditer(save_data):
             if match[3]:
