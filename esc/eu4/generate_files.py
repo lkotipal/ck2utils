@@ -264,7 +264,6 @@ class AnotherFileGenerator(Eu4FileGenerator):
                 result += self.create_unit_pip_table(unitlist['cavalry'][tech_group]) 
                 result += '</div>\n'
             if (tech_group in unitlist['artillery']):
-                print(f"Unique arty for {tech_group}!")
                 result += '<div style="margin-right: 100px;">\n'
                 result += self.create_unit_pip_table(unitlist['artillery'][tech_group])
                 result += '</div>\n'
@@ -320,10 +319,10 @@ class AnotherFileGenerator(Eu4FileGenerator):
             f.write(content)
 
     def generate_all(self):
-        #self.unit_pip_table()
+        self.unit_pip_table()
         self.mil_table()
-        #self.mil_techs_effects_table()
-        #self.straits()
+        self.mil_techs_effects_table()
+        self.straits()
 
 
 if __name__ == '__main__':
