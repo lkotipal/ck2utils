@@ -32,10 +32,6 @@ class ProvinceTables:
 
         self.write_file('continenttable', self.generate_continent_table(continents))
 
-        for continent in ['India', 'East Indies'] + list(continents.keys()):
-            if continent == 'Total':
-                continue
-            self.write_file('regiontable_' + continent, self.generate_region_list(continent))
 
     def generate_continent_table(self, continents=None):
         if continents is None:
@@ -55,12 +51,11 @@ class ProvinceTables:
         return self.format_output(['ID', 'Name', 'Owner (1444)', 'Religion', 'Culture', 'Culture Group'])
 
     def generate_region_list(self, continent_or_superregion):
-        """India and East Indies are the only supported superregions and they are not included when requesting Asia"""
-        map_filenames = {'Africa': 'superregion_africa.png', 'Asia': 'Asian regions.png',
-                         'East Indies': 'Superregion east indies.png', 'Europe': 'European regions.png',
-                         'India': 'Superregion india.png', 'Oceania': 'Oceanian regions.png',
-                         'North America': 'North American regions.png',
-                         'South America': 'Superregion_south_america.png'}
+        map_filenames = {'Sarhal': 'Sarhaly regions.png', 'Haless': 'Halessi regions.png',
+                         'Cannor': 'Cannorian regions.png',
+                         'Insyaa': 'Insyaa regions.png',
+                         'North Aelantir': 'North Aelantiri regions.png',
+                         'South Aelantir': 'South Aelantiri regions.png'}
         notes, provinces_to_include_in_continent = self.find_oddities(self.parser.all_provinces)
         if continent_or_superregion == 'Asia':
             continent = 'Asia'
@@ -159,11 +154,10 @@ class ProvinceTables:
                         continents[continent_name] = defaultdict(int)
                     cont = continents[continent_name]
                     cont['Provinces'] += 1
-                    cont['Base Tax'] += int(prov['BT']) if prov['BT'] else 0
-                    cont['Base Production'] += int(prov['BP']) if prov['BP'] else 0
-                    cont['Base Manpower'] += int(prov['BM']) if prov['BM'] else 0
-                    cont['Development'] += (int(prov['Development'])
-                        if prov['Development'] else 0)
+                    cont['Base Tax'] += int(prov.get('BT', 0))
+                    cont['Base Production'] += int(prov.get('BP', 0))
+                    cont['Base Manpower'] += int(prov.get('BM', 0))
+                    cont['Development'] += int(prov.get('Development', 0))
             total = defaultdict(int)
             for cont in continents.values():
                 for key, val in cont.items():
@@ -194,9 +188,10 @@ class ProvinceTables:
             'Religion': '[[File:{0}.png|24px|alt={0}|link={0}]]',
             'Owner': '[[File:{0}.png|24px|border|alt={0}|link={0}]] [[{0}]]'}
         if attribute == 'Owner' and 'tribal_owner' in province.attributes:
-            if 'Owner' in province.attributes:
-                raise Exception('province {} has an owner and a tribal_owner'.format(province.id))
-            return "''Tribal land of'' " + formatstrings[attribute].format(self.parser.localize(province.get('tribal_owner', '')))
+            #if 'Owner' in province.attributes:
+                #raise Exception('province {} has an owner and a tribal_owner'.format(province.id))
+            if not 'Owner' in province.attributes:
+                return "''Tribal land of'' " + formatstrings[attribute].format(self.parser.localize(province.get('tribal_owner', '')))
         value = self.parser.localize(province.get(attribute, ''))
         if value == '':
             return value

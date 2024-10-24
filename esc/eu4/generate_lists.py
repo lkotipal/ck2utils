@@ -505,10 +505,10 @@ class MonumentList:
                 build_cost = None
                 prestige_gain = None
 
-            try:
+            if ('start' in v):
                 provinceID = v['start']
                 prov = self.parser.all_provinces[provinceID]
-            except:
+            else:
                 provinceID = self._get_provinceid(monumentid)
                 prov = self.parser.all_provinces[provinceID] if provinceID else None
                 provinceID = 0 # Hidden
@@ -523,12 +523,9 @@ class MonumentList:
                 can_upgrade_trigger = v['can_upgrade_trigger'].str(self.parser.parser)
             else:
                 can_upgrade_trigger = None
-            try:
-                if len(v['build_trigger']) > 0:
-                    build_trigger = v['build_trigger'].str(self.parser.parser)
-                else:
-                    build_trigger = None
-            except:
+            if len(v.get('build_trigger', [])) > 0:
+                build_trigger = v['build_trigger'].str(self.parser.parser)
+            else:
                 build_trigger = None
             if trigger != can_upgrade_trigger:
                 print('Warning: can_use_modifiers_trigger is {} but can_upgrade_trigger is {}'.format(trigger,
@@ -1474,6 +1471,43 @@ class CultureList(Eu4FileGenerator):
 
         return lines
 
+class HolyOrders(PdxparseToList):
+
+    def get_order_icon(self, gfx):
+        if self.order_icons is None:
+            self.icons = {}
+            for n, v in self.parser.parser.parse_file(r'interface/holy_orders_view.gfx'):
+                for n2, v2 in v:
+                    name = v2['name']
+                    image = v2['texturefile'].val.replace(r'gfx/interface/holy_orders/', '').replace('.dds', '.png')
+                    self.order_icons[name] = image
+        try:
+            return self.monument_icons[gfx]
+        except:
+            print(f"No icon for {gfx}!")
+            return "404"
+
+    def generate_holy_orders_list(self):
+        mana_to_dev = {
+            'adm_power': 'base_tax',
+            'dip_power': 'base_production',
+            'mil_power': 'manpower'
+        }
+
+        orders = [{
+            'style="width:400px" | Order': f'{{{{iconbox|{order['name']}|{order['desc']}|image={self.get_order_icon(order['icon'])}}}}}',
+            'Cost': f"""'''{order['cost']}''' {{{{icon|{order['cost_type']}}}}}""",
+            'Development': f"""'''1''' {{{{icon|{mana_to_dev[order['cost_type']]}}}}}""", # hardcoded atm
+            'Modifiers and Effects': f'{{plainlist|\n{order['modifier']}\n}}',
+            'Conditions': order['trigger'],
+        } for order in self.get_data_from_files('common/holy_orders/anb_holy_orders.txt',
+                                                 province_scope=['modifier'],
+                                                 country_scope=['trigger'],
+                                                 localisation_with_title=True,
+                                                 localise_desc=True)]
+        table = self.make_wiki_table(orders, one_line_per_cell=True)
+
+        return self.get_SVersion_header('table') + '\n' + table
 
 if __name__ == '__main__':
     # for correct sorting. en_US seems to work even for non english characters, but the default None sorts all non-ascii characters to the end
@@ -1489,3 +1523,4 @@ if __name__ == '__main__':
     CountryList().run([])
     AreaAndRegionsList().run([])
     CultureList().run([])
+    HolyOrders().run([])

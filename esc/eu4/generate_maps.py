@@ -26,8 +26,23 @@ class MapGenerator:
 
     def decision_maps(self):
         # change the version number after verifying that the provinces/areas are still correct
-        verified_for_version('1.37.0')
+        verified_for_version('Forbidden Valley')
 
+        for religion in self.mapparser.all_religions.values():
+            holy_sites = religion.data.get("holy_sites", [])
+            if holy_sites:
+                self.color_map_generator.generate_mapimage_with_several_colors({religion.color: holy_sites}, f'{religion} Holy Sites', crop_to_color=True)
+
+        self.color_map_generator.generate_mapimage_with_several_colors({
+            (255, 255, 255): ['west_castanor_region', 'south_castanor_region', 'inner_castanor_region', 'cursewood_area', 'whistlevale_area']
+        }, 'Escanni Wars of Consolidation', crop_to_color=True)
+
+        self.color_map_generator.generate_mapimage_with_several_colors({
+            (241, 135, 50): ['bulwar_superregion', 'rahen_superregion'],
+            'white': [2909, 643, 625, 601, 4411, 4435, 4391]
+        }, 'Form the Jadd Empire', crop_to_color=True)
+
+        return
         self.color_map_generator.create_shaded_image({
             'yellow': [prov.id for prov in self.mapparser.all_land_provinces.values() if
                        prov.get('Culture') == 'greek' and prov.region.name in ['balkan_region', 'anatolia_region']],
@@ -126,26 +141,13 @@ class MapGenerator:
 
     def region_maps(self):
         maps_to_generate = {
-            #'Superregion india': [prov.id for prov in self.mapparser.all_land_provinces.values() if prov.superregion.name == 'india_superregion'],
-            #'Superregion east indies': [prov.id for prov in self.mapparser.all_land_provinces.values() if prov.superregion.name == 'east_indies_superregion'],
-            'Insyaan regions': [prov.id for prov in self.mapparser.all_land_provinces.values() if prov.continent.name == 'oceania'],
-            'Halessi regions': [prov.id for prov in self.mapparser.all_land_provinces.values() if prov.continent.name == 'asia' and prov.superregion.name not in ['india_superregion', 'east_indies_superregion']],
-            'Cannorian regions': [prov.id for prov in self.mapparser.all_land_provinces.values() if prov.continent.name == 'europe'],
-            #'Superregion africa': [prov.id for prov in self.mapparser.all_land_provinces.values() if prov.continent.name == 'africa'],
             'South Aelantiri regions': [prov.id for prov in self.mapparser.all_land_provinces.values() if prov.continent.name == 'south_america'],
             'North Aelantiri regions': [prov.id for prov in self.mapparser.all_land_provinces.values() if prov.continent.name == 'north_america'],
+            'Cannorian regions': [prov.id for prov in self.mapparser.all_land_provinces.values() if prov.continent.name == 'europe'],
+            'Halessi regions': [prov.id for prov in self.mapparser.all_land_provinces.values() if prov.continent.name == 'asia' and prov.superregion.name not in ['india_superregion', 'east_indies_superregion']],
+            'Insyaan regions': [prov.id for prov in self.mapparser.all_land_provinces.values() if prov.continent.name == 'oceania'],
             'Sarhaly regions': [prov.id for prov in self.mapparser.all_land_provinces.values() if prov.continent.name == 'africa'],
             'Serpentspine regions': [prov.id for prov in self.mapparser.all_land_provinces.values() if prov.continent.name == 'serpentspine'],
-            #'Africa northern regions': [prov.id for prov in self.mapparser.all_land_provinces.values() if prov.superregion.name == 'africa_superregion' or prov.region.name == 'egypt_region'],
-            #'Africa southern regions': [prov.id for prov in self.mapparser.all_land_provinces.values() if prov.superregion.name == 'southern_africa_superregion'],
-            #'Europe central regions': [prov.id for prov in self.mapparser.all_land_provinces.values() if prov.region.name in ['scandinavia_region', 'north_german_region', 'south_german_region', 'italy_region']],
-            #'Europe western regions': [prov.id for prov in self.mapparser.all_land_provinces.values() if prov.region.name in ['france_region', 'iberia_region', 'british_isles_region', 'low_countries_region']],
-            #'Middle East regions': [prov.id for prov in self.mapparser.all_land_provinces.values() if prov.superregion.name in ['persia_superregion', 'near_east_superregion'] and prov.region.name != 'egypt_region'],
-            #'Superregion Central and South America': [prov.id for prov in self.mapparser.all_land_provinces.values() if prov.superregion.name in ['south_america_superregion', 'andes_superregion', 'central_america_superregion'] and prov.region.name not in ['rio_grande_region', 'california_region']],
-            #'Superregion china far east': [prov.id for prov in self.mapparser.all_land_provinces.values() if prov.superregion.name in ['china_superregion', 'far_east_superregion'] and prov.region.name not in ['manchuria_region']],
-            #'Superregion east europe': [prov.id for prov in self.mapparser.all_land_provinces.values() if prov.superregion.name in ['eastern_europe_superregion'] and prov.region.name not in ['manchuria_region']],
-            #'Superregion north america': [prov.id for prov in self.mapparser.all_land_provinces.values() if prov.superregion.name == 'north_america_superregion' or prov.region.name in['rio_grande_region', 'california_region']],
-            #'Superregion tartary': [prov.id for prov in self.mapparser.all_land_provinces.values() if prov.superregion.name == 'tartary_superregion' or prov.region.name in['manchuria_region']],
             'Region map':  [prov.id for prov in self.mapparser.all_land_provinces.values()],
             }
         for name, provinces in maps_to_generate.items():
@@ -163,35 +165,6 @@ class MapGenerator:
         
         # Insyaa doesn't need Oceania handling
         return
-
-        # reorganize the oceania image so that the parts west of the
-        # date line are on the left side of the image and the parts
-        # east of the date line are on the right of the image
-        # provinces with a lower x value are considered to be
-        # east of the date line
-        x_threshold = 2000
-        provinces_east_of_date_line = set()
-        for line in self.mapparser.positions_to_provinceID_array:
-            provinces_east_of_date_line.update(line[:x_threshold])
-        oceania_provinces_west_of_date_line = [prov.id for prov in self.mapparser.all_land_provinces.values() if prov.continent.name == 'oceania' and prov.id not in provinces_east_of_date_line]
-        oceania_provinces_east_of_date_line = [prov.id for prov in self.mapparser.all_land_provinces.values() if prov.continent.name == 'oceania' and prov.id in provinces_east_of_date_line]
-
-        c_west = np.isin(self.mapparser.positions_to_provinceID_array, oceania_provinces_west_of_date_line).nonzero()
-        c_east = np.isin(self.mapparser.positions_to_provinceID_array, oceania_provinces_east_of_date_line).nonzero()
-        west_min_x = c_west[1].min() - 10
-        west_max_x = self.mapparser.positions_to_provinceID_array.shape[1] - 1
-        min_y = min(c_west[0].min(), c_east[0].min()) - 10
-        max_y = self.mapparser.positions_to_provinceID_array.shape[0] - 1
-        east_min_x = 0
-        east_max_x = c_east[1].max() + 10
-
-        temp_image = Image.open(eu4outpath / 'Oceanian regions.png')
-        oceania_west = temp_image.crop((west_min_x, min_y, west_max_x, max_y))
-        oceania_east = temp_image.crop((east_min_x, min_y, east_max_x, max_y))
-        oceania_full = Image.new('RGB', (oceania_west.size[0] + oceania_east.size[0] + 1, oceania_east.size[1]), (0, 0, 0))
-        oceania_full.paste(oceania_west, (0, 0))
-        oceania_full.paste(oceania_east, (oceania_west.size[0] + 1, 0))
-        oceania_full.save(eu4outpath / 'Oceanian regions.png')
 
 # doesn't work. I have no idea how the color of an area is determined if none is defied in the areas.txt
 #     def areas_map(self):
@@ -456,7 +429,7 @@ class MapGenerator:
 
     def mission_map_from_save(self, savefile):
         save_data = open(savefile, encoding='cp1252').read()
-        all_missions_regex = re.compile(r'^\t([ABG-JL-NP-RU-Z][0-9]{2})=.*?(country_missions=\{\n(.*?)^\t\t})', re.MULTILINE | re.DOTALL)
+        all_missions_regex = re.compile(r'^\t([ABG-JL-NP-RU-Z][a-zA-Z0-9]{2}|([a-zA-Z]{3}))=.*?(country_missions=\{\n(.*?)^\t\t})', re.MULTILINE | re.DOTALL)
         tags_to_mission_groups = {}
         for match in all_missions_regex.finditer(save_data):
             if match[3]:
@@ -743,7 +716,7 @@ every_province = {
         self.region_maps()
         self.areas_maps()
         self.island_maps()
-        ##self.decision_maps() hardcoded
+        self.decision_maps()
         self.coal_map()
         self.gold_map()
         # TODO Damestear, mithril, more?
