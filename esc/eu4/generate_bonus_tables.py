@@ -373,16 +373,20 @@ class StaticModifiersGenerator:
         lines = []
         for name, modifiers in static_modifiers.items():
             display_name = self.parser.localize(name)
+            modifier_id = name
 
             lines.append('==={}==='.format(display_name))
             lines.append(get_SVersion_header('table'))
+            lines.append(f'<section begin={modifier_id}/>')
             lines.append('{|')
             for line in modifiers.splitlines():
                 icon, colored_value, value, name = self.extract_data_from_modifier_line(line)
                 lines.append('| {} || style="text-align:right" | {} || {}'.format(icon, colored_value, name))
                 lines.append('|-')
-            lines.pop()  # remove extra |-
+            if (lines[-1] == '|-'):
+                lines.pop()  # remove extra |-
             lines.append('|}')
+            lines.append(f'<section end={modifier_id}/>')
             lines.append('')
 
         PolicyListGenerator.writeFile('static_modifiers', lines)
