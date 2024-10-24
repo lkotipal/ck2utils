@@ -1498,7 +1498,7 @@ class HolyOrders(PdxparseToList):
             'style="width:400px" | Order': f'{{{{iconbox|{order['name']}|{order['desc']}|image={self.get_order_icon(order['icon'])}}}}}',
             'Cost': f"""'''{order['cost']}''' {{{{icon|{order['cost_type']}}}}}""",
             'Development': f"""'''1''' {{{{icon|{mana_to_dev[order['cost_type']]}}}}}""", # hardcoded atm
-            'Modifiers and Effects': order['modifier'],
+            'Modifiers and Effects': f'{{plainlist|\n{order['modifier']}\n}}',
             'Conditions': order['trigger'],
         } for order in self.get_data_from_files('common/holy_orders/anb_holy_orders.txt',
                                                  province_scope=['modifier'],
