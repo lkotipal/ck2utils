@@ -1498,9 +1498,11 @@ class HolyOrders(PdxparseToList):
             'style="width:400px" | Order': f'{{{{iconbox|{order['name']}|{order['desc']}|image={self.get_order_icon(order['icon'])}}}}}',
             'Cost': f"""'''{order['cost']}''' {{{{icon|{order['cost_type']}}}}}""",
             'Development': f"""'''1''' {{{{icon|{mana_to_dev[order['cost_type']]}}}}}""", # hardcoded atm
-            'Modifiers and  Effects': order['modifier'],
+            'Modifiers and Effects': order['modifier'],
+            'Conditions': order['trigger'],
         } for order in self.get_data_from_files('common/holy_orders/anb_holy_orders.txt',
                                                  province_scope=['modifier'],
+                                                 country_scope=['trigger'],
                                                  localisation_with_title=True,
                                                  localise_desc=True)]
         table = self.make_wiki_table(orders, one_line_per_cell=True)
