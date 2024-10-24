@@ -1500,15 +1500,15 @@ class HolyOrders(PdxparseToList):
 
         orders = [{
             'style="width:400px" | Order': f"{{{{iconbox|{order['name']}|{order['desc']}|image={self.get_order_icon(order['icon'])}}}}}",
-            'Cost': f"""'''{order['cost']}''' {{{{icon|{order['cost_type']}}}}}""",
+            'Cost': f"""'''{order['cost']}''' {{{{icon|{order['cost_type'].replace(r'_power', '')}}}}}""",
             'Development': f"""'''1''' {{{{icon|{mana_to_dev[order['cost_type']]}}}}}""", # hardcoded atm
-            'Modifiers and Effects': f"{{{{plainlist|{order['modifier']}\n}}}}",
+            'Modifiers and Effects': f"{{{{plainlist|{order['modifier']}\n{order['per_province_effect']}}}}}",
             'Conditions': order['trigger'],
         } for order in self.get_data_from_files('common/holy_orders/anb_holy_orders.txt',
                                                  modifier_scope=['modifier'],
                                                  country_scope=['trigger'],
                                                  key_value_pair_list=['icon', 'cost', 'cost_type'],
-                                                 localisation_with_title=True,
+                                                 extra_handlers={'per_province_effect': (lambda x: (f"* {self.parser.localize(x['custom_tooltip'])}\n") if ('custom_tooltip' in x) else "")},
                                                  localise_desc=True)]
         table = self.make_wiki_table(orders, one_line_per_cell=True)
 
