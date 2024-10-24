@@ -710,7 +710,8 @@ class MonumentList:
                     self.improve_requirements(trigger_and_effects[self._get_unique_key(monument, 'trigger')]))
             else:
                 data['Requirements'] = ''
-            for tier in range(1, 4):
+            #for tier in range(1, 4):
+            for tier in range(4):
                 effects = ''
                 tier_data = data['tiers'][tier]
                 for effect_type, description in {'province_modifiers': 'Province modifiers',
@@ -743,10 +744,10 @@ class MonumentList:
             ('', 'id="%(name)s" | %(number)d'),
             ('Name',
              'style="text-align:center; font-weight: bold; font-size:larger" | %(name)s\n\n[[File:%(icon)s.png|%(name)s]]'),
-            ('Location', lambda k, v: ('{{plainlist|\n*%s\n*%s\n}}\n%s' % (
+            ('Location', lambda k, v: ((('{{plainlist|\n*%s\n*%s\n}}\n%s' % (
                 v['province'].superregion,
                 v['province'].region,
-                v['province']) + ("" if v['provinceid'] else ", via mission")) if v['province'] else "Not present in 1444"), # Likely expedition
+                v['province'])) + ("" if v['provinceID'] else ", via mission")) if v['province'] else "Not present in 1444")), # Likely expedition
             ('Level', '%(level)d'),
             # yes/no style might work better for mobile devices for which the column seems to be broken
             # ('[[File:Great project level icon move.png|24px|Can be relocated]]', lambda k,v: 'yes' if v['can_be_moved'] else 'no')
@@ -765,15 +766,14 @@ class MonumentList:
         table = make_table(monuments, 'wiki', column_specs, table_style='', table_classes=['mildtable'], sortable=True)
 
         column_specs = [
-            ('Name',
-             'style="text-align:center; font-weight: bold; font-size:larger" | %(name)s\n\n[[File:%(icon)s.png|%(name)s]]'),
-            ('Location', lambda k, v: ('{{plainlist|\n*%s\n*%s\n}}\n%s' % (
+            ('Name', 'style="text-align:center; font-weight: bold; font-size:larger" | %(name)s\n\n[[File:%(icon)s.png|%(name)s]]'),
+            ('Location', lambda k, v: ((('{{plainlist|\n*%s\n*%s\n}}\n%s' % (
                 v['province'].superregion,
                 v['province'].region,
-                v['province']) + ("" if v['provinceid'] else ", via mission")) if v['province'] else "Not present in 1444"), # Likely expedition
+                v['province'])) + ("" if v['provinceID'] else ", via mission")) if v['province'] else "Not present in 1444")), # Likely expedition
             ('Build requirements', '%(Requirements)s'),
             ('Build cost', '%(build_cost)s'),
-            ('[[File:Great project level icon tier 1.png|24px]] Insignificant level', '%(tier_0)s'),
+            ('[[File:Great project level icon tier 0.png|24px]] Insignificant level', '%(tier_0)s'),
             ('[[File:Great project level icon tier 1.png|24px]] Noteworthy level', '%(tier_1)s'),
             ('[[File:Great project level icon tier 2.png|24px]] Significant level', '%(tier_2)s'),
             ('[[File:Great project level icon tier 3.png|24px]] Magnificent level', '%(tier_3)s'),
