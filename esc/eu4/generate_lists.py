@@ -1473,16 +1473,20 @@ class CultureList(Eu4FileGenerator):
 
 class HolyOrders(PdxparseToList):
 
+    def __init__(self):
+        super().__init__()
+        self.icons = None
+
     def get_order_icon(self, gfx):
-        if self.order_icons is None:
+        if not self.icons:
             self.icons = {}
             for n, v in self.parser.parser.parse_file(r'interface/holy_orders_view.gfx'):
                 for n2, v2 in v:
                     name = v2['name']
                     image = v2['texturefile'].val.replace(r'gfx/interface/holy_orders/', '').replace('.dds', '.png')
-                    self.order_icons[name] = image
+                    self.icons[name] = image
         try:
-            return self.monument_icons[gfx]
+            return self.icons[gfx]
         except:
             print(f"No icon for {gfx}!")
             return "404"
@@ -1495,14 +1499,15 @@ class HolyOrders(PdxparseToList):
         }
 
         orders = [{
-            'style="width:400px" | Order': f'{{{{iconbox|{order['name']}|{order['desc']}|image={self.get_order_icon(order['icon'])}}}}}',
+            'style="width:400px" | Order': f"{{{{iconbox|{order['name']}|{order['desc']}|image={self.get_order_icon(order['icon'])}}}}}",
             'Cost': f"""'''{order['cost']}''' {{{{icon|{order['cost_type']}}}}}""",
             'Development': f"""'''1''' {{{{icon|{mana_to_dev[order['cost_type']]}}}}}""", # hardcoded atm
-            'Modifiers and Effects': f'{{plainlist|\n{order['modifier']}\n}}',
+            'Modifiers and Effects': f"{{{{plainlist|{order['modifier']}\n}}}}",
             'Conditions': order['trigger'],
         } for order in self.get_data_from_files('common/holy_orders/anb_holy_orders.txt',
-                                                 province_scope=['modifier'],
+                                                 modifier_scope=['modifier'],
                                                  country_scope=['trigger'],
+                                                 key_value_pair_list=['icon', 'cost', 'cost_type'],
                                                  localisation_with_title=True,
                                                  localise_desc=True)]
         table = self.make_wiki_table(orders, one_line_per_cell=True)
