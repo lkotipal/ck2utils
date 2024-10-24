@@ -31,9 +31,16 @@ class MapGenerator:
         for religion in self.mapparser.all_religions.values():
             holy_sites = religion.data.get("holy_sites", [])
             if holy_sites:
-                self.color_map_generator.generate_mapimage_with_several_colors({
-                    religion.color: holy_sites
-                    }, f'{religion} Holy Sites', crop_to_color=True)
+                self.color_map_generator.generate_mapimage_with_several_colors({religion.color: holy_sites}, f'{religion} Holy Sites', crop_to_color=True)
+
+        self.color_map_generator.generate_mapimage_with_several_colors({
+            (255, 255, 255): ['west_castanor_region', 'south_castanor_region', 'inner_castanor_region', 'cursewood_area', 'whistlevale_area']
+        }, 'Escanni Wars of Consolidation', crop_to_color=True)
+
+        self.color_map_generator.generate_mapimage_with_several_colors({
+            (241, 135, 50): ['bulwar_superregion', 'rahen_superregion'],
+            'white': [2909, 643, 625, 601, 4411, 4435, 4391]
+        }, 'Form the Jadd Empire', crop_to_color=True)
 
         return
         self.color_map_generator.create_shaded_image({
