@@ -56,6 +56,7 @@ class PdxparseToList(Eu4FileGenerator):
         unhandled_sections = {}
         elements = {}
         for element_id, data in self.parser.parser.merge_parse(glob):
+            to_remove = []
             if element_id in ignored_elements:
                 continue
             if localisation_with_title:
@@ -65,23 +66,35 @@ class PdxparseToList(Eu4FileGenerator):
                 # print(elements[element_id].replace('§J', '').replace('§!', ''))
 
             unhandled_sections[element_id] = ''
-            for section_name, section_data in data:
+            for idx, itm in enumerate(data):
+                section_name, section_data = itm
                 if section_name in province_scope:
+                    to_remove.append(idx)
                     self._add_element_to_dict_and_create_list_for_duplicates(f'{element_id}__{section_name}', section_data.inline_str(self.parser.parser)[0], province_params)
                 elif section_name in country_scope:
+                    to_remove.append(idx)
                     self._add_element_to_dict_and_create_list_for_duplicates(f'{element_id}__{section_name}', section_data.inline_str(self.parser.parser)[0], country_params)
                 elif section_name in modifier_scope:
+                    to_remove.append(idx)
                     self._add_element_to_dict_and_create_list_for_duplicates(f'{element_id}__{section_name}', section_data.inline_str(self.parser.parser)[0], modifier_params)
                 elif section_name in extra_handlers:
+                    to_remove.append(idx)
                     self._add_element_to_dict_and_create_list_for_duplicates(f'{element_id}__{section_name}', extra_handlers[section_name](section_data), extra_sections)
                 elif section_name in key_value_pair_list:
+                    to_remove.append(idx)
                     self._add_element_to_dict_and_create_list_for_duplicates(f'{element_id}__{section_name}', section_data.val, key_value_pairs)
                 elif section_name in ignored:
+                    to_remove.append(idx)
                     pass
                 else:
                     print(f'Warning: unhandled section "{section_name}" in "{element_id}"')
                     unhandled_sections[element_id] += f'\n{section_name} = {{\n{section_data}\n}}'
 
+            if 'all' in modifier_scope:
+                to_remove.reverse()
+                for k in to_remove:
+                    del data.contents[k]
+                self._add_element_to_dict_and_create_list_for_duplicates(f'{element_id}', data.inline_str(self.parser.parser)[0], modifier_params)
         self.wiki_converter.to_wikitext(province_scope=province_params, country_scope=country_params,
                                    modifiers=modifier_params, strip_icon_sizes=True)
 
@@ -98,6 +111,8 @@ class PdxparseToList(Eu4FileGenerator):
                         result[section_name] = '\n' + result[section_name]
                 else:
                     result[section_name] = ''
+            if'all' in modifier_scope:
+                result['all'] = merged_sections[f'{element_id}']
             result['unhandled'] = unhandled_sections[element_id]
             results.append(result)
 
@@ -1482,19 +1497,47 @@ class HolyOrders(PdxparseToList):
 
         orders = [{
             'style="width:400px" | Order': f"{{{{iconbox|{order['name']}|{order['desc']}|image={self.get_order_icon(order['icon'])}}}}}",
-            'Cost': f"""'''{order['cost']}''' {{{{icon|{order['cost_type'].replace(r'_power', '')}}}}}""",
-            'Development': f"""'''1''' {{{{icon|{mana_to_dev[order['cost_type']]}}}}}""", # hardcoded atm
-            'Modifiers and Effects': f"{{{{plainlist|{order['modifier']}\n{order['per_province_effect']}}}}}",
-            'Conditions': order['trigger'],
+            'class="unsortable" | Cost': f"""'''{order['cost']}''' {{{{icon|{order['cost_type'].replace(r'_power', '')}}}}}""",
+            'class="unsortable" | Development': f"""'''1''' {{{{icon|{mana_to_dev[order['cost_type']]}}}}}""", # hardcoded atm
+            'class="unsortable" | Modifiers and Effects': f"{{{{plainlist|{order['modifier']}\n{order['per_province_effect']}}}}}",
+            'class="unsortable" | Conditions': order['trigger'],
         } for order in self.get_data_from_files('common/holy_orders/anb_holy_orders.txt',
                                                  modifier_scope=['modifier'],
                                                  country_scope=['trigger'],
                                                  key_value_pair_list=['icon', 'cost', 'cost_type'],
-                                                 extra_handlers={'per_province_effect': (lambda x: (f"* {self.parser.localize(x['custom_tooltip'])}\n") if ('custom_tooltip' in x) else "")},
+                                                 extra_handlers={'per_province_effect': (lambda x: (f"* ''{self.parser.localize(x['custom_tooltip'])}''\n") if ('custom_tooltip' in x) else "")},
                                                  localise_desc=True)]
-        table = self.make_wiki_table(orders, one_line_per_cell=True)
+        table = self.make_wiki_table(orders, one_line_per_cell=True, table_classes=['mildtable'])
 
         return self.get_SVersion_header('table') + '\n' + table
+
+class DeitiesList(PdxparseToList):
+
+    def generate_deities_list(self, file):
+        print(file)
+        deities = [{
+            'Deity': f"{{{{icon|{deity['name']}}}}} {deity['name']}",
+            'class="unsortable" | Effects': f"{{{{plainlist|\n{deity['all']}\n}}}}",
+            'class="unsortable" | Description': f"''{deity['desc']}''",
+            'class="unsortable" | Available': deity['potential'],
+        } for deity in self.get_data_from_files(f'common/personal_deities/{file}',
+                                                 modifier_scope=['all'],
+                                                 country_scope=['potential'],
+                                                 ignored=['potential', 'ai_will_do', 'sprite'],
+                                                 localise_desc=True)]
+        table = self.make_wiki_table(deities, one_line_per_cell=True, table_classes=['mildtable'])
+
+        return self.get_SVersion_header('table') + '\n' + table
+
+
+    def run(self):
+        for file in self.parser.parser.files(r'common/personal_deities/*'):
+            self.writeFile(os.path.basename(file), self.generate_deities_list(os.path.basename(file)))
+
+    def writeFile(self, name, content):
+        output_file = eu4outpath / 'eu4deities_{}'.format(name)
+        with output_file.open('w') as f:
+            f.write(content)
 
 if __name__ == '__main__':
     # for correct sorting. en_US seems to work even for non english characters, but the default None sorts all non-ascii characters to the end
@@ -1511,3 +1554,4 @@ if __name__ == '__main__':
     AreaAndRegionsList().run([])
     CultureList().run([])
     HolyOrders().run([])
+    DeitiesList().run()
