@@ -1537,7 +1537,7 @@ class DeitiesList(PdxparseToList):
             'Deity': f"{{{{icon|{deity['name']}}}}} {deity['name']}",
             'class="unsortable" | Effects': f"{{{{plainlist|\n{deity['all']}\n}}}}",
             'class="unsortable" | Description': f"''{deity['desc']}''",
-            'class="unsortable" | Available': deity['potential'],
+            'class="unsortable" | Conditions': deity['potential'],
         } for deity in self.get_data_from_files(f'common/personal_deities/{file}',
                                                  modifier_scope=['all'],
                                                  country_scope=['potential'],
@@ -1557,6 +1557,29 @@ class DeitiesList(PdxparseToList):
         with output_file.open('w') as f:
             f.write(content)
 
+class Incidents(PdxparseToList):
+
+    def generate_incidents_list(self):
+        incidents = [{
+            'Incident': f"{incident['name']}",
+            'class="unsortable" | Potential': f"{incident['potential']}",
+            'class="unsortable" | Trigger': f"{incident['trigger']}",
+            #'class="unsortable" | MTTH': f"{incident['mean_time_to_happen']}",
+            'class="unsortable" | Effect': f"{incident['immediate_effect']}",
+            'class="unsortable" | Description': incident['desc'],
+        } for incident in filter(
+            lambda x: not 'Never' in x['potential'],
+            self.get_data_from_files(
+                'common/incidents/00_isolationism.txt', 
+                country_scope=['trigger', 'potential', 'immediate_effect'], 
+                #key_value_pair_list=['mean_time_to_happen'], 
+                localisation_with_title=True,
+                localise_desc=True)
+        )]
+        table = self.make_wiki_table(incidents, one_line_per_cell=True, table_classes=['mildtable'])
+
+        return self.get_SVersion_header('table') + '\n' + table
+
 if __name__ == '__main__':
     # for correct sorting. en_US seems to work even for non english characters, but the default None sorts all non-ascii characters to the end
     setlocale(LC_COLLATE, 'en_US.utf8')
@@ -1573,3 +1596,4 @@ if __name__ == '__main__':
     CultureList().run([])
     HolyOrders().run([])
     DeitiesList().run()
+    Incidents().run([])
