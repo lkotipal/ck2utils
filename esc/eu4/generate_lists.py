@@ -1516,7 +1516,7 @@ class DeitiesList(PdxparseToList):
     def generate_deities_list(self, file):
         print(file)
         deities = [{
-            'Deity': f"{{{{icon|{deity['name']}}}}} {deity['name']}",
+            'Deity': f"""{{{{icon|{deity['name']}}}}} '''{deity['name']}'''""",
             'class="unsortable" | Effects': f"{{{{plainlist|\n{deity['all']}\n}}}}",
             'class="unsortable" | Description': f"''{deity['desc']}''",
             'class="unsortable" | Conditions': deity['potential'],
@@ -1543,12 +1543,12 @@ class Incidents(PdxparseToList):
 
     def generate_incidents_list(self):
         incidents = [{
-            'Incident': f"{incident['name']}",
+            'Incident': f"""'''{incident['name']}'''""",
             'class="unsortable" | Potential': f"{incident['potential']}",
             'class="unsortable" | Trigger': f"{incident['trigger']}",
             #'class="unsortable" | MTTH': f"{incident['mean_time_to_happen']}",
             'class="unsortable" | Effect': f"{incident['immediate_effect']}",
-            'class="unsortable" | Description': incident['desc'],
+            'class="unsortable" | Description': f"''{incident['desc']}''",
         } for incident in filter(
             lambda x: not 'Never' in x['potential'],
             self.get_data_from_files(
