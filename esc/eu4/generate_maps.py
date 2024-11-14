@@ -42,6 +42,10 @@ class MapGenerator:
             'white': [2909, 643, 625, 601, 4411, 4435, 4391]
         }, 'Form the Jadd Empire', crop_to_color=True)
 
+        # TODO can province groups be checked programatically?
+        ic_provinces = [101, 63, 266, 227, 750, 840, 191, 257, 426, 221, 8, 833, 4097, 165, 216, 280, 365, 898, 417, 442, 14, 234, 787]
+        self.color_map_generator.generate_mapimage_with_several_colors({self.mapparser.all_religions['infernal_court'].color: ic_provinces}, 'Infernal Court provinces', crop_to_color=True)
+
         return
         self.color_map_generator.create_shaded_image({
             'yellow': [prov.id for prov in self.mapparser.all_land_provinces.values() if
