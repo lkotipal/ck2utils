@@ -129,7 +129,10 @@ class WikiTextConverter:
 
             this is needed, because ck2utils has no way of getting the inner code of a section
          """
-        match = re.match(r'^[\s]*{(.*)}[\s]*$', string, re.DOTALL)
+        try:
+            match = re.match(r'^[\s]*{(.*)}[\s]*$', string, re.DOTALL)
+        except:
+            match = re.match(r'^[\s]*{(.*)}[\s]*$', "".join(string), re.DOTALL)
         if match:
             return match.group(1)
         else:

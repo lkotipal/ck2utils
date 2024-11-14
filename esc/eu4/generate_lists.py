@@ -356,6 +356,8 @@ class EstateAgendas(PdxparseToList):
 
             'Description': agenda['desc'],
         } for agenda in self.get_agendas_for_estate(estate)]
+        if (len(agendas) == 0):
+            return ""
         table = self.make_wiki_table(agendas, one_line_per_cell=True, row_id_key='id')
 
         return f'=={estate.display_name}==\n{self.get_SVersion_header("table")}\n{table}\n'
@@ -1583,9 +1585,9 @@ class Incidents(PdxparseToList):
 if __name__ == '__main__':
     # for correct sorting. en_US seems to work even for non english characters, but the default None sorts all non-ascii characters to the end
     setlocale(LC_COLLATE, 'en_US.utf8')
-    # EstateAgendas().run_for_all_estates() Doesn't work
+    EstateAgendas().run_for_all_estates()
     # Achievements(365).run([])
-    # EstatePrivileges().run_for_all_estates() No output yet
+    EstatePrivileges().run_for_all_estates()
     EocReforms().run([])
     GovernmentReforms().run()
     MercenaryList().run([])
