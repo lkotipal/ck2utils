@@ -236,6 +236,10 @@ class EstatePrivileges(PdxparseToList):
 
     def estate_privileges_list(self, estate: Estate):
         formatter = WikiTextFormatter()
+        for privilege in self.get_privileges_for_estate(estate):
+            for k in privilege.keys():
+                if(type(privilege[k]) is list):
+                    privilege[k] = '\n'.join(privilege[k])
         privileges = [{
             'id': privilege['name'],
             'class="unsortable" | [[File:Privilege_check.png|28px]]': f"[[File:{privilege['icon'].replace('_', ' ')}.png]]",
@@ -244,26 +248,51 @@ class EstatePrivileges(PdxparseToList):
             '{{icon|max absolutism}}': formatter.add_red_green(privilege["max_absolutism"]) if privilege["max_absolutism"] else '',
             '{{icon|friendly attitude|Estate loyalty equilibrium change}}': formatter.add_red_green(privilege["loyalty"] * 100) if privilege["loyalty"] else '',
             '{{icon|estate influence|Estate influence change}}': formatter.add_plus_minus(privilege["influence"] * 100, bold=True) if privilege['influence'] else '',
-            'is_valid': privilege['is_valid'],
-            'can_select': privilege['can_select'],
-            'can_revoke': privilege['can_revoke'],
-            'on_granted': privilege['on_granted'],
-            'on_revoked': privilege['on_revoked'],
-            'on_invalid': privilege['on_invalid'],
-            'on_cooldown_expires': privilege['on_cooldown_expires'],
-            'on_granted_province': privilege['on_granted_province'],
-            'on_invalid_province': privilege['on_invalid_province'],
-            'on_revoked_province': privilege['on_revoked_province'],
-            'benefits': privilege['benefits'],
-            'penalties': privilege['penalties'],
-            'conditional_modifier': self._format_conditional_modifiers(privilege['conditional_modifier']),
-            'modifier_by_land_ownership': privilege['modifier_by_land_ownership'],
-            'loyalty_scaled_conditional_modifier': self._format_conditional_modifiers(privilege['loyalty_scaled_conditional_modifier']),
-            'influence_scaled_conditional_modifier': self._format_conditional_modifiers(privilege['influence_scaled_conditional_modifier']),
-            'cooldown_years': privilege['cooldown_years'],
-            'mechanics': privilege['mechanics'],
-            'Description': privilege['desc'],
+            'Requirements': '\n'.join((x for x in (privilege['is_valid'], privilege['can_select']) if x)),
+            'Effects': '\n'.join((x for x in (
+                privilege['on_granted'], 
+                privilege['benefits'], 
+                privilege['penalties'],
+                # 'conditional_modifier' omitted since there's loads of clutter
+                "Scaling to the estate's land ownership, at '''100%'''" if privilege['modifier_by_land_ownership'] else '',
+                privilege['modifier_by_land_ownership'],
+                "Scaling to the estate's loyalty, at '''100%''':" if privilege['loyalty_scaled_conditional_modifier'] else '',
+                privilege['loyalty_scaled_conditional_modifier'],
+                "Scaling to the estate's influence, at '''100%''':" if privilege['influence_scaled_conditional_modifier'] else '',
+                "Every owned province:" if privilege['on_granted_province'] else '',
+                privilege['on_granted_province'],
+                privilege['influence_scaled_conditional_modifier'],
+                privilege['mechanics'],
+                '----' if privilege['on_revoked'] or privilege['can_revoke'] else '',
+                "On revoke:" if privilege['on_revoked'] else '',
+                privilege['on_revoked'],
+                "Revoking requires:" if privilege['can_revoke'] else '',
+                privilege['can_revoke'],
+                f"----\nCannot be revoked for {privilege['cooldown_years']} years" if privilege['cooldown_years'] else '',
+                f"{privilege['cooldown_years']} years after enactment:" if privilege['cooldown_years'] and privilege['on_cooldown_expires'] else '',
+                privilege['on_cooldown_expires']
+            ) if x))
+            #'is_valid': privilege['is_valid'],
+            #'can_select': privilege['can_select'],
+            #'can_revoke': privilege['can_revoke'],
+            #'on_granted': privilege['on_granted'],
+            #'on_revoked': privilege['on_revoked'],
+            #'on_invalid': privilege['on_invalid'],
+            #'on_cooldown_expires': privilege['on_cooldown_expires'],
+            #'on_granted_province': privilege['on_granted_province'],
+            #'on_invalid_province': privilege['on_invalid_province'],
+            #'on_revoked_province': privilege['on_revoked_province'],
+            #'benefits': privilege['benefits'],
+            #'penalties': privilege['penalties'],
+            #'conditional_modifier': self._format_conditional_modifiers(privilege['conditional_modifier']),
+            #'modifier_by_land_ownership': privilege['modifier_by_land_ownership'],
+            #'loyalty_scaled_conditional_modifier': self._format_conditional_modifiers(privilege['loyalty_scaled_conditional_modifier']),
+            #'influence_scaled_conditional_modifier': self._format_conditional_modifiers(privilege['influence_scaled_conditional_modifier']),
+            #'cooldown_years': privilege['cooldown_years'],
+            #'mechanics': privilege['mechanics'],
+            #'Description': privilege['desc'],
         } for privilege in self.get_privileges_for_estate(estate)]
+
         table = self.make_wiki_table(privileges, one_line_per_cell=True, row_id_key='id')
 
         return f'=={estate.display_name}==\n{self.get_SVersion_header("table")}\n{table}\n'
