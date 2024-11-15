@@ -371,19 +371,26 @@ class EstateAgendas(PdxparseToList):
         agendas = [{
             'id': agenda['name'],
             'Agenda': agenda['name'],
-            'can_select': agenda['can_select'],
-            # 'selection_weight': f'<pre>{agenda["selection_weight"]}</pre>',
-            'selection_weight': self._format_weights(agenda["selection_weight"]),
-            'pre_effect': agenda['pre_effect'],
-            'immediate_effect': agenda['immediate_effect'],
-            'task_requirements': agenda['task_requirements'],
-            'task_completed_effect': agenda['task_completed_effect'],
-            'fail_if': agenda['fail_if'],
-            'failing_effect': agenda['failing_effect'],
-            # 'invalid_trigger': agenda['invalid_trigger'],
-            # 'on_invalid': agenda['on_invalid'],
+            'Triggers': agenda['can_select'],
+            'Weight': self._format_weights(agenda["selection_weight"]),
+            'Upon picking': '\n'.join((x for x in (agenda['pre_effect'], agenda['immediate_effect']) if x)),
+            'Success': agenda['task_requirements'],
+            'Additional rewards': agenda['task_completed_effect'],
+            'Will be failed if': agenda['fail_if'],
+            'Fail effect': agenda['failing_effect'],
+            #'can_select': agenda['can_select'],
+            ## 'selection_weight': f'<pre>{agenda["selection_weight"]}</pre>',
+            #'selection_weight': self._format_weights(agenda["selection_weight"]),
+            #'pre_effect': agenda['pre_effect'],
+            #'immediate_effect': agenda['immediate_effect'],
+            #'task_requirements': agenda['task_requirements'],
+            #'task_completed_effect': agenda['task_completed_effect'],
+            #'fail_if': agenda['fail_if'],
+            #'failing_effect': agenda['failing_effect'],
+            ## 'invalid_trigger': agenda['invalid_trigger'],
+            ## 'on_invalid': agenda['on_invalid'],
 
-            'Description': agenda['desc'],
+            #'Description': agenda['desc'],
         } for agenda in self.get_agendas_for_estate(estate)]
         if (len(agendas) == 0):
             return ""
@@ -1615,7 +1622,7 @@ if __name__ == '__main__':
     # for correct sorting. en_US seems to work even for non english characters, but the default None sorts all non-ascii characters to the end
     setlocale(LC_COLLATE, 'en_US.utf8')
     EstateAgendas().run_for_all_estates()
-    ## Achievements(365).run([])
+    # Achievements(365).run([])
     EstatePrivileges().run_for_all_estates()
     EocReforms().run([])
     GovernmentReforms().run()
