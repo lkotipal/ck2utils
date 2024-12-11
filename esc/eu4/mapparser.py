@@ -469,11 +469,13 @@ class Eu4MapParser(Eu4Parser):
             cores = set()
             values = self.parser.parse_file(path).get_entries_at_date(
                 duplicated_keys=['add_permanent_province_modifier', 'add_province_triggered_modifier'],
-                special_handlers={'add_core': lambda value, previous_values: cores.add(value.val),
-                                  'remove_core': lambda value, previous_values:
-                                  cores.remove(value.val) if value.val in cores
-                                  else print('remove_core with non-existing core in ' + str(number) + ' for ' + value.val)
-                                  }
+                special_handlers={
+                    'add_core': lambda value, previous_values: cores.add(value.val),
+                    'remove_core': lambda value, previous_values:
+                        cores.remove(value.val) if value.val in cores
+                        else print('remove_core with non-existing core in ' + str(number) + ' for ' + value.val)
+                }
+                
             )
             modifiers = []
             if 'add_permanent_province_modifier' in values:
@@ -486,6 +488,7 @@ class Eu4MapParser(Eu4Parser):
             dev = [values[x].val if x in values else 0 for
                    x in ['base_tax', 'base_production', 'base_manpower']]
             province = {}
+            province['HRE'] = values.get('hre', '') == 'yes'
             province['Development'] = int(sum(dev)) if sum(dev) else ''
             province['BT'] = int(dev[0]) if dev[0] else ''
             province['BP'] = int(dev[1]) if dev[1] else ''

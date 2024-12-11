@@ -28,19 +28,128 @@ class MapGenerator:
         # change the version number after verifying that the provinces/areas are still correct
         verified_for_version('Forbidden Valley')
 
+        # Holy Sites
         for religion in self.mapparser.all_religions.values():
             holy_sites = religion.data.get("holy_sites", [])
             if holy_sites:
                 self.color_map_generator.generate_mapimage_with_several_colors({religion.color: holy_sites}, f'{religion} Holy Sites', crop_to_color=True)
 
+        # EWoC
         self.color_map_generator.generate_mapimage_with_several_colors({
-            (255, 255, 255): ['west_castanor_region', 'south_castanor_region', 'inner_castanor_region', 'cursewood_area', 'whistlevale_area']
+            self.mapparser.all_countries['B32'].get_color(): ['west_castanor_region', 'south_castanor_region', 'inner_castanor_region', 'cursewood_area', 'whistlevale_area']
         }, 'Escanni Wars of Consolidation', crop_to_color=True)
 
+        # JE
         self.color_map_generator.generate_mapimage_with_several_colors({
             (241, 135, 50): ['bulwar_superregion', 'rahen_superregion'],
             'white': [2909, 643, 625, 601, 4411, 4435, 4391]
         }, 'Form the Jadd Empire', crop_to_color=True)
+
+        # IC cults
+        # TODO can province groups be checked programatically?
+        ic_provinces = [101, 63, 266, 227, 750, 840, 191, 257, 426, 221, 8, 833, 4097, 165, 216, 280, 365, 898, 417, 442, 14, 234, 787]
+        self.color_map_generator.generate_mapimage_with_several_colors({self.mapparser.all_religions['infernal_court'].color: ic_provinces}, 'Infernal Court provinces', crop_to_color=True)
+
+        # EoA
+        color_to_provinces = {}
+        hre_provinces = [prov.id for prov in self.mapparser.all_provinces.values() if prov.get('HRE')]
+        color_to_provinces[(0, 127, 0)] = hre_provinces
+
+        hre_countries = []
+        for tag in self.mapparser.existing_tags:
+            country = self.mapparser.all_countries[tag]
+            if country.get_capital_id() in hre_provinces:
+                hre_countries.append(country)
+
+        # Hardcoded for now
+        hre_electors = sorted([self.mapparser.all_countries[tag] for tag in ('A11', 'A12', 'A25', 'A31', 'A45', 'A73', 'A85')])
+        hre_free_cities = sorted([self.mapparser.all_countries[tag] for tag in ('A38', 'A42', 'A44', 'A54', 'A55', 'A61', 'A81', 'A82', 'A86', 'Z02', 'Z03', 'Z04')])
+
+        print('Princes')
+        for country in sorted(hre_countries):
+            print(f'#{{{{flag|{country}}}}}')
+        print()
+
+        print('Electors')
+        for country in sorted(hre_electors):
+            print(f'#{{{{flag|{country}}}}}')
+        print()
+
+        print('Free cities')
+        for country in sorted(hre_free_cities):
+            print(f'#{{{{flag|{country}}}}}')
+        print()
+
+        color_to_provinces[(153, 51, 0)] = []
+        for country in hre_electors:
+            provinces = [prov.id for prov in self.mapparser.all_provinces.values() if prov.get('Owner') == country.tag]
+            if len(provinces) > 0:
+                color_to_provinces[(153, 51, 0)] += provinces
+
+        color_to_provinces[(0, 0, 153)] = []
+        for country in hre_free_cities:
+            provinces = [prov.id for prov in self.mapparser.all_provinces.values() if prov.get('Owner') == country.tag]
+            if len(provinces) > 0:
+                color_to_provinces[(0, 0, 153)] += provinces
+
+        emperor_provinces = [prov.id for prov in self.mapparser.all_provinces.values() if prov.get('Owner') == 'A30']
+        color_to_provinces[(127, 0, 76)] = emperor_provinces
+
+        self.color_map_generator.generate_mapimage_with_several_colors(color_to_provinces, 'EoA', crop_to_color=True)
+
+        # Sirpocalypse
+        color_to_provinces = {}
+        for tag in ('R09', 'R10', 'R11', 'R62', 'Y28'):
+            country = self.mapparser.all_countries[tag]
+            provinces = [prov.id for prov in self.mapparser.all_provinces.values() if prov.get('Owner') == country.tag]
+            if len(provinces) > 0:
+                color_to_provinces[country.get_color()] = provinces
+
+        # Slave states
+        for tag in ('R63', 'R64', 'R65', 'R66'):
+            country = self.mapparser.all_countries[tag]
+            provinces = [prov.id for prov in self.mapparser.all_provinces.values() if prov.get('Owner') == country.tag]
+            if len(provinces) > 0:
+                color_to_provinces[self.mapparser.all_countries['R62'].get_color()].extend(provinces)
+
+        # Sarnavan subjects
+        for tag in ('R12', 'R34'):
+            country = self.mapparser.all_countries[tag]
+            provinces = [prov.id for prov in self.mapparser.all_provinces.values() if prov.get('Owner') == country.tag]
+            if len(provinces) > 0:
+                color_to_provinces[self.mapparser.all_countries['R10'].get_color()].extend(provinces)
+
+        # Xiaken
+        for tag in ('Y11', 'Y12', 'Y29', 'Y30', 'Y31', 'Y32', 'Y33', 'Y34', 'Y35', 'Y36', 'Y37', 'Y38', 'Y39', 'Y40', 'Y41', 'Y42', 'Y43', 'Y44', 'Y45', 'Y46', 'Y47', 'Y48', 'Y49', 'R82'):
+            country = self.mapparser.all_countries[tag]
+            provinces = [prov.id for prov in self.mapparser.all_provinces.values() if prov.get('Owner') == country.tag]
+            if len(provinces) > 0:
+                color_to_provinces[self.mapparser.all_countries['Y28'].get_color()].extend(provinces)
+
+        # Released
+        for tag in ('R80', 'R79', 'R78'):
+            country = self.mapparser.all_countries[tag]
+            provinces = [prov.id for prov in self.mapparser.all_provinces.values() if country.tag in prov.get('cores', []) and prov.id not in [4311, 4538, 4630]]
+            if len(provinces) > 0:
+                color_to_provinces[country.get_color()] = provinces
+
+        # War camps
+        #color_to_provinces['important'] = ('4311', '4538', '4630')
+        self.color_map_generator.generate_mapimage_with_several_colors(color_to_provinces, 'Sir Revolt', crop_to_color=True)
+
+        return
+        color_to_provinces = {}
+        for tag in ('R78', 'Y28', 'R79', 'R10', 'R11'):
+            country = self.mapparser.all_countries[tag]
+            color_to_provinces[country.get_color()] = (country.get_capital_id(),)
+
+        # Wrong capitals in files
+        color_to_provinces[self.mapparser.all_countries['R80'].get_color()] = (4525,)
+        color_to_provinces[self.mapparser.all_countries['R09'].get_color()] = (4467,)
+
+        color_to_provinces[self.mapparser.all_countries['R62'].get_color()] = ('4311', '4538', '4630')
+
+        self.color_map_generator.generate_mapimage_with_several_colors(color_to_provinces, 'Sir Revolt', crop_to_color=True)
 
         return
         self.color_map_generator.create_shaded_image({
