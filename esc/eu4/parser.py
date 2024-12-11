@@ -283,7 +283,7 @@ class Eu4Parser:
     def tag_to_color_mapping(self):
         country_colors = {}
         for c in self.all_countries.values():
-            country_data = self.parser.parse_file('common/' + c.country_file)
+            country_data = self.parser.parse_file(f'common/{c.country_file}')
             country_colors[c.tag] = Eu4Color.new_from_parser_obj(country_data['color'])
         return country_colors
 
