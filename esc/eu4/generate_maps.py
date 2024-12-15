@@ -26,7 +26,7 @@ class MapGenerator:
 
     def decision_maps(self):
         # change the version number after verifying that the provinces/areas are still correct
-        verified_for_version('Forbidden Valley')
+        verified_for_version('Fires of Conviction')
 
         # Holy Sites
         for religion in self.mapparser.all_religions.values():
@@ -851,7 +851,7 @@ every_province = {
         print('\n'.join(add_core_code))
 
     def generate_provincelists(self, savefile):
-        save_data = open(savefile, encoding='cp1252').read()
+        save_data = open(savefile, encoding='cp1250').read()
         core_regex = re.compile('^-([0-9]{1,4})=.*?(cores=\{\n([^}\n]*)|^\t\})', re.MULTILINE |re.DOTALL)
         tags_to_provinces = {}
         for match in core_regex.finditer(save_data):
