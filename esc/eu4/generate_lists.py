@@ -464,7 +464,13 @@ class MercenaryList(PdxparseToList):
             modifiers += "\n* {{green|''Costs no force limit to maintain.''}}"
         if data['mercenary_desc_key']:
             desc = data['mercenary_desc_key']
-            if desc == 'FREE_OF_ARMY_PROFESSIONALISM_COST':
+            if isinstance(desc, list):
+                for elem in desc:
+                    if elem == 'FREE_OF_ARMY_PROFESSIONALISM_COST':
+                        modifiers += "\n* {{green|''Does not reduce Army professionalism when recruited''}}"
+                    else:
+                        modifiers += "\n* " + self.parser.localize(elem)
+            elif desc == 'FREE_OF_ARMY_PROFESSIONALISM_COST':
                 modifiers += "\n* {{green|''Does not reduce Army professionalism when recruited''}}"
             else:
                 modifiers += "\n* " + self.parser.localize(desc)
@@ -994,7 +1000,7 @@ class AreaAndRegionsList(Eu4FileGenerator):
                 'Continent': ', '.join(continent.display_name for continent in region.continents),
                 'Trade Company region': region,
                 'class="unsortable" width="75px" | Colour': f'style="background:{region.color.get_css_color_string()}"|',
-                'Trade Node': ', '.join(trade_node.display_name for trade_node in region.trade_nodes),
+                'Trade Node': ', '.join(trade_node if isinstance(trade_node, str) else trade_node.display_name for trade_node in region.trade_nodes),
                 'class="unsortable" | Key provinces': self._get_key_provinces(region),
             } for region in self.parser.all_trade_companies.values()
             ], one_line_per_cell=True)

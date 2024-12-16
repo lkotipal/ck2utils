@@ -68,8 +68,9 @@ class Eu4MapParser(Eu4Parser):
         province_positions = self.positions_to_provinceID_array
         provinceIDs = []
         for i in range(1, self.max_provinces):
-            if i in self.random_only:
-                continue
+            # RNW provinces shouldn't be on the map
+            # if i in self.random_only:
+            #     continue
             # check if province exists in the province map
             prov_indices = np.nonzero(province_positions == i)
             if not len(prov_indices[0]):
@@ -419,10 +420,13 @@ class Eu4MapParser(Eu4Parser):
         """returns a dict. keys are the estuary modifier names and the values are province lists"""
         estuaries = {}
         for name, data in self.parser.merge_parse('common/event_modifiers/*'):
-            if 'picture' in data and data['picture'] == 'estuary_icon':
-                provinces = [p for p in self.all_provinces.values() if 'Modifiers' in p and name in p['Modifiers']]
-                if len(provinces) > 0:
-                    estuaries[name] = provinces
+            try:
+                if 'picture' in data and data['picture'] == 'estuary_icon':
+                    provinces = [p for p in self.all_provinces.values() if 'Modifiers' in p and name in p['Modifiers']]
+                    if len(provinces) > 0:
+                        estuaries[name] = provinces
+            except TypeError:
+                continue
 
         return estuaries
 
