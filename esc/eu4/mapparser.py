@@ -262,6 +262,18 @@ class Eu4MapParser(Eu4Parser):
         return areas
 
     @cached_property
+    def all_provincegroups(self) -> dict[str, ProvinceGroup]:
+        provinceGroups = {}
+        for n, v in self.parser.parse_file(self.map_path('provincegroup')):
+            if len(v) > 0:
+                provinceIDs = []
+                for n2 in v:
+                    if not isinstance(n2, Pair):
+                        provinceIDs.append(n2.val)
+                provinceGroups[n.val] = ProvinceGroup(n.val, self.localize(n.val), provinceIDs=provinceIDs, parser=self)
+        return provinceGroups
+
+    @cached_property
     def province_to_area_mapping(self):
         """mapping between province ids and areas"""
         province_to_area_mapping = {}
