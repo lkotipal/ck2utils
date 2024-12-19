@@ -143,6 +143,24 @@ class Area(NameableEntityWithProvinces):
                 return True
         return False
 
+class ProvinceGroup(NameableEntityWithProvinces):
+
+    def __init__(self, name, display_name, provinces=None, provinceIDs=None, parser=None):
+        super().__init__(name, display_name, provinces, provinceIDs, parser)
+
+    @cached_property
+    def contains_land_provinces(self):
+        for province in self.provinces:
+            if province.type == 'Land':
+                return True
+        return False
+
+    @cached_property
+    def contains_inland_seas(self):
+        for province in self.provinces:
+            if province.type == 'Inland sea':
+                return True
+        return False
 
 class Region(NameableEntity):
 
