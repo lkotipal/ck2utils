@@ -46,8 +46,7 @@ class MapGenerator:
         }, 'Form the Jadd Empire', crop_to_color=True)
 
         # IC cults
-        # TODO can province groups be checked programatically?
-        ic_provinces = [101, 63, 266, 227, 750, 840, 191, 257, 426, 221, 8, 833, 4097, 165, 216, 280, 365, 898, 417, 442, 14, 234, 787]
+        ic_provinces = self.mapparser.all_provincegroups['infernal_court_provinces'].provinceIDs
         self.color_map_generator.generate_mapimage_with_several_colors({self.mapparser.all_religions['infernal_court'].color: ic_provinces}, 'Infernal Court provinces', crop_to_color=True)
 
         # EoA
@@ -136,6 +135,24 @@ class MapGenerator:
         # War camps
         #color_to_provinces['important'] = ('4311', '4538', '4630')
         self.color_map_generator.generate_mapimage_with_several_colors(color_to_provinces, 'Sir Revolt', crop_to_color=True)
+
+        # Rending
+        color_to_provinces = {}
+        color_to_provinces[(129, 255, 255)] = self.mapparser.all_provincegroups['cinulau_spirit_area'].provinceIDs
+        color_to_provinces[(233, 35, 25)] = self.mapparser.all_provincegroups['dhenbasana_spirit_area'].provinceIDs
+        color_to_provinces[(239, 130, 58)] = self.mapparser.all_provincegroups['gehet_ketine_spirit_area'].provinceIDs
+        color_to_provinces[(173, 80, 173)] = self.mapparser.all_provincegroups['hengdu_bowu_spirit_area'].provinceIDs
+        color_to_provinces[(143, 0, 19)] = self.mapparser.all_provincegroups['hokuma_spirit_area'].provinceIDs
+        color_to_provinces[(123, 125, 8)] = self.mapparser.all_provincegroups['hukai_telebei_spirit_area'].provinceIDs
+        color_to_provinces[(255, 177, 208)] = self.mapparser.all_provincegroups['huszien_spirit_area'].provinceIDs
+        color_to_provinces[(0, 130, 132)] = self.mapparser.all_provincegroups['kharunyana_spirit_area'].provinceIDs
+        color_to_provinces[(33, 178, 66)] = self.mapparser.all_provincegroups['lupulan_spirit_area'].provinceIDs
+        color_to_provinces[(33, 178, 66)] = self.mapparser.all_provincegroups['lupulan_spirit_area'].provinceIDs
+        color_to_provinces[(239, 227, 175)] = self.mapparser.all_provincegroups['marutha_spirit_area'].provinceIDs
+        color_to_provinces[(115, 94, 126)] = self.mapparser.all_provincegroups['phokhao_spirit_area'].provinceIDs
+        color_to_provinces[(191, 123, 99)] = self.mapparser.all_provincegroups['tughayasa_spirit_area'].provinceIDs
+        color_to_provinces[(255, 255, 255)] = self.mapparser.all_provincegroups['yanhe_spirit_area'].provinceIDs
+        self.color_map_generator.generate_mapimage_with_several_colors(color_to_provinces, 'Rending', crop_to_color=True)
 
         return
         color_to_provinces = {}
