@@ -333,7 +333,9 @@ class Eu4Parser:
             tier_num = 0
             for tier, reforms in tiers.items():
                 for reform in reforms:
-                    reforms_to_type_and_tier[reform] = (gov_type, tier, tier_num)
+                    if reform not in reforms_to_type_and_tier:
+                        reforms_to_type_and_tier[reform] = list()
+                    reforms_to_type_and_tier[reform].append((gov_type, tier, tier_num))
                 tier_num += 1
         all_reforms = {}
         for file, file_data in self.parser.parse_files('common/government_reforms/*'):
@@ -379,9 +381,7 @@ class Eu4Parser:
                     else:
                         other_attributes[str(k)] = self._parse_government_attribute_value(v)
                 if reform_name in reforms_to_type_and_tier:
-                    gov_type, tier, tier_num = reforms_to_type_and_tier[reform_name]
-                    all_reforms[reform_name] = GovernmentReform(reform_name, self.localize(reform_name), gov_type, tier,
-                                                                tier_num, attributes=other_attributes,
+                    all_reforms[reform_name] = GovernmentReform(reform_name, self.localize(reform_name), reforms_to_type_and_tier[reform_name], attributes=other_attributes,
                                                                 **basic_attributes)
                 else:
                     print("Error: Reform {} has no tier".format(reform_name))
