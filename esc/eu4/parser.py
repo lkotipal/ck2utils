@@ -9,9 +9,8 @@ from ck2parser import SimpleParser, Obj, String, Number
 from localpaths import eu4dir, eu4mod_paths
 from eu4.paths import eu4_version, eu4_major_version
 from eu4.eu4lib import Religion, Idea, IdeaGroup, Policy, Eu4Color, Country, Mission, MissionGroup, GovernmentReform, \
-    CultureGroup, Culture, DLC, BaseGame, Estate
+    CultureGroup, Culture, DLC, BaseGame, Estate, AdvisorType
 from eu4.cache import disk_cache, cached_property
-
 
 class Eu4Parser:
     """the methods of this class parse game files and retrieve all kinds of information
@@ -413,6 +412,35 @@ class Eu4Parser:
             agendas = [p.val for p in data['agendas']]
             estates[name] = Estate(name, self.localize(name), privileges=privileges, agendas=agendas)
         return estates
+
+    @cached_property
+    def advisor_types(self):
+        advisor_types = {}
+        for name, data in self.parser.merge_parse('common/advisortypes/*'):
+            monarch_power = ''
+            modifiers = {}
+            skill_scaled_modifiers = []
+            allow_only_owner_religion = False
+            chance = None
+            ai_will_do = None
+            for k, v in data:
+                match k:
+                    case 'monarch_power':
+                        monarch_power = v.val
+                    case 'skill_scaled_modifier':
+                        skill_scaled_modifiers.append(v)
+                    case 'chance':
+                        chance = v
+                    case 'allow_only_owner_religion':
+                        allow_only_owner_religion = v
+                    case 'ai_will_do':
+                        ai_will_do = v
+                    case _:
+                        modifiers[k] = v.val
+            advisor_types[name] = AdvisorType(name, self.localize(name), monarch_power=monarch_power, modifiers=modifiers,
+                                              skill_scaled_modifiers=skill_scaled_modifiers, allow_only_owner_religion=allow_only_owner_religion, chance=chance,
+                                              ai_will_do=ai_will_do)
+        return advisor_types
 
 
 if __name__ == '__main__':

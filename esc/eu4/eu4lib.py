@@ -806,6 +806,14 @@ class Estate(NameableEntity):
     privileges: list[str]
     agendas: list[str]
 
+class AdvisorType(NameableEntity):
+    monarch_power: str
+    modifiers: dict
+    skill_scaled_modifiers: list
+    allow_only_owner_religion: bool = False
+    chance: dict
+    ai_will_do: dict
+
 
 class Unit(NameableEntity):
     tech_group: str
