@@ -10,6 +10,7 @@ from localpaths import eu4dir, eu4mod_paths
 from eu4.paths import eu4_version, eu4_major_version
 from eu4.eu4lib import Religion, Idea, IdeaGroup, Policy, Eu4Color, Country, Mission, MissionGroup, GovernmentReform, \
     CultureGroup, Culture, DLC, BaseGame, Estate, AdvisorType
+from eu4.gfxparser import GfxParser, SpriteType
 from eu4.cache import disk_cache, cached_property
 
 class Eu4Parser:
@@ -84,6 +85,10 @@ class Eu4Parser:
     @cached_property
     def dlcs_by_name(self) -> dict[str, DLC]:
         return {dlc.display_name: dlc for dlc in self.dlcs}
+
+    @cached_property
+    def sprite_types(self) -> dict[str, SpriteType]:
+        return GfxParser(self.parser).parse_all_gfx_files(self.dlcs_including_base_game)
 
     @cached_property
     def all_religions(self):
