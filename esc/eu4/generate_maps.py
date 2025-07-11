@@ -26,7 +26,7 @@ class MapGenerator:
 
     def decision_maps(self):
         # change the version number after verifying that the provinces/areas are still correct
-        verified_for_version('Fires of Conviction')
+        verified_for_version("19")
 
         # Holy Sites
         for religion in self.mapparser.all_religions.values():
@@ -302,31 +302,39 @@ class MapGenerator:
                 provinces_in_region = set(region.provinceIDs) & provinces
                 if len(provinces_in_region) > 0:
                     color_to_provinces[i+1] = list(provinces_in_region)
-            if name in ['Oceanian regions', 'Region map']:
-                crop_to_color = False
-            else:
-                crop_to_color = True
+            crop_to_color = not (name in ['North Aelantiri regions', 'Region map'])
             self.color_map_generator.generate_mapimage_with_several_colors(color_to_provinces, name, crop_to_color=crop_to_color)
         
-        # Insyaa doesn't need Oceania handling
-        return
+        # reorganize the oceania image so that the parts west of the
+        # date line are on the left side of the image and the parts
+        # east of the date line are on the right of the image
+        # provinces with a lower x value are considered to be
+        # east of the date line
+        x_threshold = 3000
+        provinces_east_of_date_line = set()
+        for line in self.mapparser.positions_to_provinceID_array:
+            provinces_east_of_date_line.update(line[:x_threshold])
+        oceania_provinces_west_of_date_line = [prov.id for prov in self.mapparser.all_land_provinces.values() if prov.continent.name == 'north_america' and prov.id not in provinces_east_of_date_line]
+        oceania_provinces_east_of_date_line = [prov.id for prov in self.mapparser.all_land_provinces.values() if prov.continent.name == 'north_america' and prov.id in provinces_east_of_date_line]
 
-# doesn't work. I have no idea how the color of an area is determined if none is defied in the areas.txt
-#     def areas_map(self):
-#         color_to_provinces = {}
-#         provinces = self.mapparser.all_land_provinces.keys()
-#         i = 0
-#         for area in self.mapparser.allAreas.values():
-#             if area.color:
-#                 color = area.color
-#             else:
-#                 color = i
-#             i += 1
-#             provinces_in_area = set(area.provinceIDs) & provinces
-#             if len(provinces_in_area) > 0:
-#                 color_to_provinces[color] = list(provinces_in_area)
-#
-#         self.color_map_generator.generate_mapimage_with_several_colors(color_to_provinces, 'Areas map', crop_to_color=False)
+        c_west = np.isin(self.mapparser.positions_to_provinceID_array, oceania_provinces_west_of_date_line).nonzero()
+        c_east = np.isin(self.mapparser.positions_to_provinceID_array, oceania_provinces_east_of_date_line).nonzero()
+        west_min_x = c_west[1].min() - 10
+        west_max_x = self.mapparser.positions_to_provinceID_array.shape[1] - 1
+        min_y = min(c_west[0].min(), c_east[0].min()) - 10
+        max_y = max(c_west[0].max(), c_east[0].max()) - 10
+        east_min_x = 0
+        east_max_x = c_east[1].max() + 10
+
+        temp_image = Image.open(eu4outpath / 'North Aelantiri regions.png')
+        oceania_west = temp_image.crop((west_min_x, min_y, west_max_x, max_y))
+        oceania_east = temp_image.crop((east_min_x, min_y, east_max_x, max_y))
+        oceania_full = Image.new('RGB', (oceania_west.size[0] + oceania_east.size[0] + 1, oceania_east.size[1]), (0, 0, 0))
+        oceania_full.paste(oceania_west, (0, 0))
+        oceania_full.paste(oceania_east, (oceania_west.size[0] + 1, 0))
+        oceania_full.save(eu4outpath / 'North Aelantiri regions.png')
+
+        return
 
     def areas_maps(self):
         maps_to_generate = {
@@ -346,11 +354,37 @@ class MapGenerator:
                 provinces_in_area = set(area.provinceIDs) & provinces
                 if len(provinces_in_area) > 0:
                     color_to_provinces[i+1] = list(provinces_in_area)
-            if name in ['Oceanian regions', 'Region map']:
-                crop_to_color = False
-            else:
-                crop_to_color = True
+            crop_to_color = not (name in ['North Aelantiri areas', 'Region map'])
             self.color_map_generator.generate_mapimage_with_several_colors(color_to_provinces, name, crop_to_color=crop_to_color)
+
+        # reorganize the oceania image so that the parts west of the
+        # date line are on the left side of the image and the parts
+        # east of the date line are on the right of the image
+        # provinces with a lower x value are considered to be
+        # east of the date line
+        x_threshold = 3000
+        provinces_east_of_date_line = set()
+        for line in self.mapparser.positions_to_provinceID_array:
+            provinces_east_of_date_line.update(line[:x_threshold])
+        oceania_provinces_west_of_date_line = [prov.id for prov in self.mapparser.all_land_provinces.values() if prov.continent.name == 'north_america' and prov.id not in provinces_east_of_date_line]
+        oceania_provinces_east_of_date_line = [prov.id for prov in self.mapparser.all_land_provinces.values() if prov.continent.name == 'north_america' and prov.id in provinces_east_of_date_line]
+
+        c_west = np.isin(self.mapparser.positions_to_provinceID_array, oceania_provinces_west_of_date_line).nonzero()
+        c_east = np.isin(self.mapparser.positions_to_provinceID_array, oceania_provinces_east_of_date_line).nonzero()
+        west_min_x = c_west[1].min() - 10
+        west_max_x = self.mapparser.positions_to_provinceID_array.shape[1] - 1
+        min_y = min(c_west[0].min(), c_east[0].min()) - 10
+        max_y = max(c_west[0].max(), c_east[0].max()) - 10
+        east_min_x = 0
+        east_max_x = c_east[1].max() + 10
+
+        temp_image = Image.open(eu4outpath / 'North Aelantiri areas.png')
+        oceania_west = temp_image.crop((west_min_x, min_y, west_max_x, max_y))
+        oceania_east = temp_image.crop((east_min_x, min_y, east_max_x, max_y))
+        oceania_full = Image.new('RGB', (oceania_west.size[0] + oceania_east.size[0] + 1, oceania_east.size[1]), (0, 0, 0))
+        oceania_full.paste(oceania_west, (0, 0))
+        oceania_full.paste(oceania_east, (oceania_west.size[0] + 1, 0))
+        oceania_full.save(eu4outpath / 'North Aelantiri areas.png')
 
     def get_similar_colors(self, base_color: LabColor, number_of_colors: int, brightness_step: float = 0.1,
                            color_step: float = 0.1, layers_of_brightness: float = 5) -> list[LabColor]:
@@ -486,6 +520,35 @@ class MapGenerator:
             color_to_provinces[colonial_region.color] = colonial_region.provinceIDs
         self.color_map_generator.generate_mapimage_with_several_colors(color_to_provinces, 'Colonial regions', crop_to_color=True)
 
+        # reorganize the oceania image so that the parts west of the
+        # date line are on the left side of the image and the parts
+        # east of the date line are on the right of the image
+        # provinces with a lower x value are considered to be
+        # east of the date line
+        x_threshold = 3000
+        provinces_east_of_date_line = set()
+        for line in self.mapparser.positions_to_provinceID_array:
+            provinces_east_of_date_line.update(line[:x_threshold])
+        oceania_provinces_west_of_date_line = [prov.id for prov in self.mapparser.all_land_provinces.values() if prov.continent.name in ('north_america', 'south_america') and prov.id not in provinces_east_of_date_line]
+        oceania_provinces_east_of_date_line = [prov.id for prov in self.mapparser.all_land_provinces.values() if prov.continent.name in ('north_america', 'south_america') and prov.id in provinces_east_of_date_line]
+
+        c_west = np.isin(self.mapparser.positions_to_provinceID_array, oceania_provinces_west_of_date_line).nonzero()
+        c_east = np.isin(self.mapparser.positions_to_provinceID_array, oceania_provinces_east_of_date_line).nonzero()
+        west_min_x = c_west[1].min() - 10
+        west_max_x = self.mapparser.positions_to_provinceID_array.shape[1] - 1
+        min_y = min(c_west[0].min(), c_east[0].min()) - 10
+        max_y = max(c_west[0].max(), c_east[0].max()) - 10
+        east_min_x = 0
+        east_max_x = c_east[1].max() + 10
+
+        temp_image = Image.open(eu4outpath / 'Colonial regions.png')
+        oceania_west = temp_image.crop((west_min_x, min_y, west_max_x, max_y))
+        oceania_east = temp_image.crop((east_min_x, min_y, east_max_x, max_y))
+        oceania_full = Image.new('RGB', (oceania_west.size[0] + oceania_east.size[0] + 1, oceania_east.size[1]), (0, 0, 0))
+        oceania_full.paste(oceania_west, (0, 0))
+        oceania_full.paste(oceania_east, (oceania_west.size[0] + 1, 0))
+        oceania_full.save(eu4outpath / 'Colonial regions.png')
+
     def island_maps(self):
         self.color_map_generator.generate_mapimage_with_important_provinces(is_island, 'is_island_map', crop=False)
         self.color_map_generator.generate_mapimage_with_important_provinces(island, 'island_map', crop=False)
@@ -609,13 +672,12 @@ class MapGenerator:
         self.color_map_generator.generate_mapimage_with_several_colors(color_to_provinces, 'Missions1444map')
 
     def mission_map_from_save(self, savefile):
-        save_data = open(savefile, encoding='cp1252').read()
+        save_data = open(savefile, encoding='cp1250').read()
         all_missions_regex = re.compile(r'^\t([ABG-JL-NP-RU-Z][0-9]{2})=.*?(country_missions=\{\n(.*?)^\t\t})', re.MULTILINE | re.DOTALL)
         tags_to_mission_groups = {}
         for match in all_missions_regex.finditer(save_data):
             if match[3]:
                 tag = match[1]
-                #print(f'{tag}: ')
                 tags_to_mission_groups[tag] = []
                 for mission in match[3].split():
                     if mission not in ['mission_slot={', '}']:
@@ -912,7 +974,7 @@ every_province = {
         self.continent_map()
         self.techgroup_map()
         self.trade_center_map()
-        # self.mission_map()
+        self.mission_map()
 
 
 if __name__ == '__main__':
