@@ -162,7 +162,6 @@ class Achievements(PdxparseToList):
 
         return self.get_SVersion_header('table') + '\n' + table
 
-
 class EocReforms(PdxparseToList):
 
     def generate_eoc_reforms_list(self):
@@ -183,6 +182,31 @@ class EocReforms(PdxparseToList):
 
         return self.get_SVersion_header('table') + '\n' + table
 
+class HREReforms(PdxparseToList):
+
+    def generate_hre_reforms_list(self):
+        reforms = [{
+            'Reform': f"[[File:Anbennar {reform['name']}.png]] {{{{anchor|{reform['name']}}}}} {reform['name']}",
+            'All': reform.get('all', None), # all is a special key apparently...
+            'Emperor': reform.get('emperor', None),
+            'Emperor per prince': reform.get('emperor_per_prince', None),
+            'Princes': reform.get('member', None),
+            'Provinces': reform.get('province', None),
+            'Electors': reform.get('elector', None),
+            'Elector per prince': reform.get('elector_per_prince', None),
+            'Type': reform['gui_container'],
+            'Required Reform': self.parser.localize(reform.get('required_reform', None) + '_title'),
+            'Enacting effect': reform['on_effect'],
+            'Revoking effect': reform['off_effect'],
+        } for reform in self.get_data_from_files('common/imperial_reforms/00_hre_emperor.txt',
+                                                 country_scope=['trigger', 'on_effect', 'off_effect'],
+                                                 modifier_scope=['all', 'member', 'emperor', 'emperor_per_prince', 'elector', 'elector_per_prince', 'province'],
+                                                 key_value_pair_list=['all', 'gui_container', 'required_reform'],
+                                                 ignored=['empire', 'potential'], localisation_with_title=True,
+                                                 localise_desc=True)]
+        table = self.make_wiki_table(reforms, one_line_per_cell=True)
+
+        return self.get_SVersion_header('table') + '\n' + table
 
 class EstatePrivileges(PdxparseToList):
 
@@ -239,7 +263,11 @@ class EstatePrivileges(PdxparseToList):
         for privilege in self.get_privileges_for_estate(estate):
             for k in privilege.keys():
                 if(type(privilege[k]) is list):
-                    privilege[k] = '\n'.join(privilege[k])
+                    try:
+                        privilege[k] = '\n'.join(privilege[k])
+                    except:
+                        privilege[k] = privilege[k][1] # pffft
+
         privileges = [{
             'id': privilege['name'],
             'class="unsortable" | [[File:Privilege_check.png|28px]]': f"[[File:{privilege['icon'].replace('_', ' ')}.png]]",
@@ -525,7 +553,8 @@ class MonumentList:
             monument_type = v['type']
             if monument_type == 'canal':
                 build_cost = v['build_cost']
-                if 'owner' in v['on_built'] and 'add_prestige' in v['on_built']['owner']:
+                # jfc
+                if 'on_built' in v and 'owner' in v['on_built'] and 'add_prestige' in v['on_built']['owner']:
                     prestige_gain = v['on_built']['owner']['add_prestige']
                 else:
                     prestige_gain = None
@@ -536,11 +565,11 @@ class MonumentList:
             prov = self.parser.all_provinces[provinceID]
             can_be_moved = v['can_be_moved'].val == 'yes'
             level = v['starting_tier'].val
-            if len(v['can_use_modifiers_trigger']) > 0:
+            if len(v.get('can_use_modifiers_trigger', [])) > 0:
                 trigger = v['can_use_modifiers_trigger'].str(self.parser.parser)
             else:
                 trigger = None
-            if len(v['can_upgrade_trigger']) > 0:
+            if len(v.get('can_upgrade_trigger', [])) > 0:
                 can_upgrade_trigger = v['can_upgrade_trigger'].str(self.parser.parser)
             else:
                 can_upgrade_trigger = None
@@ -553,11 +582,20 @@ class MonumentList:
                                                                                                       can_upgrade_trigger))
             if trigger != build_trigger:
                 print('Warning: can_use_modifiers_trigger is {} but build_trigger is {}'.format(trigger, build_trigger))
-            if len(v['keep_trigger']) > 0:
+            if len(v.get('keep_trigger', [])) > 0:
                 print('Warning: keep_trigger is not empty')
             tier_data = []
             for tier in range(4):
-                values = v['tier_{}'.format(tier)]
+                try:
+                    values = v['tier_{}'.format(tier)]
+                except:
+                    print(f'{monumentid} {name} missing tier_{tier}')
+                    tier_data.append({'province_modifiers': None, 'area_modifier': None,
+                                    'region_modifier': None,
+                                    'country_modifiers': None, 'on_upgraded': None,
+                                    'conditional_modifier': None,
+                                    'conditional_modifier_trigger': None})
+                    continue
                 upgrade_time = values['upgrade_time'].inline_str(self.parser.parser)[0]
                 if tier == 0:
                     expected_upgrade_time = 0
@@ -573,9 +611,12 @@ class MonumentList:
                     expected_upgrade_cost = 5000
                 if upgrade_time != '{{ months = {} }}'.format(expected_upgrade_time):
                     print('Warning: unexpected upgrade_time "{}" on tier {}'.format(upgrade_time, tier))
-                cost_to_upgrade = values['cost_to_upgrade'].inline_str(self.parser.parser)[0]
-                if cost_to_upgrade != '{{ factor = {} }}'.format(expected_upgrade_cost):
-                    print('Warning: unexpected cost_to_upgrade "{}" on tier {}'.format(cost_to_upgrade, tier))
+                if 'cost_to_upgrade' in values:
+                    cost_to_upgrade = values['cost_to_upgrade'].inline_str(self.parser.parser)[0]
+                    if cost_to_upgrade != '{{ factor = {} }}'.format(expected_upgrade_cost):
+                        print('Warning: unexpected cost_to_upgrade "{}" on tier {}'.format(cost_to_upgrade, tier))
+                else:
+                    cost_to_upgrade = None
 
                 if 'province_modifiers' in values and len(values['province_modifiers']) > 0:
                     province_modifiers = values['province_modifiers'].inline_str(self.parser.parser)[0]
@@ -1605,6 +1646,7 @@ if __name__ == '__main__':
     Achievements(365).run([])
     EstatePrivileges().run_for_all_estates()
     EocReforms().run([])
+    HREReforms().run([])
     GovernmentReforms().run()
     MercenaryList().run([])
     MonumentList().run()
