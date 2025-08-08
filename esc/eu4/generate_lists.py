@@ -1616,6 +1616,22 @@ class DeitiesList(PdxparseToList):
         with output_file.open('w') as f:
             f.write(content)
 
+class FetishistCultsList(PdxparseToList):
+
+    def generate_cults_list(self):
+        cults = [{
+            'Deity': f"""{{{{icon|{deity['name']}}}}} '''{deity['name']}'''""",
+            '| Unlocked by': deity['allow'],
+            'class="unsortable" | Effects': f"{{{{plainlist|\n{deity['all']}\n}}}}",
+        } for deity in self.get_data_from_files(f'common/fetishist_cults/00_fetishist_cults.txt',
+                                                 modifier_scope=['all'],
+                                                 country_scope=['allow'],
+                                                 ignored=['ai_will_do', 'sprite'],
+                                                 localise_desc=True)]
+        table = self.make_wiki_table(cults, one_line_per_cell=True, table_classes=['mildtable'])
+
+        return self.get_SVersion_header('table') + '\n' + table
+
 class Incidents(PdxparseToList):
 
     def generate_incidents_list(self):
@@ -1656,4 +1672,5 @@ if __name__ == '__main__':
     CultureList().run([])
     HolyOrders().run([])
     DeitiesList().run()
+    FetishistCultsList().run([])
     Incidents().run([])
