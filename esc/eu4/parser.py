@@ -447,6 +447,25 @@ class Eu4Parser:
                                               ai_will_do=ai_will_do)
         return advisor_types
 
+    @cached_property
+    def event_modifiers(self):
+        """returns a dict. keys are the modifier names and the values are a list of modifiers"""
+        event_modifiers = {}
+        for name, data in self.parser.merge_parse('common/event_modifiers/*'):
+            event_modifiers[name] = data
+
+        return event_modifiers
+
+    @cached_property
+    def triggerd_modifiers(self):
+        """returns a dict. keys are the modifier names and the values are a list of modifiers"""
+        modifiers = {}
+        for name, data in self.parser.merge_parse('common/province_triggered_modifiers/*'):
+            modifiers[name] = data
+        for name, data in self.parser.merge_parse('common/triggered_modifiers/*'):
+            modifiers[name] = data
+
+        return modifiers
 
 if __name__ == '__main__':
     if len(sys.argv) == 2 and sys.argv[1] == '--eu4-version':
