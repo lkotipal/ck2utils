@@ -12,7 +12,7 @@ from typing import Dict
 
 
 # the MonumentList needs pyradox which needs to be imported in some way
-sys.path.append(os.path.dirname(os.path.realpath(__file__)) + '/../../../../pyradox')
+sys.path.append(os.path.dirname(os.path.realpath(__file__)) + '/../../../../pyradox/src')
 from pyradox.filetype.table import make_table, WikiDialect
 
 # add the parent folder to the path so that imports work even if the working directory is the eu4 folder
@@ -23,7 +23,7 @@ from eu4.paths import eu4outpath
 from localpaths import eu4mod_paths, eu4mod_prefix
 from eu4.parser import Eu4Parser
 from eu4.mapparser import Eu4MapParser
-from eu4.eu4lib import GovernmentReform, Country, Estate, ColonialRegion, Culture
+from eu4.eu4lib import GovernmentReform, Country, Estate, ColonialRegion, Culture, TradeCompany
 from eu4.eu4_file_generator import Eu4FileGenerator
 from eu4.eventparser import Eu4EventParser
 from ck2parser import Obj, Pair
@@ -855,7 +855,7 @@ class AreaAndRegionsList(Eu4FileGenerator):
     def generate_superregions(self):
         return self.formatSuperregionsColorTable() + ['', 'All of the land regions are grouped together to form the following in-game subcontinents:', ] + self.formatSuperRegions()
 
-    def _get_key_provinces(self, region: ColonialRegion) -> str:
+    def _get_key_provinces(self, region: ColonialRegion|TradeCompany) -> str:
         key_provinces = {'cotlvl3': [],
                          'cotlvl2': [],
                          'cotlvl1': [],
@@ -866,7 +866,7 @@ class AreaAndRegionsList(Eu4FileGenerator):
             if province.center_of_trade > 0:
                 key_provinces[f'cotlvl{province.center_of_trade}'].append(province)
 
-        lines = [f'{{{{icon|{prov_type}}}}} {", ".join(sorted(province.name for province in provinces))}'
+        lines = [f'{{{{icon|{prov_type}}}}} {", ".join(sorted(f'{province.name}({province.id})' for province in provinces))}'
                  for prov_type, provinces in key_provinces.items()
                  if len(provinces) > 0]
         return '{{plainlist|\n' + self.create_wiki_list(lines) + '\n}}'
@@ -883,6 +883,18 @@ class AreaAndRegionsList(Eu4FileGenerator):
                 'class="unsortable" | Key provinces': self._get_key_provinces(region),
             } for region in self.parser.all_colonial_regions.values()
             ], one_line_per_cell=True)
+
+    def generate_trade_company_regions(self):
+        return self.get_SVersion_header('table') + '\n' + \
+            self.make_wiki_table([{
+                'Continent': ', '.join(continent.display_name for continent in region.continents),
+                'Trade company region': region,
+                'class="unsortable" width="50px" | Colour': f'style="background:{region.color.get_css_color_string()}"|',
+                'Trade Node': region.tradenode,
+                'class="unsortable" | Key provinces': self._get_key_provinces(region),
+            } for region in sorted(self.parser.all_trade_companies.values(), key=attrgetter('continents', 'display_name'))
+            ], one_line_per_cell=True,
+            table_classes=['mildtable'])
 
 
 class GovernmentReforms:

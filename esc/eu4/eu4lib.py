@@ -273,7 +273,15 @@ class Religion(NameableEntity):
 
 
 class TradeCompany(NameableEntityWithProvincesAndColor):
-    pass
+
+    @cached_property
+    def continents(self) -> list[Continent]:
+        continents = set(province.continent for province in self.provinces)
+        return sorted(continents)
+
+    @cached_property
+    def tradenode(self) -> 'TradeNode':
+        return self.provinces[0].tradenode
 
 
 class TradeNode(NameableEntityWithProvincesAndColor):

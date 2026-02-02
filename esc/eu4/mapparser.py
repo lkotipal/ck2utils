@@ -372,7 +372,7 @@ class Eu4MapParser(Eu4Parser):
             return ''
 
     @cached_property
-    def all_trade_companies(self):
+    def all_trade_companies(self) -> dict[str, TradeCompany]:
         all_tc = {}
         for _, tree in self.parser.parse_files('common/trade_companies/*'):
             for tc_name, data in tree:
