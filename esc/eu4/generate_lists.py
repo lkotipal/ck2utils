@@ -619,7 +619,7 @@ class MonumentList:
                 can_upgrade_trigger = v['can_upgrade_trigger'].str(self.parser.parser)
             else:
                 can_upgrade_trigger = None
-            if len(v['build_trigger']) > 0:
+            if len(v.get('build_trigger', [])) > 0:
                 build_trigger = v['build_trigger'].str(self.parser.parser)
             else:
                 build_trigger = None
