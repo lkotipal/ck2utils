@@ -421,7 +421,9 @@ class EstateAgendas(PdxparseToList):
 
             #'Description': agenda['desc'],
         } for agenda in self.get_agendas_for_estate(estate)]
-        table = self.make_wiki_table(agendas, one_line_per_cell=True, row_id_key='id')
+        table = self.make_wiki_table(agendas, one_line_per_cell=True, row_id_key='id') if agendas else ''
+        if not agendas:
+            print(f"{estate} has no agendas!")
 
         return f'=={estate.display_name}==\n{self.get_SVersion_header("table")}\n{table}\n'
 
@@ -482,6 +484,11 @@ class MercenaryList(PdxparseToList):
         return ''
 
     def get_modifiers(self, data):
+        special_keys = {
+            'FREE_OF_ARMY_PROFESSIONALISM_COST': "\n* {{green|''Does not reduce Army professionalism when recruited.''}}",
+            'FREE_OF_ARMY_PROFESSIONALISM_AND_FORCELIMIT_COST': "\n* {{green|''Does not reduce Army professionalism when recruited.''}}\n* {{green|''Costs no force limit to maintain.''}}"
+        }
+
         modifiers = data['modifier']
         if data['manpower_pool']:
             modifiers += f"\n* {{{{icon|mercenary manpower}}}} {{{{green|{data['manpower_pool'] * 1000}}}}} Manpower pool independent of the size"
@@ -491,8 +498,15 @@ class MercenaryList(PdxparseToList):
             modifiers += "\n* {{green|''Costs no force limit to maintain.''}}"
         if data['mercenary_desc_key']:
             desc = data['mercenary_desc_key']
-            if desc == 'FREE_OF_ARMY_PROFESSIONALISM_COST':
-                modifiers += "\n* {{green|''Does not reduce Army professionalism when recruited''}}"
+            if isinstance(desc, list):
+                print(f'{data} is malformed!')
+                for d in desc:
+                    if d in special_keys:
+                        modifiers += special_keys[d]
+                    else:
+                        modifiers += "\n* " + self.parser.localize(d)
+            elif desc in special_keys:
+                modifiers += special_keys[desc]
             else:
                 modifiers += "\n* " + self.parser.localize(desc)
         if modifiers != '':
@@ -1659,7 +1673,7 @@ if __name__ == '__main__':
     # for correct sorting. en_US seems to work even for non english characters, but the default None sorts all non-ascii characters to the end
     setlocale(LC_COLLATE, 'en_US.utf8')
     EstateAgendas().run_for_all_estates()
-    Achievements(365).run([])
+    #Achievements(365).run([])
     EstatePrivileges().run_for_all_estates()
     EocReforms().run([])
     HREReforms().run([])
