@@ -6,12 +6,12 @@ from collections import OrderedDict
 # add the parent folder to the path so that imports work even if the working directory is the eu4 folder
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 from ck2parser import SimpleParser, Obj, String, Number
-from localpaths import eu4dir
+from localpaths import eu4dir, eu4mod_paths
 from eu4.paths import eu4_version, eu4_major_version
 from eu4.eu4lib import Religion, Idea, IdeaGroup, Policy, Eu4Color, Country, Mission, MissionGroup, GovernmentReform, \
-    CultureGroup, Culture, DLC, BaseGame, Estate
+    CultureGroup, Culture, DLC, BaseGame, Estate, AdvisorType
+from eu4.gfxparser import GfxParser, SpriteType
 from eu4.cache import disk_cache, cached_property
-
 
 class Eu4Parser:
     """the methods of this class parse game files and retrieve all kinds of information
@@ -24,14 +24,20 @@ class Eu4Parser:
     localizationOverrides = {}
 
     def __init__(self):
-        self.parser = SimpleParser()
+        self.parser = SimpleParser(*eu4mod_paths)
         self.parser.basedir = eu4dir
 
     @cached_property
     @disk_cache()
     def _localisation_dict(self):
         localisation_dict = {}
-        for path in (eu4dir / 'localisation').glob('*_l_english.yml'):
+
+        paths = list(self.parser.files('localisation/*_l_english.yml'))
+        # put replace localisations at the end so that they override the normal localisation.
+        # TODO: this does not take mod load order into account when multiple mods replace the same localisation
+        paths.extend(self.parser.files('localisation/replace/*_l_english.yml'))
+
+        for path in paths:
             with path.open(encoding='utf-8-sig') as f:
                 for line in f:
                     match = re.fullmatch(r'\s*([^#\s:]+):\d?\s*"(.*)"[^"]*', line)
@@ -79,6 +85,10 @@ class Eu4Parser:
     @cached_property
     def dlcs_by_name(self) -> dict[str, DLC]:
         return {dlc.display_name: dlc for dlc in self.dlcs}
+
+    @cached_property
+    def sprite_types(self) -> dict[str, SpriteType]:
+        return GfxParser(self.parser).parse_all_gfx_files(self.dlcs_including_base_game)
 
     @cached_property
     def all_religions(self):
@@ -198,7 +208,7 @@ class Eu4Parser:
                         modifiers[n2.val] = v2.val
                 all_policies[policy_name] = Policy(policy_name,
                                                    self.localize(policy_name),
-                                                   self.localize('desc_' + policy_name),
+                                                   self.localize('desc_' + policy_name, default=''),
                                                    category,
                                                    modifiers,
                                                    idea_groups)
@@ -274,8 +284,8 @@ class Eu4Parser:
     def all_countries(self):
         """returns a dictionary. keys are tags and values are Country objects. It is ordered by the tag order"""
         countries = OrderedDict()
-        for tag, country_file in self.parser.parse_file('common/country_tags/anb_countries.txt'):
-            countries[tag.val] = Country(tag.val, self.localize(tag.val), parser=self, country_file=country_file.val)
+        for tag, country_file in self.parser.merge_parse('common/country_tags/*.txt'):
+            countries[tag] = Country(tag, self.localize(tag), parser=self, country_file=country_file.val)
         return countries
 
     @cached_property
@@ -327,7 +337,9 @@ class Eu4Parser:
             tier_num = 0
             for tier, reforms in tiers.items():
                 for reform in reforms:
-                    reforms_to_type_and_tier[reform] = (gov_type, tier, tier_num)
+                    if reform not in reforms_to_type_and_tier:
+                        reforms_to_type_and_tier[reform] = list()
+                    reforms_to_type_and_tier[reform].append((gov_type, tier, tier_num))
                 tier_num += 1
         all_reforms = {}
         for file, file_data in self.parser.parse_files('common/government_reforms/*'):
@@ -373,9 +385,7 @@ class Eu4Parser:
                     else:
                         other_attributes[str(k)] = self._parse_government_attribute_value(v)
                 if reform_name in reforms_to_type_and_tier:
-                    gov_type, tier, tier_num = reforms_to_type_and_tier[reform_name]
-                    all_reforms[reform_name] = GovernmentReform(reform_name, self.localize(reform_name), gov_type, tier,
-                                                                tier_num, attributes=other_attributes,
+                    all_reforms[reform_name] = GovernmentReform(reform_name, self.localize(reform_name), reforms_to_type_and_tier[reform_name], attributes=other_attributes,
                                                                 **basic_attributes)
                 else:
                     print("Error: Reform {} has no tier".format(reform_name))
@@ -408,6 +418,54 @@ class Eu4Parser:
             estates[name] = Estate(name, self.localize(name), privileges=privileges, agendas=agendas)
         return estates
 
+    @cached_property
+    def advisor_types(self):
+        advisor_types = {}
+        for name, data in self.parser.merge_parse('common/advisortypes/*'):
+            monarch_power = ''
+            modifiers = {}
+            skill_scaled_modifiers = []
+            allow_only_owner_religion = False
+            chance = None
+            ai_will_do = None
+            for k, v in data:
+                match k:
+                    case 'monarch_power':
+                        monarch_power = v.val
+                    case 'skill_scaled_modifier':
+                        skill_scaled_modifiers.append(v)
+                    case 'chance':
+                        chance = v
+                    case 'allow_only_owner_religion':
+                        allow_only_owner_religion = v
+                    case 'ai_will_do':
+                        ai_will_do = v
+                    case _:
+                        modifiers[k] = v.val
+            advisor_types[name] = AdvisorType(name, self.localize(name), monarch_power=monarch_power, modifiers=modifiers,
+                                              skill_scaled_modifiers=skill_scaled_modifiers, allow_only_owner_religion=allow_only_owner_religion, chance=chance,
+                                              ai_will_do=ai_will_do)
+        return advisor_types
+
+    @cached_property
+    def event_modifiers(self):
+        """returns a dict. keys are the modifier names and the values are a list of modifiers"""
+        event_modifiers = {}
+        for name, data in self.parser.merge_parse('common/event_modifiers/*'):
+            event_modifiers[name] = data
+
+        return event_modifiers
+
+    @cached_property
+    def triggerd_modifiers(self):
+        """returns a dict. keys are the modifier names and the values are a list of modifiers"""
+        modifiers = {}
+        for name, data in self.parser.merge_parse('common/province_triggered_modifiers/*'):
+            modifiers[name] = data
+        for name, data in self.parser.merge_parse('common/triggered_modifiers/*'):
+            modifiers[name] = data
+
+        return modifiers
 
 if __name__ == '__main__':
     if len(sys.argv) == 2 and sys.argv[1] == '--eu4-version':

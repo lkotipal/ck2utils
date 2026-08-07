@@ -277,6 +277,18 @@ class Religion(NameableEntity):
         self.data = data
 
 
+class TradeCompany(NameableEntityWithProvincesAndColor):
+
+    @cached_property
+    def continents(self) -> list[Continent]:
+        continents = set(province.continent for province in self.provinces)
+        return sorted(continents)
+
+    @cached_property
+    def tradenode(self) -> 'TradeNode':
+        return self.provinces[0].tradenode
+
+
 class TradeNode(NameableEntityWithProvincesAndColor):
 
     def __init__(self, name, display_name, location, outgoing_node_names=None, inland=False, endnode=False,
@@ -623,15 +635,13 @@ class GovernmentReform(NameableEntity):
         'prussian_monarchy_base': 'Prussian Monarchy (base)',
     }
 
-    def __init__(self, name, display_name, government_type, tier_name, tier_number, basic_reform, attributes, icon,
+    def __init__(self, name, display_name, government_types_and_tiers: list[tuple[str, str, int]], basic_reform, attributes, icon,
                  modifiers, potential, trigger, effect, removed_effect, post_removed_effect, conditional
                  ):
         if name in self.name_map:
             display_name = self.name_map[name]
         super().__init__(name, display_name)
-        self.government_type = government_type
-        self.tier_name = tier_name
-        self.tier_number = tier_number
+        self.government_types_and_tiers = government_types_and_tiers
         self.basic_reform = basic_reform
         self.attributes = attributes
         self.icon = icon
@@ -642,6 +652,27 @@ class GovernmentReform(NameableEntity):
         self.removed_effect = removed_effect
         self.post_removed_effect = post_removed_effect
         self.conditional = conditional
+
+    def has_gov_type(self, government_type: str):
+        for (gov_type, tier, tier_num) in self.government_types_and_tiers:
+            if gov_type == government_type:
+                return True
+        return False
+
+    @cached_property
+    def government_type(self):
+        """If the reform has multiple types, it just lists the first"""
+        return self.government_types_and_tiers[0][0]
+
+    @cached_property
+    def tier_name(self):
+        """If the reform has multiple tiers, it just lists the first"""
+        return self.government_types_and_tiers[0][1]
+
+    @cached_property
+    def tier_number(self):
+        """If the reform has multiple tiers, it just lists the first"""
+        return self.government_types_and_tiers[0][2]
 
     @staticmethod
     def pretty_icon_name(icon):
@@ -799,6 +830,14 @@ class EventPicture:
 class Estate(NameableEntity):
     privileges: list[str]
     agendas: list[str]
+
+class AdvisorType(NameableEntity):
+    monarch_power: str
+    modifiers: dict
+    skill_scaled_modifiers: list
+    allow_only_owner_religion: bool = False
+    chance: dict
+    ai_will_do: dict
 
 
 class Unit(NameableEntity):

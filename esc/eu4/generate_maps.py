@@ -108,6 +108,25 @@ class MapGenerator:
                 'orange': [730, 2108],
             }, 'Formmanchu', crop_to_color=True)
 
+        self.formation_map('FormYemen', [387, 388, 390, 4280], [389, 391, 2346], claimed_areas=['yemen_area', 'upper_yemen_area', 'tihama_al_yemen_area', 'hadramut_area'])
+        self.formation_map('FormGeorgia', [422, 423, 2203, 2204, 4301], [462, 2196, 4303], claimed_areas=['kartli_kakheti_area', 'samtskhe_area', 'imereti_area'])
+        self.formation_map('Persiaprovinces', [414, 429, 433, 2213, 2215], [426, 2218], [416, 432, 2221], claimed_regions=['persia_region'])
+
+    def formation_map(self, filename: str, required_provinces: list[int], optional_provinces: list[int], other_optional_provinces: list[int] = None, claimed_areas: list[str] = [], claimed_regions: list[str] = []):
+        color_to_provinces = {
+            'green': optional_provinces,
+            'Darkturquoise': other_optional_provinces,
+            # claims. provinces which are not green get shaded with the default land color
+            'land': [prov.id for prov in self.mapparser.all_land_provinces.values() if
+                     prov.id not in optional_provinces and (prov.area.name in claimed_areas or prov.region.name in claimed_regions)],
+            'important': claimed_areas + claimed_regions,
+        }
+        if not other_optional_provinces:
+            del color_to_provinces['turquoise']
+        self.color_map_generator.create_shaded_image(color_to_provinces,
+                                                     {'brightred': required_provinces},
+                                                     filename, crop_to_color=True, first_shade_width=4, second_shade_width=2, margin=20)
+
 # currently not used by the wiki
 #         self.color_map_generator.generate_mapimage_with_several_colors({
 #             'yellow': ['upper_doab_area', 'lower_doab_area', 'oudh_area', 'katehar_area', 'sirhind_area', 'lahore_area', 'sind_sagar_area'], # claims
@@ -319,6 +338,42 @@ class MapGenerator:
             else:
                 color_to_provinces[i+1] = trade_node.provinceIDs
         self.color_map_generator.generate_mapimage_with_several_colors(color_to_provinces, 'Trade nodes')
+
+    def trade_center_map(self):
+        full_estuary_provinces = []
+        half_estuary_provinces = []
+        special_provinces = []
+
+
+        for estuary_provinces in self.mapparser.estuary_map.values():
+            if len(estuary_provinces) == 1:
+                full_estuary_provinces.append(estuary_provinces[0].id)
+            else:
+                # multiple provinces with the same modifier. Assume that it only gives 5 trade power
+                for prov in estuary_provinces:
+                    half_estuary_provinces.append(prov.id)
+
+        for prov in self.mapparser.all_provinces.values():
+            if prov.get('Modifiers') and prov not in self.mapparser.all_estuary_provinces:
+                for mod in prov['Modifiers']:
+                    modifiers = self.mapparser.event_modifiers[mod] if mod in self.mapparser.event_modifiers else self.mapparser.triggerd_modifiers[mod]
+                    if 'province_trade_power_value' in modifiers:
+                        special_provinces.append(prov.id)
+
+        color_to_provinces = {
+            Eu4Color(255, 186, 8): [prov.id for prov in self.mapparser.all_land_provinces.values() if prov.center_of_trade == 1],
+            Eu4Color(232, 93, 4): [prov.id for prov in self.mapparser.all_land_provinces.values() if prov.center_of_trade == 2],
+            Eu4Color(157, 2, 8): [prov.id for prov in self.mapparser.all_land_provinces.values() if prov.center_of_trade == 3],
+            Eu4Color(77, 144, 142): full_estuary_provinces,
+            Eu4Color(144,190, 109): half_estuary_provinces,
+            Eu4Color(102, 65, 138): special_provinces
+        }
+        self.color_map_generator.create_shaded_image(color_to_provinces,{},
+            'Trade center map', crop_to_color=False)
+        map_image = Image.open(eu4outpath / 'Trade center map.png')
+        legend_image = Image.open(Path(__file__).parent / 'trade_center_legend.png')
+        map_image.paste(legend_image, (1124, 1464))
+        map_image.save(eu4outpath / 'Trade center map.png')
 
     def trade_company_map(self):
         color_to_provinces = {}
@@ -756,7 +811,8 @@ every_province = {
         self.colonial_region_map()
         self.country_map()
         self.continent_map()
-        #self.techgroup_map() hardcoded
+        self.techgroup_map()
+        self.trade_center_map()
         # self.mission_map()
 
 
