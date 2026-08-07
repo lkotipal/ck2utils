@@ -128,7 +128,7 @@ class WikiTextConverter:
         """ remove {} from around a string
 
             this is needed, because ck2utils has no way of getting the inner code of a section
-         """
+        """
         match = re.match(r'^[\s]*{(.*)}[\s]*$', string, re.DOTALL)
         if match:
             return match.group(1)
@@ -138,7 +138,11 @@ class WikiTextConverter:
     def _replace_values_by_filenames(self, folder, dictionary):
         if dictionary:
             for key in dictionary:
-                value = self.remove_surrounding_brackets(dictionary[key])
+                if isinstance(dictionary[key], list):
+                    print(f'{key} is malformed!')
+                    value = "".join((self.remove_surrounding_brackets(v) for v in dictionary[key]))
+                else:
+                    value = self.remove_surrounding_brackets(dictionary[key])
                 if len(value) > 0:
                     dictionary[key] = self._create_temp_file(folder, value)
                 else:
