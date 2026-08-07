@@ -566,7 +566,11 @@ class MonumentList:
                         name = v2['name'].val.replace('GFX_great_project_', '')
                         image = v2['texturefile'].val.replace('gfx//interface//great_projects//', '').replace('.dds', '')
                         self.monument_icons[name] = image
-        return self.monument_icons[monumentid]
+        if monumentid in self.monument_icons:
+            return self.monument_icons[monumentid]
+        else:
+            print(f'{monumentid} has no icon!')
+            return ''
 
     @staticmethod
     # Hardcoded provinces for hidden monuments
