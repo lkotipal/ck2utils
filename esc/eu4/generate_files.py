@@ -40,18 +40,22 @@ class AnotherFileGenerator(Eu4FileGenerator):
 
     def add_unit_to_list(self, unitlist, unit):
         tech_group = ''
-        for n, v in self.parser.parse_file('common/units/{}.txt'.format(unit)):
-            if n.val == 'unit_type':
-                if v.val in ['sub_saharan']:
-                    tech_group = 'Sub-Saharan'
-                elif v.val == 'nomad_group':
-                    tech_group = 'Nomad'
+        try:
+            for n, v in self.parser.parse_file('common/units/{}.txt'.format(unit)):
+                if n.val == 'unit_type':
+                    if v.val in ['sub_saharan']:
+                        tech_group = 'Sub-Saharan'
+                    elif v.val == 'nomad_group':
+                        tech_group = 'Nomad'
+                    else:
+                        tech_group = self.eu4parser.localize(v.val)
+                elif n.val == 'type':
+                    unit_type = v.val
                 else:
-                    tech_group = self.eu4parser.localize(v.val)
-            elif n.val == 'type':
-                unit_type = v.val
-            else:
-                continue
+                    continue
+        except:
+            print(f"Unit {unit} not found", file=sys.stderr)
+            return
         if unit_type not in unitlist:
             unitlist[unit_type] = []
         unitlist[unit_type].append((tech_group, self.eu4parser.localize(unit)))
@@ -200,17 +204,21 @@ class AnotherFileGenerator(Eu4FileGenerator):
                     unit.pips = 0
                     unit.category = None
                     unit.techlevel = techlevel
-                    for n, v in self.parser.parse_file('common/units/{}.txt'.format(unit_name)):
-                        if n.val == 'unit_type':
-                            unit.tech_group = v.val
-                        elif n.val == 'type':
-                            unit.category = v.val
-                        elif n.val in (
-                                # 'maneuver',
-                                'offensive_morale', 'defensive_morale', 'offensive_fire', 'defensive_fire',
-                                'offensive_shock', 'defensive_shock'):
-                            setattr(unit, n.val, v.val)
-                            unit.pips += int(v.val)
+                    try:
+                        for n, v in self.parser.parse_file('common/units/{}.txt'.format(unit_name)):
+                            if n.val == 'unit_type':
+                                unit.tech_group = v.val
+                            elif n.val == 'type':
+                                unit.category = v.val
+                            elif n.val in (
+                                    # 'maneuver',
+                                    'offensive_morale', 'defensive_morale', 'offensive_fire', 'defensive_fire',
+                                    'offensive_shock', 'defensive_shock'):
+                                setattr(unit, n.val, v.val)
+                                unit.pips += int(v.val)
+                    except:
+                        print(f"Unit {unit_name} not found", file=sys.stderr)
+                        continue
                     if unit.category is None:
                         raise Exception('No category for {}'.format(unit_name))
 
@@ -219,11 +227,7 @@ class AnotherFileGenerator(Eu4FileGenerator):
                     if unit.tech_group not in piplist[unit.category][techlevel]:
                         piplist[unit.category][techlevel][unit.tech_group] = unit.pips
                     elif piplist[unit.category][techlevel][unit.tech_group] != unit.pips:
-                        raise Exception(
-                            'Differing number of pips for {} in category {} on tech {} in group {}'.format(unit_name,
-                                                                                                           unit.category,
-                                                                                                           techlevel,
-                                                                                                           unit.tech_group))
+                        print('Differing number of pips for {} in category {} on tech {} in group {}'.format(unit_name, unit.category, techlevel, unit.tech_group), file=sys.stderr)
                     if unit.tech_group not in unitlist[unit.category]:
                         unitlist[unit.category][unit.tech_group] = list()
                     unitlist[unit.category][unit.tech_group].append(unit)
