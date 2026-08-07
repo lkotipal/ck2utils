@@ -797,6 +797,7 @@ class MapGenerator:
         self.map(where, achievement_name + ' map', crop, margin)
 
     def achievement_maps(self):
+        return
         # change the version number after verifying that the provinces/areas are still correct
         # for the first two achievements, the decision file has to be checked
         verified_for_version('1.37.0', 'Files to validate are:\n* ' + '\n* '.join(['common/achievements.txt', 'decisions/Religion.txt', 'decisions/Muslim.txt']))
@@ -988,7 +989,7 @@ every_province = {
         self.coal_map()
         self.gold_map()
         # TODO Damestear, mithril, more?
-        ##self.achievement_maps()
+        self.achievement_maps()
         self.culture_group_map()
         self.religion_map()
         self.trade_node_map()
