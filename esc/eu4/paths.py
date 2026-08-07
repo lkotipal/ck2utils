@@ -14,11 +14,11 @@ _eu4_full_version: str | None = None
 def eu4_version():
     global _eu4_version, _eu4_full_version
     if _eu4_version is None:
-        _eu4_version = "19"
-        _eu4_full_version = "v19"
         #json_object = json.load(open(eu4dir / 'launcher-settings.json'))
         #_eu4_version = json_object['rawVersion'].removeprefix('v')
         #_eu4_full_version = json_object['version']
+        _eu4_version = "20"
+        _eu4_full_version = "Anbennar v20 Inheritors of Insyaa"
     return _eu4_version
 
 
