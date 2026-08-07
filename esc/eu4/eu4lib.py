@@ -90,7 +90,10 @@ class NameableEntityWithProvinces(NameableEntity):
     @cached_property
     def provinces(self) -> list[Province]:
         if self._provinces is None:
-            self._provinces = [self.parser.all_provinces[provinceID] for provinceID in self._provinceIDs]
+            self._provinces = [self.parser.all_provinces.get(provinceID, None) for provinceID in self._provinceIDs]
+            if None in self._provinces:
+                print(f'{self.name} is ill defined!')
+                self._provinces = [v for v in self._provinces if v]
         return self._provinces
 
     @cached_property
@@ -299,7 +302,9 @@ class TradeCompany(NameableEntityWithProvincesAndColor):
 
     @cached_property
     def tradenode(self) -> 'TradeNode':
-        return self.provinces[0].tradenode
+        if not self.provinces:
+            print(f'{self.name} is empty!')
+        return self.provinces[0].tradenode if self.provinces else None
 
 
 class TradeNode(NameableEntityWithProvincesAndColor):
