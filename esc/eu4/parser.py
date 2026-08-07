@@ -169,6 +169,9 @@ class Eu4Parser:
         for idea_group in self.all_idea_groups.values():
             for idea in idea_group.get_ideas_including_traditions_and_ambitions():
                 for modifier, value in idea.modifiers.items():
+                    modifier = modifier.lower() # Modifiers are case-insensitive
+                    if isinstance(value, str) and value != 'yes':
+                        value = float(value) # Parse e.g. "1." as 1.0
                     if modifier not in ideas_and_policies_by_modifier:
                         ideas_and_policies_by_modifier[modifier] = {}
                     if value not in ideas_and_policies_by_modifier[modifier]:
@@ -176,6 +179,9 @@ class Eu4Parser:
                     ideas_and_policies_by_modifier[modifier][value].append(idea)
         for policy in self.all_policies.values():
             for modifier, value in policy.modifiers.items():
+                modifier = modifier.lower()
+                if isinstance(value, str) and value != 'yes':
+                    value = float(value)
                 if modifier not in ideas_and_policies_by_modifier:
                     ideas_and_policies_by_modifier[modifier] = {}
                 if value not in ideas_and_policies_by_modifier[modifier]:
