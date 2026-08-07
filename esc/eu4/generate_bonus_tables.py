@@ -174,7 +174,7 @@ class PolicyListGenerator:
 
     def get_policy_list(self, category):
         """all policies of a category (e.g. ADM) as a list"""
-        filtered_idea_groups = {self.eu4parser.all_idea_groups[group] for group in ['firepower_ideas', 'liberty_ideas', 'assimilation_ideas']}
+        filtered_idea_groups = {self.eu4parser.all_idea_groups[group] for group in []}
         return [policy for policy in self.eu4parser.all_policies.values() if policy.category == category
                 and (
                         self.idea_groups is None
