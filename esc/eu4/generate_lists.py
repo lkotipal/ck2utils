@@ -1666,9 +1666,8 @@ class DeitiesList(PdxparseToList):
     def generate_deities_list(self, file):
         print(file)
         deities = [{
-            'Deity': f"""{{{{icon|{deity['name']}}}}} '''{deity['name']}'''""",
+            'style="width:400px" | Deity': f"{{{{iconbox|{deity['name']}|{deity['desc']}|image={deity['name']}}}}}",
             'class="unsortable" | Effects': f"{{{{plainlist|\n{deity['all']}\n}}}}",
-            'class="unsortable" | Description': f"''{deity['desc']}''",
             'class="unsortable" | Conditions': deity['potential'],
         } for deity in self.get_data_from_files(f'common/personal_deities/{file}',
                                                  modifier_scope=['all'],
@@ -1693,9 +1692,9 @@ class FetishistCultsList(PdxparseToList):
 
     def generate_cults_list(self):
         cults = [{
-            'Deity': f"""{{{{icon|{deity['name']}}}}} '''{deity['name']}'''""",
-            '| Unlocked by': deity['allow'],
+            'style="width:400px" | Deity': f"{{{{iconbox|{deity['name']}|{deity['desc']}|image={deity['name']}}}}}",
             'class="unsortable" | Effects': f"{{{{plainlist|\n{deity['all']}\n}}}}",
+            '| Unlocked by': deity['allow'],
         } for deity in self.get_data_from_files(f'common/fetishist_cults/00_fetishist_cults.txt',
                                                  modifier_scope=['all'],
                                                  country_scope=['allow'],
