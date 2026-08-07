@@ -26,7 +26,7 @@ class MapGenerator:
 
     def decision_maps(self):
         # change the version number after verifying that the provinces/areas are still correct
-        verified_for_version("19")
+        verified_for_version("20")
 
         # Holy Sites
         for religion in self.mapparser.all_religions.values():
@@ -153,6 +153,31 @@ class MapGenerator:
         color_to_provinces[(191, 123, 99)] = self.mapparser.all_provincegroups['tughayasa_spirit_area'].provinceIDs
         color_to_provinces[(255, 255, 255)] = self.mapparser.all_provincegroups['yanhe_spirit_area'].provinceIDs
         self.color_map_generator.generate_mapimage_with_several_colors(color_to_provinces, 'Rending', crop_to_color=True)
+
+        # Pashaine
+        #luna_river_cities = self.mapparser.all_provincegroups['luna_river_cities'].provinceIDs
+        luna_river_cities = self.mapparser.all_provincegroups['luna_river_cities_provinces'].provinces
+
+        color_to_provinces = {}
+        for tag in ('A61', 'A55', 'A82', 'B87', 'B88', 'B89', 'B90', 'B91', 'Z03'):
+            country = self.mapparser.all_countries[tag]
+            provinces = [prov.id for prov in luna_river_cities if country.tag in prov.get('cores', [])]
+            if len(provinces) > 0:
+                color_to_provinces[country.get_color()] = provinces
+
+        for tag in ('A45', 'A84', 'A98'):
+            country = self.mapparser.all_countries[tag]
+            provinces = [prov.id for prov in luna_river_cities if prov.get('Owner') == country.tag]
+            if len(provinces) > 0:
+                color_to_provinces[country.get_color()] = provinces
+
+        color_to_provinces[self.mapparser.all_countries['A98'].get_color()].append(327)
+
+        self.color_map_generator.create_shaded_image(
+            color_to_provinces,
+            {},
+            'LRM', crop_to_color=True)
+        return
 
         return
         color_to_provinces = {}
@@ -914,12 +939,12 @@ every_province = {
         self.religion_map()
         self.trade_node_map()
         self.trade_company_map()
-        self.terrain_map()
+        #self.terrain_map()
         self.colonial_region_map()
         self.country_map()
         self.continent_map()
         #self.techgroup_map() hardcoded
-        self.mission_map()
+        #self.mission_map()
 
 
 if __name__ == '__main__':
