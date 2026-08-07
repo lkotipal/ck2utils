@@ -86,7 +86,7 @@ class PdxparseToList(Eu4FileGenerator):
                 elif section_name in ignored:
                     to_remove.append(idx)
                     pass
-                else:
+                elif not 'all' in modifier_scope:
                     print(f'Warning: unhandled section "{section_name}" in "{element_id}"')
                     unhandled_sections[element_id] += f'\n{section_name} = {{\n{section_data}\n}}'
 
@@ -1673,7 +1673,7 @@ class DeitiesList(PdxparseToList):
         } for deity in self.get_data_from_files(f'common/personal_deities/{file}',
                                                  modifier_scope=['all'],
                                                  country_scope=['potential'],
-                                                 ignored=['potential', 'ai_will_do', 'sprite'],
+                                                 ignored=['ai_will_do', 'sprite'],
                                                  localise_desc=True)]
         table = self.make_wiki_table(deities, one_line_per_cell=True, table_classes=['mildtable'])
 
@@ -1731,19 +1731,19 @@ class Incidents(PdxparseToList):
 if __name__ == '__main__':
     # for correct sorting. en_US seems to work even for non english characters, but the default None sorts all non-ascii characters to the end
     setlocale(LC_COLLATE, 'en_US.utf8')
-    EstateAgendas().run_for_all_estates()
-    #Achievements(365).run([])
-    EstatePrivileges().run_for_all_estates()
-    EocReforms().run([])
-    HREReforms().run([])
-    GovernmentReforms().run()
-    MercenaryList().run([])
-    MonumentList().run()
-    EventPicturesList().run([])
-    CountryList().run([])
-    AreaAndRegionsList().run([])
-    CultureList().run([])
-    HolyOrders().run([])
+    #EstateAgendas().run_for_all_estates()
+    ##Achievements(365).run([])
+    #EstatePrivileges().run_for_all_estates()
+    #EocReforms().run([])
+    #HREReforms().run([])
+    #GovernmentReforms().run()
+    #MercenaryList().run([])
+    #MonumentList().run()
+    ##EventPicturesList().run([])
+    #CountryList().run([])
+    #AreaAndRegionsList().run([])
+    #CultureList().run([])
+    #HolyOrders().run([])
     DeitiesList().run()
     FetishistCultsList().run([])
     Incidents().run([])
