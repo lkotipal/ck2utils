@@ -379,11 +379,11 @@ class StaticModifiersGenerator:
             else:
                 raise Exception('Unhandled modifier line: ' + line)
 
-    def run(self):
+    def write_modifiers(self, glob, out):
         wiki_converter = WikiTextConverter()
 
         static_modifiers = {name: modifiers.str(self.parser.parser) for name, modifiers in
-                            self.parser.parser.merge_parse('common/static_modifiers/*')}
+                            self.parser.parser.merge_parse(glob)}
         wiki_converter.to_wikitext(modifiers=static_modifiers, strip_icon_sizes=True)
 
         lines = []
@@ -405,8 +405,12 @@ class StaticModifiersGenerator:
             lines.append(f'<section end={modifier_id}/>')
             lines.append('')
 
-        PolicyListGenerator.writeFile('static_modifiers', lines)
+        PolicyListGenerator.writeFile(out, lines)
 
+    def run(self):
+        self.write_modifiers('common/static_modifiers/*', 'static_modifiers')
+        self.write_modifiers('common/event_modifiers/racial_admin_military.txt', 'racial administration')
+        self.write_modifiers('common/event_modifiers/racial_pop_modifiers.txt', 'racial pops')
 
 if __name__ == '__main__':
     StaticModifiersGenerator().run()
