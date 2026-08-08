@@ -1657,7 +1657,7 @@ class HolyOrders(PdxparseToList):
                                                  key_value_pair_list=['icon', 'cost', 'cost_type'],
                                                  extra_handlers={'per_province_effect': (lambda x: (f"* ''{self.parser.localize(x['custom_tooltip'])}''\n") if ('custom_tooltip' in x) else "")},
                                                  localise_desc=True)]
-        table = self.make_wiki_table(orders, one_line_per_cell=True, table_classes=['mildtable plainlist sortable'])
+        table = self.make_wiki_table(orders, one_line_per_cell=True, table_classes=['mildtable plainlist'])
 
         return self.get_SVersion_header('table') + '\n' + table
 
@@ -1674,7 +1674,7 @@ class DeitiesList(PdxparseToList):
                                                  country_scope=['potential'],
                                                  ignored=['ai_will_do', 'sprite'],
                                                  localise_desc=True)]
-        table = self.make_wiki_table(deities, one_line_per_cell=True, table_classes=['mildtable plainlist sortable'])
+        table = self.make_wiki_table(deities, one_line_per_cell=True, table_classes=['mildtable plainlist'])
 
         return self.get_SVersion_header('table') + '\n' + table
 
@@ -1700,7 +1700,7 @@ class FetishistCultsList(PdxparseToList):
                                                  country_scope=['allow'],
                                                  ignored=['ai_will_do', 'sprite'],
                                                  localise_desc=True)]
-        table = self.make_wiki_table(cults, one_line_per_cell=True, table_classes=['mildtable plainlist sortable'])
+        table = self.make_wiki_table(cults, one_line_per_cell=True, table_classes=['mildtable plainlist'])
 
         return self.get_SVersion_header('table') + '\n' + table
 
@@ -1723,7 +1723,7 @@ class Incidents(PdxparseToList):
                 localisation_with_title=True,
                 localise_desc=True)
         )]
-        table = self.make_wiki_table(incidents, one_line_per_cell=True, table_classes=['mildtable'])
+        table = self.make_wiki_table(incidents, one_line_per_cell=True, table_classes=['mildtable plainlist'])
 
         return self.get_SVersion_header('table') + '\n' + table
 
