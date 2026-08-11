@@ -177,6 +177,10 @@ class MapGenerator:
             color_to_provinces,
             {},
             'LRM', crop_to_color=True)
+
+        # Stewardship
+        mothers_sorrow = self.mapparser.all_provincegroups['mothers_sorrow_group'].provinceIDs
+        self.color_map_generator.generate_mapimage_with_several_colors({self.mapparser.all_religions['elikhetist'].color: mothers_sorrow, 'white': [475, 473, 463, 479, 5481]}, "Mother's Sorrow", crop_to_color=True)
         return
 
         return
@@ -530,7 +534,7 @@ class MapGenerator:
             'Trade center map', crop_to_color=False)
         map_image = Image.open(eu4outpath / 'Trade center map.png')
         legend_image = Image.open(Path(__file__).parent / 'trade_center_legend.png')
-        map_image.paste(legend_image, (1124, 1464))
+        map_image.paste(legend_image, (130, 1220))
         map_image.save(eu4outpath / 'Trade center map.png')
 
     def trade_company_map(self):
@@ -994,7 +998,7 @@ every_province = {
         self.religion_map()
         self.trade_node_map()
         self.trade_company_map()
-        #self.terrain_map()
+        self.terrain_map()
         self.colonial_region_map()
         self.country_map()
         self.continent_map()
