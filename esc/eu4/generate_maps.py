@@ -181,6 +181,20 @@ class MapGenerator:
         # Stewardship
         mothers_sorrow = self.mapparser.all_provincegroups['mothers_sorrow_group'].provinceIDs
         self.color_map_generator.generate_mapimage_with_several_colors({self.mapparser.all_religions['elikhetist'].color: mothers_sorrow, 'white': [475, 473, 463, 479, 5481]}, "Mother's Sorrow", crop_to_color=True)
+
+        religion_groups = {}
+        for religion in self.mapparser.all_religions.values():
+            if not religion.group in religion_groups:
+                religion_groups[religion.group] = [religion]
+            else:
+                religion_groups[religion.group].append(religion)
+
+        for group in religion_groups:
+            print(f'{{{{DenominationRow|[[{self.mapparser.localize(group)} denominations]]}}}} <div style="display: grid; grid-template-columns: 50% 50%;">')
+            for religion in religion_groups[group]:
+                r, g, b = religion.color.get_upscaled_value_tuple()
+                print(f'{{{{ReligionRow|{religion}|{r}|{g}|{b}}}}}')
+            print('</div>', end=' ')
         return
 
         return
@@ -985,26 +999,26 @@ every_province = {
         print('}')
 
     def generate_all(self):
-        self.superregion_map()
-        self.region_maps()
-        self.areas_maps()
-        self.island_maps()
+        #self.superregion_map()
+        #self.region_maps()
+        #self.areas_maps()
+        #self.island_maps()
         self.decision_maps()
-        self.coal_map()
-        self.gold_map()
-        # TODO Damestear, mithril, more?
-        self.achievement_maps()
-        self.culture_group_map()
-        self.religion_map()
-        self.trade_node_map()
-        self.trade_company_map()
-        self.terrain_map()
-        self.colonial_region_map()
-        self.country_map()
-        self.continent_map()
-        self.techgroup_map()
-        self.trade_center_map()
-        self.mission_map()
+        #self.coal_map()
+        #self.gold_map()
+        ## TODO Damestear, mithril, more?
+        #self.achievement_maps()
+        #self.culture_group_map()
+        #self.religion_map()
+        #self.trade_node_map()
+        #self.trade_company_map()
+        #self.terrain_map()
+        #self.colonial_region_map()
+        #self.country_map()
+        #self.continent_map()
+        #self.techgroup_map()
+        #self.trade_center_map()
+        #self.mission_map()
 
 
 if __name__ == '__main__':
