@@ -1681,6 +1681,7 @@ class DeitiesList(PdxparseToList):
 
     def run(self):
         for file in self.parser.parser.files(r'common/personal_deities/*'):
+            print(file)
             self.writeFile(os.path.basename(file), self.generate_deities_list(os.path.basename(file)))
 
     def writeFile(self, name, content):
@@ -1727,6 +1728,125 @@ class Incidents(PdxparseToList):
 
         return self.get_SVersion_header('table') + '\n' + table
 
+class NavalDoctrineList(PdxparseToList):
+
+    def generate_naval_doctrines_list(self):
+        doctrines = [{
+            'style="width:400px" | Doctrine': f"{{{{iconbox|{doctrine['name']}|{doctrine['desc']}|image={doctrine['name']} doctrine.png}}}}",
+            'class="unsortable" | Effects': f"{doctrine['country_modifier']}\n{doctrine['effect']}",
+            'class="unsortable" | Conditions': doctrine['can_select'],
+        } for doctrine in self.get_data_from_files(f'common/naval_doctrines/00_naval_doctrines.txt',
+                                                 modifier_scope=['country_modifier'],
+                                                 country_scope=['can_select', 'effect'],
+                                                 ignored=['button_gfx', 'cost', 'removed_effect'],
+                                                 localise_desc=True)]
+        table = self.make_wiki_table(doctrines, one_line_per_cell=True, table_classes=['mildtable plainlist'])
+
+        return self.get_SVersion_header('table') + '\n' + table
+
+class ChurchAspects(PdxparseToList):
+
+    def __init__(self):
+        super().__init__()
+        self.icons = None
+        self.parser = Eu4Parser()
+
+    def get_aspect_icon(self, gfx):
+        if not self.icons:
+            self.icons = {}
+            for n, v in self.parser.parser.parse_file(r'interface/anb_church_aspects.gfx'):
+                for n2, v2 in v:
+                    name = v2['name']
+                    image = v2['texturefile'].val.replace(r'gfx/interface/church_aspects/', '').replace('.dds', '.png')
+                    self.icons[name] = image
+        try:
+            return self.icons[gfx]
+        except:
+            print(f"No icon for {gfx}!")
+            return "404"
+
+    def generate_aspects_list(self, file):
+        aspect_data = self.get_data_from_files(f'common/church_aspects/{file}',
+                                                 modifier_scope=['modifier'],
+                                                 country_scope=['trigger', 'potential', 'effect'],
+                                                 key_value_pair_list=['sprite', 'cost', 'monarch_power', 'is_blessing'],
+                                                 ignored=['ai_will_do'],
+                                                 localise_desc=True)
+
+        aspect_type = ''
+        if (aspect_data[0]['is_blessing']):
+            aspect_type = 'coptic'
+        else:
+            for religion in self.parser.all_religions.values():
+                if (religion.data.get('aspects')):
+                    if aspect_data[0]['id'] in religion.data['aspects'].contents:
+                        if (religion.data.get('uses_church_power', None)):
+                            aspect_type = 'protestant'
+                        elif (religion.data.get('uses_anglican_power', None)):
+                            aspect_type = 'anglican'
+                        elif (religion.data.get('uses_judaism_power', None)):
+                            aspect_type = 'jewish'
+                        else:
+                            print(f'No aspect type for {religion}!')
+                            return ''
+
+        uses_sprites = aspect_data[0]['sprite']
+        dlc = ''
+
+        if (aspect_type == 'coptic'):
+            # Permanent modifiers
+            dlc = 'won'
+            aspects = [{
+                'style="width:400px" | Blessing': f"{{{{iconbox|{aspect['name']}|{aspect['desc']}|image={self.get_aspect_icon(aspect['sprite'])}}}}}" if uses_sprites else f"{aspect['name']}",
+                '| {{icon|church power}}': f"{{{{red|{aspect['cost']}}}}}",
+                'class="unsortable" | Modifiers': f"{{{{plainlist|{aspect['modifier']}}}}}",
+                'class="unsortable" | Effects': f"{{{{plainlist|{aspect['effect']}}}}}",
+                'class="unsortable" | Conditions': f"{aspect['potential']}\n{aspect['trigger']}",
+            } for aspect in aspect_data]
+        elif (aspect_type == 'protestant'):
+            # Modifiers you can swap
+            aspects = [{
+                'style="width:400px" | Aspect': f"{{{{iconbox|{aspect['name']}|{aspect['desc']}|image={self.get_aspect_icon(aspect['sprite'])}}}}}" if uses_sprites else f"{aspect['name']}",
+                '| {{icon|church power}}': f"{{{{red|{aspect['cost']}}}}}",
+                'class="unsortable" | Modifiers': f"{{{{plainlist|{aspect['modifier']}}}}}",
+                'class="unsortable" | Effects': f"{{{{plainlist|{aspect['effect']}}}}}",
+                'class="unsortable" | Conditions': f"{aspect['potential']}\n{aspect['trigger']}",
+            } for aspect in aspect_data]
+        elif (aspect_type == 'anglican'):
+            # Powers you can activate
+            dlc = 'rb'
+            aspects = [{
+                'style="width:400px" | Action': f"{{{{iconbox|{aspect['name']}|{aspect['desc']}|image={self.get_aspect_icon(aspect['sprite'])}}}}}" if uses_sprites else f"{aspect['name']}",
+                '| {{icon|church power}}': f"{{{{red|{aspect['cost']}}}}}",
+                'class="unsortable" | Effects': f"{{{{plainlist|{aspect['effect']}}}}}",
+                'class="unsortable" | Conditions': f"{aspect['potential']}\n{aspect['trigger']}",
+            } for aspect in aspect_data]
+        elif (aspect_type == 'jewish'):
+            # Three modifiers cleared with a celebration
+            # A lot of these could probably use a similar table to DP...
+            dlc = 'org'
+            aspects = [{
+                'style="width:400px" | Aspect': f"{{{{iconbox|{aspect['name']}|{aspect['desc']}|image={self.get_aspect_icon(aspect['sprite'])}}}}}" if uses_sprites else f"{aspect['name']}",
+                '| {{icon|church power}}': f"{{{{red|{aspect['cost']}}}}}",
+                'class="unsortable" | Modifiers': f"{{{{plainlist|{aspect['modifier']}}}}}",
+                'class="unsortable" | Effects': f"{{{{plainlist|{aspect['effect']}}}}}",
+                'class="unsortable" | Conditions': f"{aspect['potential']}\n{aspect['trigger']}",
+            } for aspect in aspect_data]
+
+        table = self.make_wiki_table(aspects, one_line_per_cell=True, table_classes=['mildtable plainlist'])
+        return (f'{{{{expansion|{dlc}}}}}\n' if dlc else '') + self.get_SVersion_header('table') + '\n' + table
+
+    def run(self):
+        for file in self.parser.parser.files(r'common/church_aspects/*'):
+            print(file)
+            self.writeFile(os.path.basename(file), self.generate_aspects_list(os.path.basename(file)))
+
+    def writeFile(self, name, content):
+        output_file = eu4outpath / 'eu4aspects_{}'.format(name)
+        with output_file.open('w') as f:
+            f.write(content)
+
+
 if __name__ == '__main__':
     # for correct sorting. en_US seems to work even for non english characters, but the default None sorts all non-ascii characters to the end
     setlocale(LC_COLLATE, 'en_US.utf8')
@@ -1746,3 +1866,5 @@ if __name__ == '__main__':
     DeitiesList().run()
     FetishistCultsList().run([])
     Incidents().run([])
+    NavalDoctrineList().run([])
+    ChurchAspects().run()
