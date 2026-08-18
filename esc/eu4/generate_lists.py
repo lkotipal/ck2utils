@@ -45,7 +45,7 @@ class PdxparseToList(Eu4FileGenerator):
             dictionary[key] = value
 
     def get_data_from_files(self, glob, province_scope=[], country_scope=[], modifier_scope=[], extra_handlers=None, key_value_pair_list=[],
-                            ignored=[], ignored_elements=[], localisation_with_title=False, localise_desc=False):
+                            ignored=[], ignored_elements=[], localisation_with_title=False, localise_desc=False, localise_desc_alt=False):
         if not extra_handlers:
             extra_handlers = {}
         province_params = {}
@@ -103,6 +103,8 @@ class PdxparseToList(Eu4FileGenerator):
             result = {'id': element_id, 'name': name}
             if localise_desc:
                 result['desc'] = self.parser.localize(element_id + '_desc')
+            elif localise_desc_alt:
+                result['desc'] = self.parser.localize("desc_" + element_id) # Religious aspects got it the wrong way around
             merged_sections = province_params | country_params | modifier_params | extra_sections | key_value_pairs
             for section_name in province_scope + country_scope + modifier_scope + list(extra_handlers.keys()) + key_value_pair_list:
                 if f'{element_id}__{section_name}' in merged_sections:
@@ -1771,7 +1773,7 @@ class ChurchAspects(PdxparseToList):
                                                  country_scope=['trigger', 'potential', 'effect'],
                                                  key_value_pair_list=['sprite', 'cost', 'monarch_power', 'is_blessing'],
                                                  ignored=['ai_will_do'],
-                                                 localise_desc=True)
+                                                 localise_desc_alt=True)
 
         aspect_type = ''
         if (aspect_data[0]['is_blessing']):
