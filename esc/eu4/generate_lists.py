@@ -1794,7 +1794,6 @@ class ChurchAspects(PdxparseToList):
 
         if (aspect_type == 'coptic'):
             # Permanent modifiers
-            dlc = 'won'
             aspects = [{
                 'style="width:400px" | Blessing': f"{{{{iconbox|{aspect['name']}|{aspect['desc']}|image={self.get_aspect_icon(aspect['sprite'])}}}}}" if uses_sprites else f"{aspect['name']}",
                 '| {{icon|church power}}': f"{{{{red|{aspect['cost']}}}}}",
