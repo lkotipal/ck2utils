@@ -1788,7 +1788,6 @@ class ChurchAspects(PdxparseToList):
                             aspect_type = 'jewish'
                         else:
                             print(f'No aspect type for {religion}!')
-                            return ''
 
         uses_sprites = aspect_data[0]['sprite']
         dlc = ''
@@ -1832,6 +1831,8 @@ class ChurchAspects(PdxparseToList):
                 'class="unsortable" | Effects': f"{{{{plainlist|{aspect['effect']}}}}}",
                 'class="unsortable" | Conditions': f"{aspect['potential']}\n{aspect['trigger']}",
             } for aspect in aspect_data]
+        else:
+            return ''
 
         table = self.make_wiki_table(aspects, one_line_per_cell=True, table_classes=['mildtable plainlist'])
         return (f'{{{{expansion|{dlc}}}}}\n' if dlc else '') + self.get_SVersion_header('table') + '\n' + table
