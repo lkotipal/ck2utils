@@ -41,9 +41,23 @@ class MapGenerator:
 
         # JE
         self.color_map_generator.generate_mapimage_with_several_colors({
-            (241, 135, 50): ['bulwar_superregion', 'rahen_superregion'],
+            self.mapparser.all_countries['F51'].get_color(): ['bulwar_superregion', 'rahen_superregion'],
             'white': [2909, 643, 625, 601, 4411, 4435, 4391]
         }, 'Form the Jadd Empire', crop_to_color=True)
+
+        # Khatalashya
+        self.color_map_generator.generate_mapimage_with_several_colors({
+            self.mapparser.all_countries['S81'].get_color(): ['taneyas_superregion'],
+            'white': [5921, 5650, 5898, 5914, 5941, 5951, 5947, 5646, 5908, 5863]
+
+        }, 'The Final Empire', crop_to_color=True)
+
+        # 332nd empire
+        self.color_map_generator.generate_mapimage_with_several_colors({
+            self.mapparser.all_religions['anzalkatsa'].color: ['taneyas_superregion'],
+            'white': self.mapparser.all_provincegroups['imperial_332_cities'].provinceIDs
+
+        }, '332nd Empire', crop_to_color=True)
 
         # IC cults
         ic_provinces = self.mapparser.all_provincegroups['infernal_court_provinces'].provinceIDs
