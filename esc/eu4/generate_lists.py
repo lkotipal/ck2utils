@@ -1031,7 +1031,7 @@ class AreaAndRegionsList(Eu4FileGenerator):
             if province.center_of_trade > 0:
                 key_provinces[f'cotlvl{province.center_of_trade}'].append(province)
 
-        lines = [f'{{{{icon|{prov_type}}}}} {", ".join(sorted(f'{province.name}({province.id})' for province in provinces))}'
+        lines = [f'{{{{icon|{prov_type}}}}} {", ".join(sorted(f"{province.name}({province.id})" for province in provinces))}'
                  for prov_type, provinces in key_provinces.items()
                  if len(provinces) > 0]
         return '{{plainlist|\n' + self.create_wiki_list(lines) + '\n}}'
@@ -1851,7 +1851,7 @@ class ChurchAspects(PdxparseToList):
 
 if __name__ == '__main__':
     # for correct sorting. en_US seems to work even for non english characters, but the default None sorts all non-ascii characters to the end
-    setlocale(LC_COLLATE, 'en_US.utf8')
+    setlocale(LC_COLLATE, 'en_US.ISO-8859-1')
     EstateAgendas().run_for_all_estates()
     #Achievements(365).run([])
     EstatePrivileges().run_for_all_estates()

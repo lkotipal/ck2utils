@@ -190,7 +190,7 @@ class ProvinceTables:
             'Owner': '[[File:{0}.png|24px|border|alt={0}|link={0}]] [[{0}]]'}
         if attribute == 'Owner' and 'tribal_owner' in province.attributes:
             if 'Owner' in province.attributes:
-                raise Exception('province {} has an owner and a tribal_owner'.format(province.id))
+                print('province {} has an owner and a tribal_owner'.format(province.id))
             return "''Tribal land of'' " + formatstrings[attribute].format(self.parser.localize(province.get('tribal_owner', '')))
         value = self.parser.localize(province.get(attribute, ''))
         if value == '':
