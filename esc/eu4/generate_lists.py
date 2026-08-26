@@ -45,7 +45,7 @@ class PdxparseToList(Eu4FileGenerator):
             dictionary[key] = value
 
     def get_data_from_files(self, glob, province_scope=[], country_scope=[], modifier_scope=[], extra_handlers=None, key_value_pair_list=[],
-                            ignored=[], ignored_elements=[], localisation_with_title=False, localise_desc=False, localise_desc_alt=False):
+                            ignored=[], ignored_elements=[], localisation_with_title=False, localise_desc=False, localise_desc_alt=False, localise_desc_faction=False):
         if not extra_handlers:
             extra_handlers = {}
         province_params = {}
@@ -105,6 +105,8 @@ class PdxparseToList(Eu4FileGenerator):
                 result['desc'] = self.parser.localize(element_id + '_desc')
             elif localise_desc_alt:
                 result['desc'] = self.parser.localize("desc_" + element_id) # Religious aspects got it the wrong way around
+            elif localise_desc_faction:
+                result['desc'] = self.parser.localize(element_id + "_FACTION_DESC") # jfc
             merged_sections = province_params | country_params | modifier_params | extra_sections | key_value_pairs
             for section_name in province_scope + country_scope + modifier_scope + list(extra_handlers.keys()) + key_value_pair_list:
                 if f'{element_id}__{section_name}' in merged_sections:
@@ -1848,6 +1850,40 @@ class ChurchAspects(PdxparseToList):
         with output_file.open('w') as f:
             f.write(content)
 
+class Factions(PdxparseToList):
+
+    def __init__(self):
+        super().__init__()
+        self.icons = None
+
+    def get_icon(self, gfx):
+        if not self.icons:
+            self.icons = {}
+            for n, v in self.parser.parser.parse_file(r'interface/faction.gfx'):
+                for n2, v2 in v:
+                    name = v2['name']
+                    image = v2['texturefile'].val.replace(r'gfx//interface//', '').replace('_icon', '').replace('.dds', '.png').replace('.tga', '.png')
+                    self.icons[name] = image
+        try:
+            return self.icons[gfx]
+        except:
+            print(f"No icon for {gfx}!")
+            return "404"
+
+    def generate_factions_list(self):
+        factions = [{
+            'style="width:400px" | Faction': f"{{{{iconbox|{faction['name']}|{faction['desc']}|image={self.get_icon('GFX_faction_' + faction['id'])}}}}}",
+            '| Type': f"{{{{icon|{faction['monarch_power']}}}}}",
+            'class="unsortable" | Modifiers': f"{{{{plainlist|{faction['modifier']}}}}}"
+        } for faction in self.get_data_from_files('common/factions/anb_factions.txt',
+                                                 modifier_scope=['modifier'],
+                                                 key_value_pair_list=['monarch_power'],
+                                                 localise_desc_faction=True)]
+        table = self.make_wiki_table(factions, one_line_per_cell=True, table_classes=['mildtable plainlist'])
+
+        return self.get_SVersion_header('table') + '\n' + table
+
+
 
 if __name__ == '__main__':
     # for correct sorting. en_US seems to work even for non english characters, but the default None sorts all non-ascii characters to the end
@@ -1870,3 +1906,4 @@ if __name__ == '__main__':
     Incidents().run([])
     NavalDoctrineList().run([])
     ChurchAspects().run()
+    Factions().run([])
