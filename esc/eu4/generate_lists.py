@@ -95,6 +95,7 @@ class PdxparseToList(Eu4FileGenerator):
                 for k in to_remove:
                     del data.contents[k]
                 self._add_element_to_dict_and_create_list_for_duplicates(f'{element_id}', data.inline_str(self.parser.parser)[0], modifier_params)
+
         self.wiki_converter.to_wikitext(province_scope=province_params, country_scope=country_params,
                                    modifiers=modifier_params, strip_icon_sizes=True)
 
@@ -1883,27 +1884,86 @@ class Factions(PdxparseToList):
 
         return self.get_SVersion_header('table') + '\n' + table
 
+class Disasters(PdxparseToList):
 
+    def passthrough_handler(self, section_data):
+        return self.wiki_converter.remove_surrounding_brackets(section_data.inline_str(self.parser.parser)[0])
+
+    def generate_disaster_page(self, file):
+        disasters = self.get_data_from_files(f'common/disasters/{file}',
+                                            country_scope=['potential', 'can_start', 'can_stop', 'progress', 'down_progress', 'can_end', 'on_start', 'on_end', 'on_monthly'],
+                                            extra_handlers={'on_start': self.passthrough_handler,
+                                                            'on_end': self.passthrough_handler,
+                                                            'on_monthly': self.passthrough_handler,
+                                            },
+                                            modifier_scope=['modifier'],
+                                            localise_desc_alt=True)
+        if not disasters:
+            return ''
+        disaster = disasters[0]
+        s = f'{self.get_version_header()}\n'
+        s += f"{{{{Disaster|{disaster['name']}|{disaster['desc']}}}}}\n"
+        s += f"The '''{disaster['name']}''' is a {{{{icon|disaster|24px}}}} [[disaster]].\n\n"
+        s += "== Prerequisites ==\n"
+        s += "The country:"
+        s += f"{disaster['potential']}\n"
+        s += "If these prerequisites are met, the monthly progress can begin.\n"
+        s += self.make_wiki_table([{
+            'align="left" | Progress starts if': disaster['can_start'],
+            'align="left" | Progress halts if': disaster['can_stop']
+        }], one_line_per_cell = True, table_classes = ['mildtable', 'plainlist']) + "\n"
+        s += '\n{|  class="mildtable plainlist sortable"\n! Monthly progress\n! The country:\n|-\n|'
+        # Some assembly required
+        s += disaster['progress']
+        s += disaster['down_progress']
+        s += '\n|}\n'
+        s += "== Start ==\n"
+        s += "If the progress reaches 100%, the disaster will start with the following event:"
+        s += f"{disaster['on_start']}\n\n"
+        s += "=== Modifiers ===\n"
+        s += "While the disaster is ongoing the country gets:"
+        s += f"{disaster['modifier']}\n\n"
+        s += "== Monthly events ==\n"
+        s += "The following events may fire on a monthly pulse:"
+        s += f"{disaster['on_monthly']}\n\n"
+        s += "== Finishing conditions ==\n"
+        s += "If the country:"
+        s += f"{disaster['can_end']}\n"
+        s += "the disaster ends and the following event is triggered:"
+        s += f"{disaster['on_end']}\n\n"
+        s += f"==Related events==\n"
+        return s
+
+    def run(self):
+        for file in self.parser.parser.files(r'common/disasters/*'):
+            print(file)
+            self.writeFile(os.path.basename(file), self.generate_disaster_page(os.path.basename(file)))
+
+    def writeFile(self, name, content):
+        output_file = eu4outpath / 'eu4disasters_{}'.format(name)
+        with output_file.open('w') as f:
+            f.write(content)
 
 if __name__ == '__main__':
     # for correct sorting. en_US seems to work even for non english characters, but the default None sorts all non-ascii characters to the end
     setlocale(LC_COLLATE, 'en_US.ISO-8859-1')
-    EstateAgendas().run_for_all_estates()
+    #EstateAgendas().run_for_all_estates()
     #Achievements(365).run([])
-    EstatePrivileges().run_for_all_estates()
-    EocReforms().run([])
-    HREReforms().run([])
-    GovernmentReforms().run()
-    MercenaryList().run([])
-    MonumentList().run()
-    #EventPicturesList().run([])
-    CountryList().run([])
-    AreaAndRegionsList().run([])
-    CultureList().run([])
-    HolyOrders().run([])
-    DeitiesList().run()
-    FetishistCultsList().run([])
-    Incidents().run([])
-    NavalDoctrineList().run([])
-    ChurchAspects().run()
-    Factions().run([])
+    #EstatePrivileges().run_for_all_estates()
+    #EocReforms().run([])
+    #HREReforms().run([])
+    #GovernmentReforms().run()
+    #MercenaryList().run([])
+    #MonumentList().run()
+    ##EventPicturesList().run([])
+    #CountryList().run([])
+    #AreaAndRegionsList().run([])
+    #CultureList().run([])
+    #HolyOrders().run([])
+    #DeitiesList().run()
+    #FetishistCultsList().run([])
+    #Incidents().run([])
+    #NavalDoctrineList().run([])
+    #ChurchAspects().run()
+    #Factions().run([])
+    Disasters().run()
