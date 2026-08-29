@@ -1770,84 +1770,80 @@ class ChurchAspects(PdxparseToList):
             print(f"No icon for {gfx}!")
             return "404"
 
-    def generate_aspects_list(self, file):
-        aspect_data = self.get_data_from_files(f'common/church_aspects/{file}',
+    def run(self):
+        aspect_data = self.get_data_from_files(f'common/church_aspects/*',
                                                  modifier_scope=['modifier'],
                                                  country_scope=['trigger', 'potential', 'effect'],
                                                  key_value_pair_list=['sprite', 'cost', 'monarch_power', 'is_blessing'],
                                                  ignored=['ai_will_do'],
                                                  localise_desc_alt=True)
 
-        aspect_type = ''
-        if (aspect_data[0]['is_blessing']):
-            aspect_type = 'coptic'
-        else:
-            for religion in self.parser.all_religions.values():
-                if (religion.data.get('aspects')):
-                    if aspect_data[0]['id'] in religion.data['aspects'].contents:
-                        if (religion.data.get('uses_church_power', None)):
-                            aspect_type = 'protestant'
-                        elif (religion.data.get('uses_anglican_power', None)):
-                            aspect_type = 'anglican'
-                        elif (religion.data.get('uses_judaism_power', None)):
-                            aspect_type = 'jewish'
-                        else:
-                            print(f'No aspect type for {religion}!')
+        for religion in self.parser.all_religions.values():
+            print(religion)
+            aspect_type = ''
+            dlc = ''
+            aspects = []
 
-        uses_sprites = aspect_data[0]['sprite']
-        dlc = ''
+            if (religion.data.get('aspects')):
+                aspects = religion.data['aspects'].contents
+                if (religion.data.get('uses_church_power', None)):
+                    aspect_type = 'protestant'
+                elif (religion.data.get('uses_anglican_power', None)):
+                    aspect_type = 'anglican'
+                    dlc = 'rb'
+                elif (religion.data.get('uses_judaism_power', None)):
+                    aspect_type = 'jewish'
+                    dlc = 'org'
+                else:
+                    print(f'No aspect type for {religion}!')
+            elif (religion.data.get('blessings', None)):
+                aspects = religion.data['blessings'].contents
+                aspect_type = 'coptic'
+            else:
+                continue
 
-        if (aspect_type == 'coptic'):
-            # Permanent modifiers
-            aspects = [{
-                'style="width:400px" | Blessing': f"{{{{iconbox|{aspect['name']}|{aspect['desc']}|image={self.get_aspect_icon(aspect['sprite'])}}}}}" if uses_sprites else f"{aspect['name']}",
-                '| {{icon|church power}}': f"{{{{red|{aspect['cost']}}}}}",
-                'class="unsortable" | Modifiers': f"{{{{plainlist|{aspect['modifier']}}}}}",
-                'class="unsortable" | Effects': f"{{{{plainlist|{aspect['effect']}}}}}",
-                'class="unsortable" | Conditions': f"{aspect['potential']}\n{aspect['trigger']}",
-            } for aspect in aspect_data]
-        elif (aspect_type == 'protestant'):
-            # Modifiers you can swap
-            aspects = [{
-                'style="width:400px" | Aspect': f"{{{{iconbox|{aspect['name']}|{aspect['desc']}|image={self.get_aspect_icon(aspect['sprite'])}}}}}" if uses_sprites else f"{aspect['name']}",
-                '| {{icon|church power}}': f"{{{{red|{aspect['cost']}}}}}",
-                'class="unsortable" | Modifiers': f"{{{{plainlist|{aspect['modifier']}}}}}",
-                'class="unsortable" | Effects': f"{{{{plainlist|{aspect['effect']}}}}}",
-                'class="unsortable" | Conditions': f"{aspect['potential']}\n{aspect['trigger']}",
-            } for aspect in aspect_data]
-        elif (aspect_type == 'anglican'):
-            # Powers you can activate
-            dlc = 'rb'
-            aspects = [{
-                'style="width:400px" | Action': f"{{{{iconbox|{aspect['name']}|{aspect['desc']}|image={self.get_aspect_icon(aspect['sprite'])}}}}}" if uses_sprites else f"{aspect['name']}",
-                '| {{icon|church power}}': f"{{{{red|{aspect['cost']}}}}}",
-                'class="unsortable" | Effects': f"{{{{plainlist|{aspect['effect']}}}}}",
-                'class="unsortable" | Conditions': f"{aspect['potential']}\n{aspect['trigger']}",
-            } for aspect in aspect_data]
-        elif (aspect_type == 'jewish'):
-            # Three modifiers cleared with a celebration
-            # A lot of these could probably use a similar table to DP...
-            dlc = 'org'
-            aspects = [{
-                'style="width:400px" | Aspect': f"{{{{iconbox|{aspect['name']}|{aspect['desc']}|image={self.get_aspect_icon(aspect['sprite'])}}}}}" if uses_sprites else f"{aspect['name']}",
-                '| {{icon|church power}}': f"{{{{red|{aspect['cost']}}}}}",
-                'class="unsortable" | Modifiers': f"{{{{plainlist|{aspect['modifier']}}}}}",
-                'class="unsortable" | Effects': f"{{{{plainlist|{aspect['effect']}}}}}",
-                'class="unsortable" | Conditions': f"{aspect['potential']}\n{aspect['trigger']}",
-            } for aspect in aspect_data]
-        else:
-            return ''
+            if (aspect_type == 'coptic'):
+                # Permanent modifiers
+                aspects = [{
+                    'style="width:400px" | Blessing': f"{{{{iconbox|{aspect['name']}|{aspect['desc']}|image={self.get_aspect_icon(aspect['sprite'])}}}}}" if 'sprite' in aspect else f"{aspect['name']}",
+                    '| {{icon|church power}}': f"{{{{red|{aspect['cost']}}}}}",
+                    'class="unsortable" | Modifiers': f"{{{{plainlist|{aspect['modifier']}}}}}",
+                    'class="unsortable" | Effects': f"{{{{plainlist|{aspect['effect']}}}}}",
+                    'class="unsortable" | Conditions': f"{aspect['potential']}\n{aspect['trigger']}",
+                } for aspect in aspect_data if aspect['id'] in aspects]
+            elif (aspect_type == 'protestant'):
+                # Modifiers you can swap
+                aspects = [{
+                    'style="width:400px" | Aspect': f"{{{{iconbox|{aspect['name']}|{aspect['desc']}|image={self.get_aspect_icon(aspect['sprite'])}}}}}" if 'sprite' in aspect else f"{aspect['name']}",
+                    '| {{icon|church power}}': f"{{{{red|{aspect['cost']}}}}}",
+                    'class="unsortable" | Modifiers': f"{{{{plainlist|{aspect['modifier']}}}}}",
+                    'class="unsortable" | Effects': f"{{{{plainlist|{aspect['effect']}}}}}",
+                    'class="unsortable" | Conditions': f"{aspect['potential']}\n{aspect['trigger']}",
+                } for aspect in aspect_data if aspect['id'] in aspects]
+            elif (aspect_type == 'anglican'):
+                # Powers you can activate
+                aspects = [{
+                    'style="width:400px" | Action': f"{{{{iconbox|{aspect['name']}|{aspect['desc']}|image={self.get_aspect_icon(aspect['sprite'])}}}}}" if 'sprite' in aspect else f"{aspect['name']}",
+                    '| {{icon|church power}}': f"{{{{red|{aspect['cost']}}}}}",
+                    'class="unsortable" | Effects': f"{{{{plainlist|{aspect['effect']}}}}}",
+                    'class="unsortable" | Conditions': f"{aspect['potential']}\n{aspect['trigger']}",
+                } for aspect in aspect_data if aspect['id'] in aspects]
+            elif (aspect_type == 'jewish'):
+                # Three modifiers cleared with a celebration
+                # A lot of these could probably use a similar table to DP...
+                aspects = [{
+                    'style="width:400px" | Aspect': f"{{{{iconbox|{aspect['name']}|{aspect['desc']}|image={self.get_aspect_icon(aspect['sprite'])}}}}}" if 'sprite' in aspect else f"{aspect['name']}",
+                    '| {{icon|church power}}': f"{{{{red|{aspect['cost']}}}}}",
+                    'class="unsortable" | Modifiers': f"{{{{plainlist|{aspect['modifier']}}}}}",
+                    'class="unsortable" | Effects': f"{{{{plainlist|{aspect['effect']}}}}}",
+                    'class="unsortable" | Conditions': f"{aspect['potential']}\n{aspect['trigger']}",
+                } for aspect in aspect_data if aspect['id'] in aspects]
 
-        table = self.make_wiki_table(aspects, one_line_per_cell=True, table_classes=['mildtable plainlist'])
-        return (f'{{{{expansion|{dlc}}}}}\n' if dlc else '') + self.get_SVersion_header('table') + '\n' + table
-
-    def run(self):
-        for file in self.parser.parser.files(r'common/church_aspects/*'):
-            print(file)
-            self.writeFile(os.path.basename(file), self.generate_aspects_list(os.path.basename(file)))
+            table = (f'{{{{expansion|{dlc}}}}}\n' if dlc else '') + f"{self.get_SVersion_header('table')}\n{self.make_wiki_table(aspects, one_line_per_cell=True, table_classes=['mildtable plainlist'])}"
+            self.writeFile(religion.name, table)
 
     def writeFile(self, name, content):
-        output_file = eu4outpath / 'eu4aspects_{}'.format(name)
+        output_file = eu4outpath / 'eu4aspects_{}.txt'.format(name)
         with output_file.open('w') as f:
             f.write(content)
 
@@ -1940,23 +1936,23 @@ class Disasters(PdxparseToList):
 if __name__ == '__main__':
     # for correct sorting. en_US seems to work even for non english characters, but the default None sorts all non-ascii characters to the end
     setlocale(LC_COLLATE, 'en_US.ISO-8859-1')
-    #EstateAgendas().run_for_all_estates()
-    #Achievements(365).run([])
-    #EstatePrivileges().run_for_all_estates()
-    #EocReforms().run([])
-    #HREReforms().run([])
-    #GovernmentReforms().run()
-    #MercenaryList().run([])
-    #MonumentList().run()
-    ##EventPicturesList().run([])
-    #CountryList().run([])
-    #AreaAndRegionsList().run([])
-    #CultureList().run([])
-    #HolyOrders().run([])
-    #DeitiesList().run()
-    #FetishistCultsList().run([])
-    #Incidents().run([])
-    #NavalDoctrineList().run([])
-    #ChurchAspects().run()
-    #Factions().run([])
+    EstateAgendas().run_for_all_estates()
+    Achievements(365).run([])
+    EstatePrivileges().run_for_all_estates()
+    EocReforms().run([])
+    HREReforms().run([])
+    GovernmentReforms().run()
+    MercenaryList().run([])
+    MonumentList().run()
+    #EventPicturesList().run([])
+    CountryList().run([])
+    AreaAndRegionsList().run([])
+    CultureList().run([])
+    HolyOrders().run([])
+    DeitiesList().run()
+    FetishistCultsList().run([])
+    Incidents().run([])
+    NavalDoctrineList().run([])
+    ChurchAspects().run()
+    Factions().run([])
     Disasters().run()
