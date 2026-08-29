@@ -1889,58 +1889,51 @@ class Disasters(PdxparseToList):
     def passthrough_handler(self, section_data):
         return self.wiki_converter.remove_surrounding_brackets(section_data.inline_str(self.parser.parser)[0])
 
-    def generate_disaster_page(self, file):
-        disasters = self.get_data_from_files(f'common/disasters/{file}',
+    def run(self):
+        for disaster in self.get_data_from_files(f'common/disasters/*',
                                             country_scope=['potential', 'can_start', 'can_stop', 'progress', 'down_progress', 'can_end', 'on_start', 'on_end', 'on_monthly'],
                                             extra_handlers={'on_start': self.passthrough_handler,
                                                             'on_end': self.passthrough_handler,
                                                             'on_monthly': self.passthrough_handler,
                                             },
                                             modifier_scope=['modifier'],
-                                            localise_desc_alt=True)
-        if not disasters:
-            return ''
-        disaster = disasters[0]
-        s = f'{self.get_version_header()}\n'
-        s += f"{{{{Disaster|{disaster['name']}|{disaster['desc']}}}}}\n"
-        s += f"The '''{disaster['name']}''' is a {{{{icon|disaster|24px}}}} [[disaster]].\n\n"
-        s += "== Prerequisites ==\n"
-        s += "The country:"
-        s += f"{disaster['potential']}\n"
-        s += "If these prerequisites are met, the monthly progress can begin.\n"
-        s += self.make_wiki_table([{
-            'align="left" | Progress starts if': disaster['can_start'],
-            'align="left" | Progress halts if': disaster['can_stop']
-        }], one_line_per_cell = True, table_classes = ['mildtable', 'plainlist']) + "\n"
-        s += '\n{|  class="mildtable plainlist sortable"\n! Monthly progress\n! The country:\n|-\n|'
-        # Some assembly required
-        s += disaster['progress']
-        s += disaster['down_progress']
-        s += '\n|}\n'
-        s += "== Start ==\n"
-        s += "If the progress reaches 100%, the disaster will start with the following event:"
-        s += f"{disaster['on_start']}\n\n"
-        s += "=== Modifiers ===\n"
-        s += "While the disaster is ongoing the country gets:"
-        s += f"{disaster['modifier']}\n\n"
-        s += "== Monthly events ==\n"
-        s += "The following events may fire on a monthly pulse:"
-        s += f"{disaster['on_monthly']}\n\n"
-        s += "== Finishing conditions ==\n"
-        s += "If the country:"
-        s += f"{disaster['can_end']}\n"
-        s += "the disaster ends and the following event is triggered:"
-        s += f"{disaster['on_end']}\n\n"
-        s += f"==Related events==\n"
-        return s
+                                            localise_desc_alt=True):
+            s = f'{self.get_version_header()}\n'
+            s += f"{{{{Disaster|{disaster['name']}|{disaster['desc']}}}}}\n"
+            s += f"The '''{disaster['name']}''' is a {{{{icon|disaster|24px}}}} [[disaster]].\n\n"
+            s += "== Prerequisites ==\n"
+            s += "The country:"
+            s += f"{disaster['potential']}\n"
+            s += "If these prerequisites are met, the monthly progress can begin.\n"
+            s += self.make_wiki_table([{
+                'align="left" | Progress starts if': disaster['can_start'],
+                'align="left" | Progress halts if': disaster['can_stop']
+            }], one_line_per_cell = True, table_classes = ['mildtable', 'plainlist']) + "\n"
+            s += '\n{|  class="mildtable plainlist sortable"\n! Monthly progress\n! The country:\n|-\n|'
+            # TODO proper parsing... I think monuments do something like this
+            s += disaster['progress']
+            s += disaster['down_progress']
+            s += '\n|}\n'
+            s += "== Start ==\n"
+            s += "If the progress reaches 100%, the disaster will start with the following event:"
+            s += f"{disaster['on_start']}\n\n"
+            s += "=== Modifiers ===\n"
+            s += "While the disaster is ongoing the country gets:"
+            s += f"{disaster['modifier']}\n\n"
+            s += "== Monthly events ==\n"
+            s += "The following events may fire on a monthly pulse:"
+            s += f"{disaster['on_monthly']}\n\n"
+            s += "== Finishing conditions ==\n"
+            s += "If the country:"
+            s += f"{disaster['can_end']}\n"
+            s += "the disaster ends and the following event is triggered:"
+            s += f"{disaster['on_end']}\n\n"
+            s += f"==Related events==\n"
 
-    def run(self):
-        for file in self.parser.parser.files(r'common/disasters/*'):
-            print(file)
-            self.writeFile(os.path.basename(file), self.generate_disaster_page(os.path.basename(file)))
+            self.writeFile(disaster['id'], s)
 
     def writeFile(self, name, content):
-        output_file = eu4outpath / 'eu4disasters_{}'.format(name)
+        output_file = eu4outpath / 'eu4disasters_{}.txt'.format(name)
         with output_file.open('w') as f:
             f.write(content)
 
