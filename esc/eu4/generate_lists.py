@@ -1784,37 +1784,44 @@ class ChurchAspects(PdxparseToList):
             dlc = ''
             aspects = []
 
+            aspect_name_long = ""
+            aspect_name_short = ""
+            if 'aspects_name' in religion.data:
+                aspect_name_short = self.parser.localize(f"{religion.data['aspects_name']}_SHORT")
+                aspect_name_long = self.parser.localize(f"{religion.data['aspects_name']}_LONG")
             if (religion.data.get('aspects')):
                 aspects = religion.data['aspects'].contents
                 if (religion.data.get('uses_church_power', None)):
                     aspect_type = 'protestant'
+                    if not aspect_name_short:
+                        aspect_name_short = "Aspect"
+                        aspect_name_long = "Religious aspects"
                 elif (religion.data.get('uses_anglican_power', None)):
                     aspect_type = 'anglican'
                     dlc = 'rb'
+                    if not aspect_name_short:
+                        aspect_name_short = "Action"
+                        aspect_name_long = "Religious action"
                 elif (religion.data.get('uses_judaism_power', None)):
                     aspect_type = 'jewish'
                     dlc = 'org'
+                    if not aspect_name_short:
+                        aspect_name_short = "Aspect"
+                        aspect_name_long = "Religious aspect"
                 else:
                     print(f'No aspect type for {religion}!')
             elif (religion.data.get('blessings', None)):
                 aspects = religion.data['blessings'].contents
                 aspect_type = 'coptic'
+                aspect_name_short = 'Blessing'
+                aspect_name_long = 'Blessing'
             else:
                 continue
 
-            if (aspect_type == 'coptic'):
+            if aspect_type in ('coptic', 'protestant', 'jewish'):
                 # Permanent modifiers
                 aspects = [{
-                    'style="width:400px" | Blessing': f"{{{{iconbox|{aspect['name']}|{aspect['desc']}|image={self.get_aspect_icon(aspect['sprite'])}}}}}" if 'sprite' in aspect else f"{aspect['name']}",
-                    '| {{icon|church power}}': f"{{{{red|{aspect['cost']}}}}}",
-                    'class="unsortable" | Modifiers': f"{{{{plainlist|{aspect['modifier']}}}}}",
-                    'class="unsortable" | Effects': f"{{{{plainlist|{aspect['effect']}}}}}",
-                    'class="unsortable" | Conditions': f"{aspect['potential']}\n{aspect['trigger']}",
-                } for aspect in aspect_data if aspect['id'] in aspects]
-            elif (aspect_type == 'protestant'):
-                # Modifiers you can swap
-                aspects = [{
-                    'style="width:400px" | Aspect': f"{{{{iconbox|{aspect['name']}|{aspect['desc']}|image={self.get_aspect_icon(aspect['sprite'])}}}}}" if 'sprite' in aspect else f"{aspect['name']}",
+                    f'style="width:400px" | {aspect_name_short}': f"{{{{iconbox|{aspect['name']}|{aspect['desc']}|image={self.get_aspect_icon(aspect['sprite'])}}}}}" if aspect.get('sprite', "") else f"{aspect['name']}",
                     '| {{icon|church power}}': f"{{{{red|{aspect['cost']}}}}}",
                     'class="unsortable" | Modifiers': f"{{{{plainlist|{aspect['modifier']}}}}}",
                     'class="unsortable" | Effects': f"{{{{plainlist|{aspect['effect']}}}}}",
@@ -1823,23 +1830,13 @@ class ChurchAspects(PdxparseToList):
             elif (aspect_type == 'anglican'):
                 # Powers you can activate
                 aspects = [{
-                    'style="width:400px" | Action': f"{{{{iconbox|{aspect['name']}|{aspect['desc']}|image={self.get_aspect_icon(aspect['sprite'])}}}}}" if 'sprite' in aspect else f"{aspect['name']}",
+                    f'style="width:400px" | {aspect_name_short}': f"{{{{iconbox|{aspect['name']}|{aspect['desc']}|image={self.get_aspect_icon(aspect['sprite'])}}}}}" if 'sprite' in aspect else f"{aspect['name']}",
                     '| {{icon|church power}}': f"{{{{red|{aspect['cost']}}}}}",
-                    'class="unsortable" | Effects': f"{{{{plainlist|{aspect['effect']}}}}}",
-                    'class="unsortable" | Conditions': f"{aspect['potential']}\n{aspect['trigger']}",
-                } for aspect in aspect_data if aspect['id'] in aspects]
-            elif (aspect_type == 'jewish'):
-                # Three modifiers cleared with a celebration
-                # A lot of these could probably use a similar table to DP...
-                aspects = [{
-                    'style="width:400px" | Aspect': f"{{{{iconbox|{aspect['name']}|{aspect['desc']}|image={self.get_aspect_icon(aspect['sprite'])}}}}}" if 'sprite' in aspect else f"{aspect['name']}",
-                    '| {{icon|church power}}': f"{{{{red|{aspect['cost']}}}}}",
-                    'class="unsortable" | Modifiers': f"{{{{plainlist|{aspect['modifier']}}}}}",
                     'class="unsortable" | Effects': f"{{{{plainlist|{aspect['effect']}}}}}",
                     'class="unsortable" | Conditions': f"{aspect['potential']}\n{aspect['trigger']}",
                 } for aspect in aspect_data if aspect['id'] in aspects]
 
-            table = (f'{{{{expansion|{dlc}}}}}\n' if dlc else '') + f"{self.get_SVersion_header('table')}\n{self.make_wiki_table(aspects, one_line_per_cell=True, table_classes=['mildtable plainlist'])}"
+            table = f'=== {aspect_name_long} ===\n' + (f'{{{{expansion|{dlc}}}}}\n' if dlc else '') + f"{self.get_SVersion_header('table')}\n{self.make_wiki_table(aspects, one_line_per_cell=True, table_classes=['mildtable plainlist'])}"
             self.writeFile(religion.name, table)
 
     def writeFile(self, name, content):
