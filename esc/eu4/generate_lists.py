@@ -1821,7 +1821,7 @@ class ChurchAspects(PdxparseToList):
             if aspect_type in ('coptic', 'protestant', 'jewish'):
                 # Permanent modifiers
                 aspects = [{
-                    f'style="width:400px" | {aspect_name_short}': f"{{{{iconbox|{aspect['name']}|{aspect['desc']}|image={self.get_aspect_icon(aspect['sprite'])}}}}}" if aspect.get('sprite', "") else f"{aspect['name']}",
+                    f'style="width:400px" | {aspect_name_short}': f"{{{{iconbox|{aspect['name']}|{aspect['desc']}|image={self.get_aspect_icon(aspect['sprite'])}}}}}" if aspect.get('sprite', "") else f"'''{aspect['name']}'''",
                     '| {{icon|church power}}': f"{{{{red|{aspect['cost']}}}}}",
                     'class="unsortable" | Modifiers': f"{{{{plainlist|{aspect['modifier']}}}}}",
                     'class="unsortable" | Effects': f"{{{{plainlist|{aspect['effect']}}}}}",
