@@ -37,12 +37,29 @@ class Eu4Parser:
         # TODO: this does not take mod load order into account when multiple mods replace the same localisation
         paths.extend(self.parser.files('localisation/replace/*_l_english.yml'))
 
+        trans = str.maketrans({
+            # Dwarovrod
+            '|': '{{!}}',
+            # Insyaa
+            '€': 'ā',
+            '©': 'ē',
+            '†': 'ī',
+            '‡': 'ō',
+            '‹': 'ū',
+            '•': 'Ā',
+            '‰': 'Ē',
+            '™': 'Ī',
+            '®': 'Ō',
+            '¦': 'Ū'
+        })
+
         for path in paths:
             with path.open(encoding='utf-8-sig') as f:
                 for line in f:
                     match = re.fullmatch(r'\s*([^#\s:]+):\d?\s*"(.*)"[^"]*', line)
                     if match:
-                        localisation_dict[match.group(1)] = match.group(2)
+                        localisation_dict[match.group(1)] = match.group(2).translate(trans)
+
         return localisation_dict
 
     def localize(self, key: str, default: str = None) -> str:
