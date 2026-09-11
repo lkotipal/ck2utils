@@ -1818,7 +1818,7 @@ class ChurchAspects(PdxparseToList):
             else:
                 continue
 
-            if aspect_type in ('coptic', 'protestant', 'jewish'):
+            if aspect_type in ('coptic', 'protestant'):
                 # Permanent modifiers
                 aspects = [{
                     f'style="width:400px" | {aspect_name_short}': f"{{{{iconbox|{aspect['name']}|{aspect['desc']}|image={self.get_aspect_icon(aspect['sprite'])}}}}}" if aspect.get('sprite', "") else f"'''{aspect['name']}'''",
@@ -1829,9 +1829,19 @@ class ChurchAspects(PdxparseToList):
                 } for aspect in aspect_data if aspect['id'] in aspects]
             elif (aspect_type == 'anglican'):
                 # Powers you can activate
+                # TODO are these in fact the only types of aspects with sprites?
                 aspects = [{
                     f'style="width:400px" | {aspect_name_short}': f"{{{{iconbox|{aspect['name']}|{aspect['desc']}|image={self.get_aspect_icon(aspect['sprite'])}}}}}" if 'sprite' in aspect else f"{aspect['name']}",
                     '| {{icon|church power}}': f"{{{{red|{aspect['cost']}}}}}",
+                    'class="unsortable" | Effects': f"{{{{plainlist|{aspect['effect']}}}}}",
+                    'class="unsortable" | Conditions': f"{aspect['potential']}\n{aspect['trigger']}",
+                } for aspect in aspect_data if aspect['id'] in aspects]
+            elif (aspect_type == 'jewish'):
+                aspects = [{
+                    f'style="width:400px" | {aspect_name_short}': f"{{{{iconbox|{aspect['name']}|{aspect['desc']}|image={self.get_aspect_icon(aspect['sprite'])}}}}}" if aspect.get('sprite', "") else f"'''{aspect['name']}'''",
+                    '| Type': f"{{{{icon|{aspect['monarch_power']}}}}}",
+                    '| {{icon|church power}}': f"{{{{red|{aspect['cost']}}}}}",
+                    'class="unsortable" | Modifiers': f"{{{{plainlist|{aspect['modifier']}}}}}",
                     'class="unsortable" | Effects': f"{{{{plainlist|{aspect['effect']}}}}}",
                     'class="unsortable" | Conditions': f"{aspect['potential']}\n{aspect['trigger']}",
                 } for aspect in aspect_data if aspect['id'] in aspects]
@@ -1933,23 +1943,23 @@ class Disasters(PdxparseToList):
 if __name__ == '__main__':
     # for correct sorting. en_US seems to work even for non english characters, but the default None sorts all non-ascii characters to the end
     setlocale(LC_COLLATE, 'en_US.ISO-8859-1')
-    EstateAgendas().run_for_all_estates()
-    #Achievements(365).run([])
-    EstatePrivileges().run_for_all_estates()
-    EocReforms().run([])
-    HREReforms().run([])
-    GovernmentReforms().run()
-    MercenaryList().run([])
-    MonumentList().run()
-    #EventPicturesList().run([])
-    CountryList().run([])
-    AreaAndRegionsList().run([])
-    CultureList().run([])
-    HolyOrders().run([])
-    DeitiesList().run()
-    FetishistCultsList().run([])
-    Incidents().run([])
-    NavalDoctrineList().run([])
+    #EstateAgendas().run_for_all_estates()
+    ##Achievements(365).run([])
+    #EstatePrivileges().run_for_all_estates()
+    #EocReforms().run([])
+    #HREReforms().run([])
+    #GovernmentReforms().run()
+    #MercenaryList().run([])
+    #MonumentList().run()
+    ##EventPicturesList().run([])
+    #CountryList().run([])
+    #AreaAndRegionsList().run([])
+    #CultureList().run([])
+    #HolyOrders().run([])
+    #DeitiesList().run()
+    #FetishistCultsList().run([])
+    #Incidents().run([])
+    #NavalDoctrineList().run([])
     ChurchAspects().run()
-    Factions().run([])
-    Disasters().run()
+    #Factions().run([])
+    #Disasters().run()
